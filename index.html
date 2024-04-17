@@ -80,8 +80,6 @@
         <button id="limpiar-receta">Limpiar Receta</button>
     </div>
 
-    
-
     <div id="event-log" class="section" style="display: none;">
         <h2>Eventos</h2>
         <ul id="log-list">
@@ -90,144 +88,60 @@
     </div>
 
     <script>
-        // JavaScript puede ser añadido aquí
+        // Funciones para interactuar con GitHub
+        const githubToken = '3136448';
+        const repoOwner = 'PedroAbascal';
+        const repoName = 'tryhtml';
+        const filePath = 'https://github.com/PedroAbascal/tryhtml/blob/main/';
+
+        async function obtenerContenidoArchivo() {
+            const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `token ${githubToken}`
+                }
+            });
+            const data = await response.json();
+            const contenido = atob(data.content);
+            return contenido;
+        }
+
+        async function guardarContenidoArchivo(contenido) {
+            const contenidoCodificado = btoa(contenido);
+            const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`;
+            const sha = await obtenerSHAContenido();
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${githubToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: 'Actualización del archivo',
+                    content: contenidoCodificado,
+                    sha: sha
+                })
+            });
+            return await response.json();
+        }
+
+        async function obtenerSHAContenido() {
+            const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `token ${githubToken}`
+                }
+            });
+            const data = await response.json();
+            return data.sha;
+        }
+
+        // Resto del código JavaScript aquí
+
         let usuariosRegistrados = [];
-        let recetasConocidas = [];
-        let recetas = [
-            { nombre: "Poción de curación", materiales: { agua: 1, hierbas: 1, "raíz de mandrágora": 1 }, efecto: "Cura 2d4 + 2 puntos de golpe." },
-            { nombre: "Espada larga", materiales: { metal: 2, madera: 1 }, efecto: "Arma cuerpo a cuerpo que causa 1d8 de daño cortante." }
-            // Puedes añadir más recetas aquí
-        ];
-
-        let recetaPersonalizada = {
-            nombre: "Receta personalizada",
-            materiales: {}
-        };
-
-        let inventario = {
-            agua: 10,
-            hierbas: 10,
-            "raíz de mandrágora": 10,
-            metal: 10,
-            madera: 10
-        };
-
-        let itemsCreados = [];
-
-        function mostrarInventario() {
-            const inventarioList = document.getElementById("inventario");
-            inventarioList.innerHTML = ""; // Limpiamos la lista de inventario
-
-            for (const [ingrediente, cantidad] of Object.entries(inventario)) {
-                const listItem = document.createElement("li");
-                listItem.textContent = `${ingrediente}: ${cantidad}`;
-                inventarioList.appendChild(listItem);
-            }
-        }
-
-        function mostrarItemsCreados() {
-            const itemsList = document.getElementById("lista-items-creados");
-            itemsList.innerHTML = ""; // Limpiamos la lista de items creados
-
-            itemsCreados.forEach(item => {
-                const listItem = document.createElement("li");
-                listItem.textContent = item;
-                itemsList.appendChild(listItem);
-            });
-        }
-
-        function mostrarRecetas() {
-            const recetasSelect = document.getElementById("recetas");
-            recetasSelect.innerHTML = ""; // Limpiamos el dropdown de recetas
-
-            recetasConocidas.forEach(receta => {
-                const option = document.createElement("option");
-                option.value = receta;
-                option.textContent = receta;
-                recetasSelect.appendChild(option);
-            });
-        }
-
-        function mostrarRecetaPersonalizada() {
-            const recetaList = document.getElementById("lista-receta");
-            recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
-
-            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
-                const listItem = document.createElement("li");
-                listItem.textContent = `${ingrediente}: ${cantidad}`;
-                recetaList.appendChild(listItem);
-            }
-        }
-
-        function agregarIngrediente() {
-            const ingredienteSeleccionado = document.getElementById("ingredientes-select").value;
-            const cantidadSeleccionada = parseInt(document.getElementById("cantidad-ingredientes").value);
-            if (ingredienteSeleccionado && cantidadSeleccionada > 0 && inventario[ingredienteSeleccionado] >= cantidadSeleccionada) {
-                if (recetaPersonalizada.materiales.hasOwnProperty(ingredienteSeleccionado)) {
-                    recetaPersonalizada.materiales[ingredienteSeleccionado] += cantidadSeleccionada;
-                } else {
-                    recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
-                }
-                inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
-                mostrarInventario();
-                mostrarRecetaPersonalizada();
-            } else {
-                agregarEvento("No tienes suficientes ingredientes.");
-            }
-        }
-
-        function limpiarReceta() {
-            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
-                inventario[ingrediente] += cantidad;
-            }
-            recetaPersonalizada.materiales = {};
-            mostrarInventario();
-            mostrarRecetaPersonalizada();
-        }
-
-        function generarItem() {
-            // Verificamos si los ingredientes seleccionados coinciden con alguna receta conocida
-            const recetaCoincidente = recetas.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
-
-            if (recetaCoincidente) {
-                // Verificamos si la receta coincide con una receta conocida
-                const itemGenerado = recetaCoincidente.nombre;
-                itemsCreados.push(itemGenerado);
-                mostrarItemsCreados();
-
-                if (!recetasConocidas.includes(itemGenerado)) {
-                    recetasConocidas.push(itemGenerado);
-                    mostrarRecetas(); // Mostramos las recetas conocidas actualizadas
-                }
-
-                alert("¡Item generado exitosamente: " + itemGenerado + "!");
-            } else {
-                alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
-            }
-        }
-
-        function sonMismosIngredientes(receta1, receta2) {
-            const ingredientes1 = receta1.materiales;
-            const ingredientes2 = receta2.materiales;
-            const keys1 = Object.keys(ingredientes1);
-            const keys2 = Object.keys(ingredientes2);
-            if (keys1.length !== keys2.length) return false;
-            for (const key of keys1) {
-                if (ingredientes1[key] !== ingredientes2[key]) return false;
-            }
-            return true;
-        }
-
-        // Función para agregar un evento al log
-        function agregarEvento(evento) {
-            const logList = document.getElementById("log-list");
-            const listItem = document.createElement("li");
-            listItem.textContent = evento;
-            logList.appendChild(listItem);
-        }
 
         // Evento para el botón de iniciar sesión
-        document.getElementById("login-btn").addEventListener("click", function() {
+        document.getElementById("login-btn").addEventListener("click", async function() {
             const username = document.getElementById("username").value;
             const password = document.getElementById("password").value;
             const usuario = usuariosRegistrados.find(user => user.nombre === username && user.contraseña === password);
@@ -240,15 +154,16 @@
                 document.getElementById("generador-section").style.display = "inline-block";
                 document.getElementById("ingredientes-section").style.display = "inline-block";
                 document.getElementById("resultado").style.display = "inline-block";
-                // Cargar datos del usuario desde cookies
-                cargarEstadoUsuario(username);
+                // Cargar datos del usuario desde GitHub
+                const contenido = await obtenerContenidoArchivo();
+                usuariosRegistrados = JSON.parse(contenido);
             } else {
                 agregarEvento("Inicio de sesión fallido: ¡Nombre de usuario o contraseña incorrectos!");
             }
         });
 
         // Evento para el botón de registro
-        document.getElementById("registro-btn").addEventListener("click", function() {
+        document.getElementById("registro-btn").addEventListener("click", async function() {
             const username = document.getElementById("username").value;
             const password = document.getElementById("password").value;
             if (username && password) {
@@ -267,97 +182,23 @@
                     document.getElementById("resultado").style.display = "inline-block";
                     // Agregar nuevo usuario registrado a la lista
                     usuariosRegistrados.push({ nombre: username, contraseña: password });
-                    // Guardar estado del usuario en cookies
-                    guardarEstadoUsuario(username);
+                    // Guardar datos del usuario en GitHub
+                    await guardarContenidoArchivo(JSON.stringify(usuariosRegistrados));
                 }
             } else {
                 agregarEvento("Registro fallido: ¡Ingrese un nombre de usuario y contraseña!");
             }
         });
-// Evento para el botón de agregar ingredientes de receta
-document.getElementById("agregar-ingredientes-receta").addEventListener("click", function() {
-    const recetaSeleccionada = document.getElementById("recetas").value;
-    const recetaEncontrada = recetas.find(receta => receta.nombre === recetaSeleccionada);
 
-    if (recetaEncontrada) {
-        for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.materiales)) {
-            if (inventario[ingrediente] >= cantidad) {
-                if (recetaPersonalizada.materiales.hasOwnProperty(ingrediente)) {
-                    recetaPersonalizada.materiales[ingrediente] += cantidad;
-                } else {
-                    recetaPersonalizada.materiales[ingrediente] = cantidad;
-                }
-                inventario[ingrediente] -= cantidad;
-            } else {
-                agregarEvento("No tienes suficientes ingredientes para esta receta.");
-                return; // Salir de la función si no hay suficientes ingredientes
-            }
-        }
-        mostrarInventario();
-        mostrarRecetaPersonalizada();
-        agregarEvento("Ingredientes de receta agregados con éxito.");
-    } else {
-        agregarEvento("Error: Receta seleccionada no encontrada.");
-    }
-});
-        // Evento para el botón de generar item
-        document.getElementById("generar-item").addEventListener("click", generarItem);
-
-        // Evento para el botón de agregar ingrediente a la receta personalizada
-        document.getElementById("agregar-ingrediente").addEventListener("click", agregarIngrediente);
-
-        // Evento para el botón de limpiar receta personalizada
-        document.getElementById("limpiar-receta").addEventListener("click", limpiarReceta);
-
-        // Función para guardar el estado del usuario en cookies
-        function guardarEstadoUsuario(username) {
-            setCookie(username + "-itemsCreados", JSON.stringify(itemsCreados), 30); // Guardar items creados
-            setCookie(username + "-inventario", JSON.stringify(inventario), 30); // Guardar estado del inventario
-            setCookie("usuariosRegistrados", JSON.stringify(usuariosRegistrados), 30); // Guardar usuarios registrados
+        // Función para agregar un evento al log
+        function agregarEvento(evento) {
+            const logList = document.getElementById("log-list");
+            const listItem = document.createElement("li");
+            listItem.textContent = evento;
+            logList.appendChild(listItem);
         }
 
-        // Función para cargar el estado del usuario desde cookies
-        function cargarEstadoUsuario(username) {
-            const itemsCreadosCookie = getCookie(username + "-itemsCreados");
-            if (itemsCreadosCookie) {
-                itemsCreados = JSON.parse(itemsCreadosCookie);
-                mostrarItemsCreados();
-            }
-
-            const inventarioCookie = getCookie(username + "-inventario");
-            if (inventarioCookie) {
-                inventario = JSON.parse(inventarioCookie);
-                mostrarInventario();
-            }
-        }
-
-        // Función para establecer una cookie
-        function setCookie(name, value, days) {
-            const date = new Date();
-            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-            const expires = "expires=" + date.toUTCString();
-            document.cookie = name + "=" + value + ";" + expires + ";path=/";
-        }
-
-        // Función para obtener el valor de una cookie
-        function getCookie(name) {
-            const cookieName = name + "=";
-            const decodedCookie = decodeURIComponent(document.cookie);
-            const cookieArray = decodedCookie.split(';');
-            for (let i = 0; i < cookieArray.length; i++) {
-                let cookie = cookieArray[i];
-                while (cookie.charAt(0) === ' ') {
-                    cookie = cookie.substring(1);
-                }
-                if (cookie.indexOf(cookieName) === 0) {
-                    return cookie.substring(cookieName.length, cookie.length);
-                }
-            }
-            return "";
-        }
-
-        // Mostrar recetas iniciales
-        mostrarRecetas();
+        // Otros eventos y funciones aquí
 
     </script>
 </body>
