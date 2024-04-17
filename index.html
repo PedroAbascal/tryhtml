@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -274,7 +274,32 @@
                 agregarEvento("Registro fallido: ¡Ingrese un nombre de usuario y contraseña!");
             }
         });
+// Evento para el botón de agregar ingredientes de receta
+document.getElementById("agregar-ingredientes-receta").addEventListener("click", function() {
+    const recetaSeleccionada = document.getElementById("recetas").value;
+    const recetaEncontrada = recetas.find(receta => receta.nombre === recetaSeleccionada);
 
+    if (recetaEncontrada) {
+        for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.materiales)) {
+            if (inventario[ingrediente] >= cantidad) {
+                if (recetaPersonalizada.materiales.hasOwnProperty(ingrediente)) {
+                    recetaPersonalizada.materiales[ingrediente] += cantidad;
+                } else {
+                    recetaPersonalizada.materiales[ingrediente] = cantidad;
+                }
+                inventario[ingrediente] -= cantidad;
+            } else {
+                agregarEvento("No tienes suficientes ingredientes para esta receta.");
+                return; // Salir de la función si no hay suficientes ingredientes
+            }
+        }
+        mostrarInventario();
+        mostrarRecetaPersonalizada();
+        agregarEvento("Ingredientes de receta agregados con éxito.");
+    } else {
+        agregarEvento("Error: Receta seleccionada no encontrada.");
+    }
+});
         // Evento para el botón de generar item
         document.getElementById("generar-item").addEventListener("click", generarItem);
 
