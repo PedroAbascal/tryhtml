@@ -266,7 +266,8 @@ function getUsuarioActual() {
     return localStorage.getItem("usuarioActual");
 }
         // Función para agregar ingredientes al inventario
-       listaIngredientes.forEach(ingrediente => {
+       function agregarIngredientes(listaIngredientes) {
+    listaIngredientes.forEach(ingrediente => {
         if (!isNaN(ingrediente.cantidad) && ingrediente.cantidad > 0) {
             inventario[ingrediente.nombre] += ingrediente.cantidad;
             agregarEvento(`Se agregaron ${ingrediente.cantidad} unidades de ${ingrediente.nombre} al inventario.`);
@@ -276,7 +277,7 @@ function getUsuarioActual() {
     });
     mostrarInventario();
     mostrarRecetaPersonalizada();
-        }
+}
 
 // Eventos para los botones de agregar ingredientes
         document.getElementById("agregar-basico").addEventListener("click", function() {
