@@ -116,11 +116,9 @@
         };
 
         let inventario = {
-            agua: 10,
-            hierbas: 10,
-            "raíz de mandrágora": 10,
-            metal: 10,
-            madera: 10
+            Uñas: 20,
+            "Pelos de Humanoide": 1000,
+            "Saliva de Humanoide": 1000,
         };
 
         const ingredientesBasico = [
@@ -313,8 +311,9 @@ document.getElementById("login-btn").addEventListener("click", function() {
         cargarEstadoUsuario(username);
         mostrarInventario();
         mostrarRecetaPersonalizada();
+        mostrarRecetas();
     } else {
-        agregarEvento("Inicio de sesión fallido: ¡Nombre de usuario o contraseña incorrectos!");
+        alert("Inicio de sesión fallido: ¡Nombre de usuario o contraseña incorrectos!");
     }
 });
 // Verificar si hay un usuario actual almacenado en localStorage al cargar la página
@@ -409,25 +408,30 @@ document.getElementById("registro-btn").addEventListener("click", function() {
 
        // Función para cargar el estado del usuario desde localStorage
 function cargarEstadoUsuario(username) {
-    console.log("Intentando cargar datos del usuario:", username);
-    const itemsCreadosLocalStorage = localStorage.getItem(username + "-itemsCreados");
-    if (itemsCreadosLocalStorage) {
-        itemsCreados = JSON.parse(itemsCreadosLocalStorage);
-        mostrarItemsCreados();
-        console.log("Datos cargados desde localStorage para items creados del usuario:", username);
-    } else {
-        console.log("No se encontraron datos para items creados en localStorage para el usuario:", username);
-    }
+            const inventarioLocalStorage = localStorage.getItem(username + "-inventario");
+            if (inventarioLocalStorage) {
+                inventario = JSON.parse(inventarioLocalStorage);
+            }
 
-    const inventarioLocalStorage = localStorage.getItem(username + "-inventario");
-    if (inventarioLocalStorage) {
-        inventario = JSON.parse(inventarioLocalStorage);
-        mostrarInventario();
-        console.log("Datos cargados desde localStorage para inventario del usuario:", username);
-    } else {
-        console.log("No se encontraron datos para inventario en localStorage para el usuario:", username);
-    }
-}
+            const itemsCreadosLocalStorage = localStorage.getItem(username + "-itemsCreados");
+            if (itemsCreadosLocalStorage) {
+                itemsCreados = JSON.parse(itemsCreadosLocalStorage);
+            }
+
+            const recetasConocidasLocalStorage = localStorage.getItem(username + "-recetasConocidas");
+            if (recetasConocidasLocalStorage) {
+                recetasConocidas = JSON.parse(recetasConocidasLocalStorage);
+            }
+        }
+
+        // Función para guardar el estado del usuario en localStorage
+        function guardarEstadoUsuario(username) {
+            localStorage.setItem(username + "-inventario", JSON.stringify(inventario));
+            localStorage.setItem(username + "-itemsCreados", JSON.stringify(itemsCreados));
+            localStorage.setItem(username + "-recetasConocidas", JSON.stringify(recetasConocidas));
+        }
+
+        
 // Evento para el botón de guardar información en localStorage
 document.getElementById("guardar-localstorage-btn").addEventListener("click", function() {
     const username = localStorage.getItem("usuarioActual");
