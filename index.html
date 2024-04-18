@@ -250,8 +250,9 @@ document.getElementById("login-btn").addEventListener("click", function() {
         document.getElementById("ingredientes-section").style.display = "inline-block";
         document.getElementById("resultado").style.display = "inline-block";
         // Establecer usuario actual en localStorage
-        localStorage.setItem("usuarioActual", username);
         console.log("Usuario actual establecido en localStorage:", username);
+        localStorage.setItem("usuarioActual", username);
+        
         // Cargar datos del usuario desde localStorage
         cargarEstadoUsuario(username);
         mostrarInventario();
