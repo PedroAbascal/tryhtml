@@ -166,21 +166,26 @@
         }
 
         function agregarIngrediente() {
-            const ingredienteSeleccionado = document.getElementById("ingredientes-select").value;
-            const cantidadSeleccionada = parseInt(document.getElementById("cantidad-ingredientes").value);
-            if (ingredienteSeleccionado && cantidadSeleccionada > 0 && inventario[ingredienteSeleccionado] >= cantidadSeleccionada) {
-                if (recetaPersonalizada.materiales.hasOwnProperty(ingredienteSeleccionado)) {
-                    recetaPersonalizada.materiales[ingredienteSeleccionado] += cantidadSeleccionada;
-                } else {
-                    recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
-                }
-                inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
-                mostrarInventario();
-                mostrarRecetaPersonalizada();
+    const ingredienteSeleccionado = document.getElementById("ingredientes-select").value;
+    const cantidadSeleccionada = parseInt(document.getElementById("cantidad-ingredientes").value);
+
+    if (ingredienteSeleccionado && cantidadSeleccionada > 0) {
+        if (inventario[ingredienteSeleccionado] >= cantidadSeleccionada) {
+            if (recetaPersonalizada.materiales.hasOwnProperty(ingredienteSeleccionado)) {
+                recetaPersonalizada.materiales[ingredienteSeleccionado] += cantidadSeleccionada;
             } else {
-                agregarEvento("No tienes suficientes ingredientes.");
+                recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
             }
+            inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
+            mostrarInventario();
+            mostrarRecetaPersonalizada();
+        } else {
+            agregarEvento("No tienes suficientes " + ingredienteSeleccionado + " en el inventario.");
         }
+    } else {
+        agregarEvento("Por favor, selecciona un ingrediente y una cantidad válida.");
+    }
+}
 
         function limpiarReceta() {
             for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
