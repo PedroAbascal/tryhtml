@@ -80,6 +80,8 @@
         <button id="limpiar-receta">Limpiar Receta</button>
     </div>
 
+    
+
     <div id="event-log" class="section" style="display: none;">
         <h2>Eventos</h2>
         <ul id="log-list">
@@ -237,7 +239,7 @@
                 document.getElementById("items-creados-section").style.display = "inline-block";
                 document.getElementById("generador-section").style.display = "inline-block";
                 document.getElementById("ingredientes-section").style.display = "inline-block";
-                document.getElementById("event-log").style.display = "inline-block";
+                document.getElementById("resultado").style.display = "inline-block";
                 // Cargar datos del usuario desde cookies
                 cargarEstadoUsuario(username);
             } else {
@@ -262,7 +264,7 @@
                     document.getElementById("items-creados-section").style.display = "inline-block";
                     document.getElementById("generador-section").style.display = "inline-block";
                     document.getElementById("ingredientes-section").style.display = "inline-block";
-                    document.getElementById("event-log").style.display = "inline-block";
+                    document.getElementById("resultado").style.display = "inline-block";
                     // Agregar nuevo usuario registrado a la lista
                     usuariosRegistrados.push({ nombre: username, contraseña: password });
                     // Guardar estado del usuario en cookies
@@ -272,7 +274,32 @@
                 agregarEvento("Registro fallido: ¡Ingrese un nombre de usuario y contraseña!");
             }
         });
+// Evento para el botón de agregar ingredientes de receta
+document.getElementById("agregar-ingredientes-receta").addEventListener("click", function() {
+    const recetaSeleccionada = document.getElementById("recetas").value;
+    const recetaEncontrada = recetas.find(receta => receta.nombre === recetaSeleccionada);
 
+    if (recetaEncontrada) {
+        for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.materiales)) {
+            if (inventario[ingrediente] >= cantidad) {
+                if (recetaPersonalizada.materiales.hasOwnProperty(ingrediente)) {
+                    recetaPersonalizada.materiales[ingrediente] += cantidad;
+                } else {
+                    recetaPersonalizada.materiales[ingrediente] = cantidad;
+                }
+                inventario[ingrediente] -= cantidad;
+            } else {
+                agregarEvento("No tienes suficientes ingredientes para esta receta.");
+                return; // Salir de la función si no hay suficientes ingredientes
+            }
+        }
+        mostrarInventario();
+        mostrarRecetaPersonalizada();
+        agregarEvento("Ingredientes de receta agregados con éxito.");
+    } else {
+        agregarEvento("Error: Receta seleccionada no encontrada.");
+    }
+});
         // Evento para el botón de generar item
         document.getElementById("generar-item").addEventListener("click", generarItem);
 
