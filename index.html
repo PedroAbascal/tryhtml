@@ -270,12 +270,16 @@
     listaIngredientes.forEach(ingrediente => {
         const cantidad = parseInt(ingrediente.cantidad);
         if (!isNaN(cantidad) && cantidad > 0) {
-            inventario[ingrediente.nombre] += cantidad;
+            agregarAlInventario(ingrediente.nombre, cantidad);
         } else {
             agregarEvento("Error: La cantidad ingresada no es válida para el ingrediente " + ingrediente.nombre);
         }
     });
     mostrarInventario();
+}
+
+function agregarAlInventario(ingrediente, cantidad) {
+    inventario[ingrediente] += cantidad;
 }
 
 
