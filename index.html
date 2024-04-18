@@ -191,26 +191,34 @@
             mostrarRecetaPersonalizada();
         }
 
-        function generarItem() {
-            // Verificamos si los ingredientes seleccionados coinciden con alguna receta conocida
-            const recetaCoincidente = recetas.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
+    function generarItem() {
+    // Verificamos si los ingredientes seleccionados coinciden con alguna receta conocida
+    const recetaCoincidente = recetas.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
 
-            if (recetaCoincidente) {
-                // Verificamos si la receta coincide con una receta conocida
-                const itemGenerado = recetaCoincidente.nombre;
-                itemsCreados.push(itemGenerado);
-                mostrarItemsCreados();
-                guardarEstadoUsuario(getUsuarioActual());
-                if (!recetasConocidas.includes(itemGenerado)) {
-                    recetasConocidas.push(itemGenerado);
-                    mostrarRecetas(); // Mostramos las recetas conocidas actualizadas
-                }
-
-                alert("¡Item generado exitosamente: " + itemGenerado + "!");
-            } else {
-                alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
-            }
+    if (recetaCoincidente) {
+        // Restar los ingredientes del inventario
+        for (const [ingrediente, cantidad] of Object.entries(recetaCoincidente.materiales)) {
+            inventario[ingrediente] -= cantidad;
         }
+        
+        // Verificamos si la receta coincide con una receta conocida
+        const itemGenerado = recetaCoincidente.nombre;
+        itemsCreados.push(itemGenerado);
+        mostrarItemsCreados();
+
+        if (!recetasConocidas.includes(itemGenerado)) {
+            recetasConocidas.push(itemGenerado);
+            mostrarRecetas(); // Mostramos las recetas conocidas actualizadas
+        }
+
+        // Mostrar el inventario actualizado
+        mostrarInventario();
+        
+        alert("¡Item generado exitosamente: " + itemGenerado + "!");
+    } else {
+        alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
+    }
+}
 
         function sonMismosIngredientes(receta1, receta2) {
             const ingredientes1 = receta1.materiales;
@@ -352,25 +360,26 @@ document.getElementById("registro-btn").addEventListener("click", function() {
 }
 
        // Función para cargar el estado del usuario desde localStorage
-function cargarEstadoUsuario() {
-    const username = localStorage.getItem("usuarioActual");
-    if (username) {
-        const itemsCreadosLocalStorage = localStorage.getItem(username + "-itemsCreados");
-        if (itemsCreadosLocalStorage) {
-            itemsCreados = JSON.parse(itemsCreadosLocalStorage);
-            mostrarItemsCreados();
-            console.log("Datos cargados desde localStorage para items creados del usuario:", username);
-        }
+function cargarEstadoUsuario(username) {
+    console.log("Intentando cargar datos del usuario:", username);
+    const itemsCreadosLocalStorage = localStorage.getItem(username + "-itemsCreados");
+    if (itemsCreadosLocalStorage) {
+        itemsCreados = JSON.parse(itemsCreadosLocalStorage);
+        mostrarItemsCreados();
+        console.log("Datos cargados desde localStorage para items creados del usuario:", username);
+    } else {
+        console.log("No se encontraron datos para items creados en localStorage para el usuario:", username);
+    }
 
-        const inventarioLocalStorage = localStorage.getItem(username + "-inventario");
-        if (inventarioLocalStorage) {
-            inventario = JSON.parse(inventarioLocalStorage);
-            mostrarInventario();
-            console.log("Datos cargados desde localStorage para inventario del usuario:", username);
-        }
+    const inventarioLocalStorage = localStorage.getItem(username + "-inventario");
+    if (inventarioLocalStorage) {
+        inventario = JSON.parse(inventarioLocalStorage);
+        mostrarInventario();
+        console.log("Datos cargados desde localStorage para inventario del usuario:", username);
+    } else {
+        console.log("No se encontraron datos para inventario en localStorage para el usuario:", username);
     }
 }
-
 // Evento para el botón de guardar información en localStorage
 document.getElementById("guardar-localstorage-btn").addEventListener("click", function() {
     const username = localStorage.getItem("usuarioActual");
