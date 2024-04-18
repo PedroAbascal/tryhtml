@@ -22,318 +22,113 @@
             vertical-align: top;
             margin-right: 20px;
         }
+        /* Agregamos estilos para separar secciones */
+        .section-container {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     
     <h1>Generador de Items y Pociones de D&D 5e</h1>
 
-    <div id="inicio-sesion" class="section">
-        <h2>Iniciar Sesión</h2>
-        <label for="username">Nombre de Usuario:</label>
-        <input type="text" id="username">
-        <label for="password">Contraseña:</label>
-        <input type="password" id="password">
-        <button id="login-btn">Iniciar Sesión</button>
-        <button id="registro-btn">Registrarse</button>
+    <div id="inicio-sesion" class="section-container">
+        <div class="section">
+            <h2>Iniciar Sesión</h2>
+            <label for="username">Nombre de Usuario:</label>
+            <input type="text" id="username">
+            <label for="password">Contraseña:</label>
+            <input type="password" id="password">
+        </div>
+        <div class="section">
+            <button id="login-btn">Iniciar Sesión</button>
+            <button id="registro-btn">Registrarse</button>
+        </div>
     </div>
 
-    <div id="inventario-section" class="section" style="display: none;">
-        <h2>Inventario</h2>
-        <ul id="inventario">
-            <!-- Aquí se mostrarán las cantidades de ingredientes restantes -->
-        </ul>
+    <div id="inventario-section" class="section-container" style="display: none;">
+        <div class="section">
+            <h2>Inventario</h2>
+            <ul id="inventario">
+                <!-- Aquí se mostrarán las cantidades de ingredientes restantes -->
+            </ul>
+        </div>
     </div>
 
-    <div id="items-creados-section" class="section" style="display: none;">
-        <h2>Items Creados</h2>
-        <ul id="lista-items-creados">
-            <!-- Aquí se mostrarán los items creados -->
-        </ul>
+    <div id="items-creados-section" class="section-container" style="display: none;">
+        <div class="section">
+            <h2>Items Creados</h2>
+            <ul id="lista-items-creados">
+                <!-- Aquí se mostrarán los items creados -->
+            </ul>
+        </div>
     </div>
 
-    <div id="generador-section" class="section" style="display: none;">
-        <label for="recetas">Selecciona una receta:</label>
-        <select id="recetas">
-            <!-- Las opciones serán agregadas dinámicamente -->
-            <option value="Poción de curación">Poción de curación</option>
-            <option value="Espada larga">Espada larga</option>
-            <!-- Agrega más opciones de recetas conocidas según sea necesario -->
-        </select>
-        <button id="agregar-ingredientes-receta">Agregar Ingredientes de Receta</button>
-        <button id="generar-item">Generar Item</button>
+    <div id="generador-section" class="section-container" style="display: none;">
+        <div class="section">
+            <h2>Generador de Items</h2> <!-- Agregado un título -->
+            <label for="recetas">Selecciona una receta:</label>
+            <select id="recetas">
+                <!-- Las opciones serán agregadas dinámicamente -->
+                <option value="Poción de curación">Poción de curación</option>
+                <option value="Espada larga">Espada larga</option>
+                <!-- Agrega más opciones de recetas conocidas según sea necesario -->
+            </select>
+        </div>
+        <div class="section">
+            <button id="agregar-ingredientes-receta">Agregar Ingredientes de Receta</button>
+            <button id="generar-item">Generar Item</button>
+        </div>
     </div>
 
-    <div id="ingredientes-section" class="section" style="display: none;">
-        <h2>Selecciona un ingrediente</h2>
-        <ul id="lista-receta"></ul>
-        <select id="ingredientes-select">
-            <option value="agua">Agua</option>
-            <option value="hierbas">Hierbas</option>
-            <option value="raíz de mandrágora">Raíz de mandrágora</option>
-            <option value="metal">Metal</option>
-            <option value="madera">Madera</option>
-            <!-- Puedes añadir más opciones aquí -->
-        </select>
-        <input type="number" id="cantidad-ingredientes" value="1" min="1">
-        <button id="agregar-ingrediente">Agregar Ingrediente</button>
-        <button id="limpiar-receta">Limpiar Receta</button>
+    <div id="ingredientes-section" class="section-container" style="display: none;">
+        <div class="section">
+            <h2>Selecciona un ingrediente</h2>
+            <ul id="lista-receta"></ul>
+            <label for="ingredientes-select">Selecciona un ingrediente:</label>
+            <select id="ingredientes-select">
+                <option value="agua">Agua</option>
+                <option value="hierbas">Hierbas</option>
+                <option value="raíz de mandrágora">Raíz de mandrágora</option>
+                <option value="metal">Metal</option>
+                <option value="madera">Madera</option>
+                <!-- Puedes añadir más opciones aquí -->
+            </select>
+            <input type="number" id="cantidad-ingredientes" value="1" min="1">
+        </div>
+        <div class="section">
+            <button id="agregar-ingrediente">Agregar Ingrediente</button>
+            <button id="limpiar-receta">Limpiar Receta</button>
+        </div>
     </div>
 
-    
-
-    <div id="event-log" class="section" style="display: none;">
-        <h2>Eventos</h2>
-        <ul id="log-list">
-            <!-- Aquí se mostrarán los eventos -->
-        </ul>
+    <div id="event-log" class="section-container" style="display: none;">
+        <div class="section">
+            <h2>Eventos</h2>
+            <ul id="log-list">
+                <!-- Aquí se mostrarán los eventos -->
+            </ul>
+        </div>
     </div>
 
     <script>
         // JavaScript puede ser añadido aquí
-        let usuariosRegistrados = [];
-        let recetasConocidas = [];
-        let recetas = [
-            { nombre: "Poción de curación", materiales: { agua: 1, hierbas: 1, "raíz de mandrágora": 1 }, efecto: "Cura 2d4 + 2 puntos de golpe." },
-            { nombre: "Espada larga", materiales: { metal: 2, madera: 1 }, efecto: "Arma cuerpo a cuerpo que causa 1d8 de daño cortante." }
-            // Puedes añadir más recetas aquí
-        ];
-
-        let recetaPersonalizada = {
-            nombre: "Receta personalizada",
-            materiales: {}
-        };
-
-        let inventario = {
-            agua: 10,
-            hierbas: 10,
-            "raíz de mandrágora": 10,
-            metal: 10,
-            madera: 10
-        };
-
-        let itemsCreados = [];
-
-        function mostrarInventario() {
-            const inventarioList = document.getElementById("inventario");
-            inventarioList.innerHTML = ""; // Limpiamos la lista de inventario
-
-            for (const [ingrediente, cantidad] of Object.entries(inventario)) {
-                const listItem = document.createElement("li");
-                listItem.textContent = `${ingrediente}: ${cantidad}`;
-                inventarioList.appendChild(listItem);
-            }
-        }
-
-        function mostrarItemsCreados() {
-            const itemsList = document.getElementById("lista-items-creados");
-            itemsList.innerHTML = ""; // Limpiamos la lista de items creados
-
-            itemsCreados.forEach(item => {
-                const listItem = document.createElement("li");
-                listItem.textContent = item;
-                itemsList.appendChild(listItem);
-            });
-        }
-
-        function mostrarRecetas() {
-            const recetasSelect = document.getElementById("recetas");
-            recetasSelect.innerHTML = ""; // Limpiamos el dropdown de recetas
-
-            recetasConocidas.forEach(receta => {
-                const option = document.createElement("option");
-                option.value = receta;
-                option.textContent = receta;
-                recetasSelect.appendChild(option);
-            });
-        }
-
-        function mostrarRecetaPersonalizada() {
-            const recetaList = document.getElementById("lista-receta");
-            recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
-
-            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
-                const listItem = document.createElement("li");
-                listItem.textContent = `${ingrediente}: ${cantidad}`;
-                recetaList.appendChild(listItem);
-            }
-        }
-
-        function agregarIngrediente() {
-            const ingredienteSeleccionado = document.getElementById("ingredientes-select").value;
-            const cantidadSeleccionada = parseInt(document.getElementById("cantidad-ingredientes").value);
-            if (ingredienteSeleccionado && cantidadSeleccionada > 0 && inventario[ingredienteSeleccionado] >= cantidadSeleccionada) {
-                if (recetaPersonalizada.materiales.hasOwnProperty(ingredienteSeleccionado)) {
-                    recetaPersonalizada.materiales[ingredienteSeleccionado] += cantidadSeleccionada;
-                } else {
-                    recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
+        document.getElementById("agregar-ingredientes-receta").addEventListener("click", function() {
+            const selectedRecipe = document.getElementById("recetas").value;
+            const recipe = recetas.find(r => r.nombre === selectedRecipe);
+            if (recipe) {
+                for (const [material, quantity] of Object.entries(recipe.materiales)) {
+                    if (recetaPersonalizada.materiales.hasOwnProperty(material)) {
+                        recetaPersonalizada.materiales[material] += quantity;
+                    } else {
+                        recetaPersonalizada.materiales[material] = quantity;
+                    }
                 }
-                inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
-                mostrarInventario();
                 mostrarRecetaPersonalizada();
             } else {
-                agregarEvento("No tienes suficientes ingredientes.");
-            }
-        }
-
-        function limpiarReceta() {
-            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
-                inventario[ingrediente] += cantidad;
-            }
-            recetaPersonalizada.materiales = {};
-            mostrarInventario();
-            mostrarRecetaPersonalizada();
-        }
-
-        function generarItem() {
-            // Verificamos si los ingredientes seleccionados coinciden con alguna receta conocida
-            const recetaCoincidente = recetas.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
-
-            if (recetaCoincidente) {
-                // Verificamos si la receta coincide con una receta conocida
-                const itemGenerado = recetaCoincidente.nombre;
-                itemsCreados.push(itemGenerado);
-                mostrarItemsCreados();
-
-                if (!recetasConocidas.includes(itemGenerado)) {
-                    recetasConocidas.push(itemGenerado);
-                    mostrarRecetas(); // Mostramos las recetas conocidas actualizadas
-                }
-
-                alert("¡Item generado exitosamente: " + itemGenerado + "!");
-            } else {
-                alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
-            }
-        }
-
-        function sonMismosIngredientes(receta1, receta2) {
-            const ingredientes1 = receta1.materiales;
-            const ingredientes2 = receta2.materiales;
-            const keys1 = Object.keys(ingredientes1);
-            const keys2 = Object.keys(ingredientes2);
-            if (keys1.length !== keys2.length) return false;
-            for (const key of keys1) {
-                if (ingredientes1[key] !== ingredientes2[key]) return false;
-            }
-            return true;
-        }
-
-        // Función para agregar un evento al log
-        function agregarEvento(evento) {
-            const logList = document.getElementById("log-list");
-            const listItem = document.createElement("li");
-            listItem.textContent = evento;
-            logList.appendChild(listItem);
-        }
-
-        // Evento para el botón de iniciar sesión
-        document.getElementById("login-btn").addEventListener("click", function() {
-            const username = document.getElementById("username").value;
-            const password = document.getElementById("password").value;
-            const usuario = usuariosRegistrados.find(user => user.nombre === username && user.contraseña === password);
-            if (usuario) {
-                // Simulación de inicio de sesión exitoso
-                agregarEvento("Inicio de sesión exitoso para el usuario: " + username);
-                document.getElementById("inicio-sesion").style.display = "none";
-                document.getElementById("inventario-section").style.display = "inline-block";
-                document.getElementById("items-creados-section").style.display = "inline-block";
-                document.getElementById("generador-section").style.display = "inline-block";
-                document.getElementById("ingredientes-section").style.display = "inline-block";
-                document.getElementById("resultado").style.display = "inline-block";
-                // Cargar datos del usuario desde cookies
-                cargarEstadoUsuario(username);
-            } else {
-                agregarEvento("Inicio de sesión fallido: ¡Nombre de usuario o contraseña incorrectos!");
+                alert("No se encontró la receta seleccionada.");
             }
         });
-
-        // Evento para el botón de registro
-        document.getElementById("registro-btn").addEventListener("click", function() {
-            const username = document.getElementById("username").value;
-            const password = document.getElementById("password").value;
-            if (username && password) {
-                // Verificar si el usuario ya existe
-                const usuarioExistente = usuariosRegistrados.find(user => user.nombre === username);
-                if (usuarioExistente) {
-                    agregarEvento("Registro fallido: ¡El nombre de usuario ya está en uso!");
-                } else {
-                    // Simulación de registro exitoso
-                    agregarEvento("Usuario registrado exitosamente: " + username);
-                    document.getElementById("inicio-sesion").style.display = "none";
-                    document.getElementById("inventario-section").style.display = "inline-block";
-                    document.getElementById("items-creados-section").style.display = "inline-block";
-                    document.getElementById("generador-section").style.display = "inline-block";
-                    document.getElementById("ingredientes-section").style.display = "inline-block";
-                    document.getElementById("resultado").style.display = "inline-block";
-                    // Agregar nuevo usuario registrado a la lista
-                    usuariosRegistrados.push({ nombre: username, contraseña: password });
-                    // Guardar estado del usuario en cookies
-                    guardarEstadoUsuario(username);
-                }
-            } else {
-                agregarEvento("Registro fallido: ¡Ingrese un nombre de usuario y contraseña!");
-            }
-        });
-
-        // Evento para el botón de generar item
-        document.getElementById("generar-item").addEventListener("click", generarItem);
-
-        // Evento para el botón de agregar ingrediente a la receta personalizada
-        document.getElementById("agregar-ingrediente").addEventListener("click", agregarIngrediente);
-
-        // Evento para el botón de limpiar receta personalizada
-        document.getElementById("limpiar-receta").addEventListener("click", limpiarReceta);
-
-        // Función para guardar el estado del usuario en cookies
-        function guardarEstadoUsuario(username) {
-            setCookie(username + "-itemsCreados", JSON.stringify(itemsCreados), 30); // Guardar items creados
-            setCookie(username + "-inventario", JSON.stringify(inventario), 30); // Guardar estado del inventario
-            setCookie("usuariosRegistrados", JSON.stringify(usuariosRegistrados), 30); // Guardar usuarios registrados
-        }
-
-        // Función para cargar el estado del usuario desde cookies
-        function cargarEstadoUsuario(username) {
-            const itemsCreadosCookie = getCookie(username + "-itemsCreados");
-            if (itemsCreadosCookie) {
-                itemsCreados = JSON.parse(itemsCreadosCookie);
-                mostrarItemsCreados();
-            }
-
-            const inventarioCookie = getCookie(username + "-inventario");
-            if (inventarioCookie) {
-                inventario = JSON.parse(inventarioCookie);
-                mostrarInventario();
-            }
-        }
-
-        // Función para establecer una cookie
-        function setCookie(name, value, days) {
-            const date = new Date();
-            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-            const expires = "expires=" + date.toUTCString();
-            document.cookie = name + "=" + value + ";" + expires + ";path=/";
-        }
-
-        // Función para obtener el valor de una cookie
-        function getCookie(name) {
-            const cookieName = name + "=";
-            const decodedCookie = decodeURIComponent(document.cookie);
-            const cookieArray = decodedCookie.split(';');
-            for (let i = 0; i < cookieArray.length; i++) {
-                let cookie = cookieArray[i];
-                while (cookie.charAt(0) === ' ') {
-                    cookie = cookie.substring(1);
-                }
-                if (cookie.indexOf(cookieName) === 0) {
-                    return cookie.substring(cookieName.length, cookie.length);
-                }
-            }
-            return "";
-        }
-
-        // Mostrar recetas iniciales
-        mostrarRecetas();
-
     </script>
 </body>
 </html>
