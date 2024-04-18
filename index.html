@@ -266,11 +266,16 @@ function getUsuarioActual() {
     return localStorage.getItem("usuarioActual");
 }
         // Función para agregar ingredientes al inventario
-        function agregarIngredientes(listaIngredientes) {
-            listaIngredientes.forEach(ingrediente => {
-                inventario[ingrediente.nombre] += ingrediente.cantidad;
-            });
-            mostrarInventario();
+       listaIngredientes.forEach(ingrediente => {
+        if (!isNaN(ingrediente.cantidad) && ingrediente.cantidad > 0) {
+            inventario[ingrediente.nombre] += ingrediente.cantidad;
+            agregarEvento(`Se agregaron ${ingrediente.cantidad} unidades de ${ingrediente.nombre} al inventario.`);
+        } else {
+            agregarEvento(`Error: La cantidad de ${ingrediente.nombre} introducida no es válida.`);
+        }
+    });
+    mostrarInventario();
+    mostrarRecetaPersonalizada();
         }
 
 // Eventos para los botones de agregar ingredientes
