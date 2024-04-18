@@ -352,19 +352,22 @@ document.getElementById("registro-btn").addEventListener("click", function() {
 }
 
        // Función para cargar el estado del usuario desde localStorage
-function cargarEstadoUsuario(username) {
-    const itemsCreadosLocalStorage = localStorage.getItem(username + "-itemsCreados");
-    if (itemsCreadosLocalStorage) {
-        itemsCreados = JSON.parse(itemsCreadosLocalStorage);
-        mostrarItemsCreados();
-        console.log("Datos cargados desde localStorage para items creados del usuario:", username);
-    }
+function cargarEstadoUsuario() {
+    const username = localStorage.getItem("usuarioActual");
+    if (username) {
+        const itemsCreadosLocalStorage = localStorage.getItem(username + "-itemsCreados");
+        if (itemsCreadosLocalStorage) {
+            itemsCreados = JSON.parse(itemsCreadosLocalStorage);
+            mostrarItemsCreados();
+            console.log("Datos cargados desde localStorage para items creados del usuario:", username);
+        }
 
-    const inventarioLocalStorage = localStorage.getItem(username + "-inventario");
-    if (inventarioLocalStorage) {
-        inventario = JSON.parse(inventarioLocalStorage);
-        mostrarInventario();
-        console.log("Datos cargados desde localStorage para inventario del usuario:", username);
+        const inventarioLocalStorage = localStorage.getItem(username + "-inventario");
+        if (inventarioLocalStorage) {
+            inventario = JSON.parse(inventarioLocalStorage);
+            mostrarInventario();
+            console.log("Datos cargados desde localStorage para inventario del usuario:", username);
+        }
     }
 }
 
