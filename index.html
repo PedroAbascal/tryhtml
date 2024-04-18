@@ -79,6 +79,11 @@
         <input type="number" id="cantidad-ingredientes" value="1" min="1">
         <button id="agregar-ingrediente">Agregar Ingrediente</button>
         <button id="limpiar-receta">Limpiar Receta</button>
+         
+        <h2>Agregar Ingredientes al Inventario</h2>
+        <button id="agregar-basico">Agregar Ingredientes Básicos</button>
+        <button id="agregar-intermedio">Agregar Ingredientes Intermedios</button>
+        <button id="agregar-avanzado">Agregar Ingredientes Avanzados</button>
     </div>
 
     <div id="event-log" class="section" style="display: none;">
@@ -117,6 +122,22 @@
             metal: 10,
             madera: 10
         };
+
+        const ingredientesBasico = [
+            { nombre: "Agua", cantidad: 5 },
+            { nombre: "Hierbas", cantidad: 5 },
+            { nombre: "Raíz de mandrágora", cantidad: 5 }
+        ];
+
+        const ingredientesIntermedio = [
+            { nombre: "Metal", cantidad: 3 },
+            { nombre: "Madera", cantidad: 3 }
+        ];
+
+        const ingredientesAvanzado = [
+            { nombre: "Oro", cantidad: 1 },
+            { nombre: "Diamante", cantidad: 1 }
+        ];
 
         let itemsCreados = [];
 
@@ -248,6 +269,28 @@
 function getUsuarioActual() {
     return localStorage.getItem("usuarioActual");
 }
+        // Función para agregar ingredientes al inventario
+        function agregarIngredientes(listaIngredientes) {
+            listaIngredientes.forEach(ingrediente => {
+                inventario[ingrediente.nombre] += ingrediente.cantidad;
+            });
+            mostrarInventario();
+        }
+
+// Eventos para los botones de agregar ingredientes
+        document.getElementById("agregar-basico").addEventListener("click", function() {
+            agregarIngredientes(ingredientesBasico);
+        });
+
+        document.getElementById("agregar-intermedio").addEventListener("click", function() {
+            agregarIngredientes(ingredientesIntermedio);
+        });
+
+        document.getElementById("agregar-avanzado").addEventListener("click", function() {
+            agregarIngredientes(ingredientesAvanzado);
+        });
+
+        
       // Evento para el botón de iniciar sesión
 document.getElementById("login-btn").addEventListener("click", function() {
     const username = document.getElementById("username").value;
