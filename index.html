@@ -261,12 +261,12 @@
             listItem.textContent = evento;
             logList.appendChild(listItem);
         }
-// Función para obtener el usuario actual desde localStorage
-function getUsuarioActual() {
-    return localStorage.getItem("usuarioActual");
-}
-        // Función para agregar ingredientes al inventario
-       function agregarIngredientes(listaIngredientes) {
+        // Función para obtener el usuario actual desde localStorage
+        function getUsuarioActual() {
+        return localStorage.getItem("usuarioActual");
+        }
+// Función para agregar ingredientes al inventario
+    function agregarIngredientes(listaIngredientes) {
     listaIngredientes.forEach(ingrediente => {
         const cantidad = parseInt(ingrediente.cantidad);
         if (!isNaN(cantidad) && cantidad > 0) {
@@ -277,6 +277,7 @@ function getUsuarioActual() {
     });
     mostrarInventario();
 }
+
 
 // Eventos para los botones de agregar ingredientes
         document.getElementById("agregar-basico").addEventListener("click", function() {
