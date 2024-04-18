@@ -194,26 +194,33 @@
             mostrarRecetaPersonalizada();
         }
 
-        function generarItem() {
-            // Verificamos si los ingredientes seleccionados coinciden con alguna receta conocida
-            const recetaCoincidente = recetas.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
+         function generarItem() {
+        // Verificamos si los ingredientes seleccionados coinciden con alguna receta conocida
+        const recetaCoincidente = recetas.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
 
-            if (recetaCoincidente) {
-                // Verificamos si la receta coincide con una receta conocida
-                const itemGenerado = recetaCoincidente.nombre;
-                itemsCreados.push(itemGenerado);
-                mostrarItemsCreados();
-
-                if (!recetasConocidas.includes(itemGenerado)) {
-                    recetasConocidas.push(itemGenerado);
-                    mostrarRecetas(); // Mostramos las recetas conocidas actualizadas
-                }
-
-                alert("¡Item generado exitosamente: " + itemGenerado + "!");
-            } else {
-                alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
+        if (recetaCoincidente) {
+            // Restar los ingredientes utilizados en la receta del inventario
+            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
+                inventario[ingrediente] -= cantidad;
             }
+            // Actualizar la lista de inventario para que se muestre el cambio
+            mostrarInventario();
+
+            // Verificar si la receta coincide con una receta conocida
+            const itemGenerado = recetaCoincidente.nombre;
+            itemsCreados.push(itemGenerado);
+            mostrarItemsCreados();
+
+            if (!recetasConocidas.includes(itemGenerado)) {
+                recetasConocidas.push(itemGenerado);
+                mostrarRecetas(); // Mostramos las recetas conocidas actualizadas
+            }
+
+            alert("¡Item generado exitosamente: " + itemGenerado + "!");
+        } else {
+            alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
         }
+    }
 
         function sonMismosIngredientes(receta1, receta2) {
             const ingredientes1 = receta1.materiales;
