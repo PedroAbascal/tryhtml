@@ -339,11 +339,12 @@ document.getElementById("registro-btn").addEventListener("click", function() {
         // Evento para el botón de limpiar receta personalizada
         document.getElementById("limpiar-receta").addEventListener("click", limpiarReceta);
 
-      function guardarEstadoUsuario(username) {
+      // Función para guardar el estado del usuario en localStorage
+    function guardarEstadoUsuario(username) {
     localStorage.setItem(username + "-itemsCreados", JSON.stringify(itemsCreados)); // Guardar items creados
     localStorage.setItem(username + "-inventario", JSON.stringify(inventario)); // Guardar estado del inventario
     localStorage.setItem("usuariosRegistrados", JSON.stringify(usuariosRegistrados)); // Guardar usuarios registrados
-    console.log("Datos guardados en localStorage para el usuario:", username);
+    localStorage.setItem("usuarioActual", username); // Guardar usuario actual
 }
 
        // Función para cargar el estado del usuario desde localStorage
