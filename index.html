@@ -22,56 +22,70 @@
             vertical-align: top;
             margin-right: 20px;
         }
+        /* Agregamos estilos para separar secciones */
+        .section-container {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     
     <h1>Generador de Items y Pociones de D&D 5e</h1>
 
-    <div id="inventario-section" class="section" style="display: none;">
-        <h2>Inventario</h2>
-        <ul id="inventario">
-            <!-- Aquí se mostrarán las cantidades de ingredientes restantes -->
-        </ul>
+    <div class="section-container">
+        <div id="inventario-section" class="section" style="display: none;">
+            <h2>Inventario</h2>
+            <ul id="inventario">
+                <!-- Aquí se mostrarán las cantidades de ingredientes restantes -->
+            </ul>
+        </div>
+
+        <div id="items-creados-section" class="section" style="display: none;">
+            <h2>Items Creados</h2>
+            <ul id="lista-items-creados">
+                <!-- Aquí se mostrarán los items creados -->
+            </ul>
+        </div>
     </div>
 
-    <div id="items-creados-section" class="section" style="display: none;">
-        <h2>Items Creados</h2>
-        <ul id="lista-items-creados">
-            <!-- Aquí se mostrarán los items creados -->
-        </ul>
-    </div>
-
-    <div id="generador-section" class="section" style="display: none; margin-top: 20px;"> <!-- Agregado margen superior -->
+    <div id="generador-section" class="section-container" style="display: none;"> <!-- Agregado el contenedor para separar secciones -->
         <h2>Generador de Items</h2> <!-- Agregado un título -->
-        <label for="recetas">Selecciona una receta:</label>
-        <select id="recetas">
-            <!-- Las opciones serán agregadas dinámicamente -->
-            <option value="Poción de curación">Poción de curación</option>
-            <option value="Espada larga">Espada larga</option>
-            <!-- Agrega más opciones de recetas conocidas según sea necesario -->
-        </select>
-        <button id="agregar-ingredientes-receta">Agregar Ingredientes de Receta</button>
-        <button id="generar-item">Generar Item</button>
+        <div class="section">
+            <label for="recetas">Selecciona una receta:</label>
+            <select id="recetas">
+                <!-- Las opciones serán agregadas dinámicamente -->
+                <option value="Poción de curación">Poción de curación</option>
+                <option value="Espada larga">Espada larga</option>
+                <!-- Agrega más opciones de recetas conocidas según sea necesario -->
+            </select>
+        </div>
+        <div class="section">
+            <button id="agregar-ingredientes-receta">Agregar Ingredientes de Receta</button>
+            <button id="generar-item">Generar Item</button>
+        </div>
     </div>
 
-    <div id="ingredientes-section" class="section" style="display: none;">
+    <div id="ingredientes-section" class="section-container" style="display: none;">
         <h2>Selecciona un ingrediente</h2>
         <ul id="lista-receta"></ul>
-        <select id="ingredientes-select">
-            <option value="agua">Agua</option>
-            <option value="hierbas">Hierbas</option>
-            <option value="raíz de mandrágora">Raíz de mandrágora</option>
-            <option value="metal">Metal</option>
-            <option value="madera">Madera</option>
-            <!-- Puedes añadir más opciones aquí -->
-        </select>
-        <input type="number" id="cantidad-ingredientes" value="1" min="1">
-        <button id="agregar-ingrediente">Agregar Ingrediente</button>
-        <button id="limpiar-receta">Limpiar Receta</button>
+        <div class="section">
+            <select id="ingredientes-select">
+                <option value="agua">Agua</option>
+                <option value="hierbas">Hierbas</option>
+                <option value="raíz de mandrágora">Raíz de mandrágora</option>
+                <option value="metal">Metal</option>
+                <option value="madera">Madera</option>
+                <!-- Puedes añadir más opciones aquí -->
+            </select>
+        </div>
+        <div class="section">
+            <input type="number" id="cantidad-ingredientes" value="1" min="1">
+            <button id="agregar-ingrediente">Agregar Ingrediente</button>
+            <button id="limpiar-receta">Limpiar Receta</button>
+        </div>
     </div>
 
-    <div id="event-log" class="section" style="display: none;">
+    <div id="event-log" class="section-container" style="display: none;">
         <h2>Eventos</h2>
         <ul id="log-list">
             <!-- Aquí se mostrarán los eventos -->
