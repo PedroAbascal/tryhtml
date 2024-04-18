@@ -321,30 +321,28 @@ document.getElementById("registro-btn").addEventListener("click", function() {
         // Evento para el botón de limpiar receta personalizada
         document.getElementById("limpiar-receta").addEventListener("click", limpiarReceta);
 
-       // Función para guardar el estado del usuario en cookies
+      // Función para guardar el estado del usuario en localStorage
 function guardarEstadoUsuario(username) {
     localStorage.setItem(username + "-itemsCreados", JSON.stringify(itemsCreados)); // Guardar items creados
     localStorage.setItem(username + "-inventario", JSON.stringify(inventario)); // Guardar estado del inventario
     localStorage.setItem("usuariosRegistrados", JSON.stringify(usuariosRegistrados)); // Guardar usuarios registrados
 }
 
-        // Función para cargar el estado del usuario desde cookies
-function cargarEstadoUsuario() {
-    const username = localStorage.getItem("usuarioActual");
-    if (username) {
-        const itemsCreadosCookie = localStorage.getItem(username + "-itemsCreados");
-        if (itemsCreadosCookie) {
-            itemsCreados = JSON.parse(itemsCreadosCookie);
-            mostrarItemsCreados();
-        }
+       // Función para cargar el estado del usuario desde localStorage
+function cargarEstadoUsuario(username) {
+    const itemsCreadosLocalStorage = localStorage.getItem(username + "-itemsCreados");
+    if (itemsCreadosLocalStorage) {
+        itemsCreados = JSON.parse(itemsCreadosLocalStorage);
+        mostrarItemsCreados();
+    }
 
-        const inventarioCookie = localStorage.getItem(username + "-inventario");
-        if (inventarioCookie) {
-            inventario = JSON.parse(inventarioCookie);
-            mostrarInventario();
-        }
+    const inventarioLocalStorage = localStorage.getItem(username + "-inventario");
+    if (inventarioLocalStorage) {
+        inventario = JSON.parse(inventarioLocalStorage);
+        mostrarInventario();
     }
 }
+
 // Evento para el botón de guardar información en localStorage
 document.getElementById("guardar-localstorage-btn").addEventListener("click", function() {
     const username = localStorage.getItem("usuarioActual");
