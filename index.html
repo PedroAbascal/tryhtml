@@ -69,12 +69,8 @@
         <h2>Selecciona un ingrediente</h2>
         <ul id="lista-receta"></ul>
         <select id="ingredientes-select">
-            <option value="agua">Agua</option>
-            <option value="hierbas">Hierbas</option>
-            <option value="raíz de mandrágora">Raíz de mandrágora</option>
-            <option value="metal">Metal</option>
-            <option value="madera">Madera</option>
             <!-- Puedes añadir más opciones aquí -->
+            
         </select>
         <input type="number" id="cantidad-ingredientes" value="1" min="1">
         <button id="agregar-ingrediente">Agregar Ingrediente</button>
@@ -141,7 +137,14 @@
 
         function mostrarInventario() {
             const inventarioList = document.getElementById("inventario");
-            inventarioList.innerHTML = ""; // Limpiamos la lista de inventario
+           const ingredientesSelect = document.getElementById("ingredientes-select");
+            ingredientesSelect.innerHTML = "";
+
+        for (const ingrediente in inventario) {
+        const opcion = document.createElement("option");
+        opcion.value = ingrediente;
+        opcion.textContent = ingrediente + " (" + inventario[ingrediente] + ")";
+        ingredientesSelect.appendChild(opcion);
 
             for (const [ingrediente, cantidad] of Object.entries(inventario)) {
                 const listItem = document.createElement("li");
