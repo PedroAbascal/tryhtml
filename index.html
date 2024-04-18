@@ -232,29 +232,27 @@
             logList.appendChild(listItem);
         }
 
-        // Evento para el botón de iniciar sesión
-document.getElementById("login-btn").addEventListener("click", function() {
+       // Evento para el botón de iniciar sesión
+    document.getElementById("login-btn").addEventListener("click", function() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
     const usuario = usuariosRegistrados.find(user => user.nombre === username && user.contraseña === password);
     if (usuario) {
         // Simulación de inicio de sesión exitoso
         agregarEvento("Inicio de sesión exitoso para el usuario: " + username);
+        localStorage.setItem("usuarioActual", username); // Guardar el nombre de usuario en localStorage
         document.getElementById("inicio-sesion").style.display = "none";
         document.getElementById("inventario-section").style.display = "inline-block";
         document.getElementById("items-creados-section").style.display = "inline-block";
         document.getElementById("generador-section").style.display = "inline-block";
         document.getElementById("ingredientes-section").style.display = "inline-block";
         document.getElementById("resultado").style.display = "inline-block";
-        // Guardar el nombre de usuario en localStorage
-        localStorage.setItem("usuarioActual", username);
-        // Cargar datos del usuario desde cookies
+        // Cargar datos del usuario desde localStorage
         cargarEstadoUsuario(username);
     } else {
         agregarEvento("Inicio de sesión fallido: ¡Nombre de usuario o contraseña incorrectos!");
     }
 });
-
 
        // Evento para el botón de registro
 document.getElementById("registro-btn").addEventListener("click", function() {
