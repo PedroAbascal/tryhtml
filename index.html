@@ -159,16 +159,15 @@
         }
 
         function mostrarRecetas() {
-            const recetasSelect = document.getElementById("recetas");
-            recetasSelect.innerHTML = ""; // Limpiamos el dropdown de recetas
-
-            recetasConocidas.forEach(receta => {
-                const option = document.createElement("option");
-                option.value = receta;
-                option.textContent = receta;
-                recetasSelect.appendChild(option);
-            });
+            document.getElementById("recetas").addEventListener("change", function() {
+    const recetaSeleccionada = this.value;
+    const recetaEncontrada = recetas.find(receta => receta.nombre === recetaSeleccionada);
+    if (recetaEncontrada) {
+        agregarIngredientesReceta(recetaEncontrada);
+    }
+});
         }
+        
 
         function mostrarRecetaPersonalizada() {
             const recetaList = document.getElementById("lista-receta");
