@@ -39,6 +39,7 @@
     </div>
 
     <div id="inventario-section" class="section" style="display: none;">
+        <button id="guardar-localstorage-btn">Guardar Estado</button>
         <h2>Inventario</h2>
         <ul id="inventario">
             <!-- Aquí se mostrarán las cantidades de ingredientes restantes -->
@@ -346,7 +347,16 @@ function cargarEstadoUsuario() {
         }
     }
 }
-
+// Evento para el botón de guardar información en localStorage
+document.getElementById("guardar-localstorage-btn").addEventListener("click", function() {
+    const username = localStorage.getItem("usuarioActual");
+    if (username) {
+        guardarEstadoUsuario(username);
+        alert("¡Información guardada en localStorage!");
+    } else {
+        alert("No hay usuario actualmente iniciado sesión.");
+    }
+});
         // Función para obtener el nombre de usuario actual
         function getUsuarioActual() {
             return document.getElementById("username").value;
