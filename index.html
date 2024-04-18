@@ -32,15 +32,31 @@
     
     <h1>Generador de Items y Pociones de D&D 5e</h1>
 
-    <div class="section-container">
-        <div id="inventario-section" class="section" style="display: none;">
+    <div id="inicio-sesion" class="section-container">
+        <div class="section">
+            <h2>Iniciar Sesión</h2>
+            <label for="username">Nombre de Usuario:</label>
+            <input type="text" id="username">
+            <label for="password">Contraseña:</label>
+            <input type="password" id="password">
+        </div>
+        <div class="section">
+            <button id="login-btn">Iniciar Sesión</button>
+            <button id="registro-btn">Registrarse</button>
+        </div>
+    </div>
+
+    <div id="inventario-section" class="section-container" style="display: none;">
+        <div class="section">
             <h2>Inventario</h2>
             <ul id="inventario">
                 <!-- Aquí se mostrarán las cantidades de ingredientes restantes -->
             </ul>
         </div>
+    </div>
 
-        <div id="items-creados-section" class="section" style="display: none;">
+    <div id="items-creados-section" class="section-container" style="display: none;">
+        <div class="section">
             <h2>Items Creados</h2>
             <ul id="lista-items-creados">
                 <!-- Aquí se mostrarán los items creados -->
@@ -48,11 +64,9 @@
         </div>
     </div>
 
-    <div id="spacer" class="section-container" style="height: 50px;"></div> <!-- Div vacío para separar secciones -->
-
     <div id="generador-section" class="section-container" style="display: none;">
-        <h2>Generador de Items</h2> <!-- Agregado un título -->
         <div class="section">
+            <h2>Generador de Items</h2> <!-- Agregado un título -->
             <label for="recetas">Selecciona una receta:</label>
             <select id="recetas">
                 <!-- Las opciones serán agregadas dinámicamente -->
@@ -68,9 +82,10 @@
     </div>
 
     <div id="ingredientes-section" class="section-container" style="display: none;">
-        <h2>Selecciona un ingrediente</h2>
-        <ul id="lista-receta"></ul>
         <div class="section">
+            <h2>Selecciona un ingrediente</h2>
+            <ul id="lista-receta"></ul>
+            <label for="ingredientes-select">Selecciona un ingrediente:</label>
             <select id="ingredientes-select">
                 <option value="agua">Agua</option>
                 <option value="hierbas">Hierbas</option>
@@ -79,19 +94,21 @@
                 <option value="madera">Madera</option>
                 <!-- Puedes añadir más opciones aquí -->
             </select>
+            <input type="number" id="cantidad-ingredientes" value="1" min="1">
         </div>
         <div class="section">
-            <input type="number" id="cantidad-ingredientes" value="1" min="1">
             <button id="agregar-ingrediente">Agregar Ingrediente</button>
             <button id="limpiar-receta">Limpiar Receta</button>
         </div>
     </div>
 
     <div id="event-log" class="section-container" style="display: none;">
-        <h2>Eventos</h2>
-        <ul id="log-list">
-            <!-- Aquí se mostrarán los eventos -->
-        </ul>
+        <div class="section">
+            <h2>Eventos</h2>
+            <ul id="log-list">
+                <!-- Aquí se mostrarán los eventos -->
+            </ul>
+        </div>
     </div>
 
     <script>
