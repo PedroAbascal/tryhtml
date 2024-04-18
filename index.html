@@ -136,22 +136,23 @@
         let itemsCreados = [];
 
         function mostrarInventario() {
-            const inventarioList = document.getElementById("inventario");
-           const ingredientesSelect = document.getElementById("ingredientes-select");
-            ingredientesSelect.innerHTML = "";
+        const inventarioList = document.getElementById("inventario");
+        const ingredientesSelect = document.getElementById("ingredientes-select");
+        ingredientesSelect.innerHTML = "";
 
         for (const ingrediente in inventario) {
         const opcion = document.createElement("option");
         opcion.value = ingrediente;
         opcion.textContent = ingrediente + " (" + inventario[ingrediente] + ")";
-        ingredientesSelect.appendChild(opcion);
+        ingredientesSelect.appendChild(opcion);}
 
             for (const [ingrediente, cantidad] of Object.entries(inventario)) {
                 const listItem = document.createElement("li");
                 listItem.textContent = `${ingrediente}: ${cantidad}`;
                 inventarioList.appendChild(listItem);
+                }
             }
-        }
+
 
         function mostrarItemsCreados() {
             const itemsList = document.getElementById("lista-items-creados");
