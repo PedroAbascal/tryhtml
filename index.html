@@ -254,6 +254,8 @@ document.getElementById("login-btn").addEventListener("click", function() {
         console.log("Usuario actual establecido en localStorage:", username);
         // Cargar datos del usuario desde localStorage
         cargarEstadoUsuario(username);
+        mostrarInventario();
+        mostrarRecetaPersonalizada();
     } else {
         agregarEvento("Inicio de sesión fallido: ¡Nombre de usuario o contraseña incorrectos!");
     }
