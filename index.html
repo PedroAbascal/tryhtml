@@ -96,6 +96,7 @@
             { nombre: "usuario4", contraseña: "usuario4" },
             { nombre: "usuario5", contraseña: "usuario5" }
         ];
+
         let recetasConocidas = [];
         let recetas = [
             { nombre: "Poción de curación", materiales: { agua: 1, hierbas: 1, "raíz de mandrágora": 1 }, efecto: "Cura 2d4 + 2 puntos de golpe." },
@@ -194,18 +195,11 @@
             const recetaCoincidente = recetas.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
 
             if (recetaCoincidente) {
-                // Restar los ingredientes utilizados en la receta del inventario
-                for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
-                    inventario[ingrediente] -= cantidad;
-                }
-                // Actualizar la lista de inventario para que se muestre el cambio
-                mostrarInventario();
-
-                // Verificar si la receta coincide con una receta conocida
+                // Verificamos si la receta coincide con una receta conocida
                 const itemGenerado = recetaCoincidente.nombre;
                 itemsCreados.push(itemGenerado);
                 mostrarItemsCreados();
-
+                guardarEstadoUsuario(getUsuarioActual());
                 if (!recetasConocidas.includes(itemGenerado)) {
                     recetasConocidas.push(itemGenerado);
                     mostrarRecetas(); // Mostramos las recetas conocidas actualizadas
@@ -251,7 +245,7 @@
                 document.getElementById("generador-section").style.display = "inline-block";
                 document.getElementById("ingredientes-section").style.display = "inline-block";
                 document.getElementById("resultado").style.display = "inline-block";
-                // Cargar datos del usuario desde cookies
+                // Cargar datos del usuario desde el almacenamiento local
                 cargarEstadoUsuario(username);
             } else {
                 agregarEvento("Inicio de sesión fallido: ¡Nombre de usuario o contraseña incorrectos!");
@@ -278,7 +272,7 @@
                     document.getElementById("resultado").style.display = "inline-block";
                     // Agregar nuevo usuario registrado a la lista
                     usuariosRegistrados.push({ nombre: username, contraseña: password });
-                    // Guardar estado del usuario en cookies
+                    // Guardar estado del usuario en el almacenamiento local
                     guardarEstadoUsuario(username);
                 }
             } else {
@@ -322,58 +316,31 @@
         // Evento para el botón de limpiar receta personalizada
         document.getElementById("limpiar-receta").addEventListener("click", limpiarReceta);
 
-        // Función para guardar el estado del usuario en cookies
+        // Función para guardar el estado del usuario en el almacenamiento local
         function guardarEstadoUsuario(username) {
-            setCookie(username + "-itemsCreados", JSON.stringify(itemsCreados), 30); // Guardar items creados
-            setCookie(username + "-inventario", JSON.stringify(inventario), 30); // Guardar estado del inventario
-            setCookie(username + "-recetasConocidas", JSON.stringify(recetasConocidas), 30); // Guardar recetas conocidas
-            setCookie("usuariosRegistrados", JSON.stringify(usuariosRegistrados), 30); // Guardar usuarios registrados
+            localStorage.setItem(username + "-itemsCreados", JSON.stringify(itemsCreados)); // Guardar items creados
+            localStorage.setItem(username + "-inventario", JSON.stringify(inventario)); // Guardar estado del inventario
+            localStorage.setItem("usuariosRegistrados", JSON.stringify(usuariosRegistrados)); // Guardar usuarios registrados
         }
 
-        // Función para cargar el estado del usuario desde cookies
+        // Función para cargar el estado del usuario desde el almacenamiento local
         function cargarEstadoUsuario(username) {
-            const itemsCreadosCookie = getCookie(username + "-itemsCreados");
-            if (itemsCreadosCookie) {
-                itemsCreados = JSON.parse(itemsCreadosCookie);
+            const itemsCreadosLocal = localStorage.getItem(username + "-itemsCreados");
+            if (itemsCreadosLocal) {
+                itemsCreados = JSON.parse(itemsCreadosLocal);
                 mostrarItemsCreados();
             }
 
-            const inventarioCookie = getCookie(username + "-inventario");
-            if (inventarioCookie) {
-                inventario = JSON.parse(inventarioCookie);
+            const inventarioLocal = localStorage.getItem(username + "-inventario");
+            if (inventarioLocal) {
+                inventario = JSON.parse(inventarioLocal);
                 mostrarInventario();
             }
-
-            const recetasConocidasCookie = getCookie(username + "-recetasConocidas");
-            if (recetasConocidasCookie) {
-                recetasConocidas = JSON.parse(recetasConocidasCookie);
-                mostrarRecetas();
-            }
         }
 
-        // Función para establecer una cookie
-        function setCookie(name, value, days) {
-            const date = new Date();
-            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-            const expires = "expires=" + date.toUTCString();
-            document.cookie = name + "=" + value + ";" + expires + ";path=/";
-        }
-
-        // Función para obtener el valor de una cookie
-        function getCookie(name) {
-            const cookieName = name + "=";
-            const decodedCookie = decodeURIComponent(document.cookie);
-            const cookieArray = decodedCookie.split(';');
-            for (let i = 0; i < cookieArray.length; i++) {
-                let cookie = cookieArray[i];
-                while (cookie.charAt(0) === ' ') {
-                    cookie = cookie.substring(1);
-                }
-                if (cookie.indexOf(cookieName) === 0) {
-                    return cookie.substring(cookieName.length, cookie.length);
-                }
-            }
-            return "";
+        // Función para obtener el nombre de usuario actual
+        function getUsuarioActual() {
+            return document.getElementById("username").value;
         }
 
         // Mostrar recetas iniciales
