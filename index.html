@@ -266,13 +266,15 @@
         return localStorage.getItem("usuarioActual");
         }
 // Función para agregar ingredientes al inventario
-   function agregarIngredientes(listaIngredientes) {
+  function agregarIngredientes(listaIngredientes) {
     console.log("Ingredientes recibidos:", listaIngredientes);
     listaIngredientes.forEach(ingrediente => {
+        console.log("Agregando al inventario:", ingrediente.nombre, "Cantidad:", ingrediente.cantidad);
         inventario[ingrediente.nombre] += ingrediente.cantidad;
     });
     mostrarInventario();
 }
+
 
 // Eventos para los botones de agregar ingredientes
         document.getElementById("agregar-basico").addEventListener("click", function() {
