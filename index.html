@@ -143,12 +143,16 @@
     const ingredientesSelect = document.getElementById("ingredientes-select");
     ingredientesSelect.innerHTML = "";
 
-    for (const ingrediente in inventario) {
+    // Filtrar los ingredientes que tienen una cantidad mayor que 0
+    const ingredientesDisponibles = Object.entries(inventario).filter(([ingrediente, cantidad]) => cantidad > 0);
+
+    // Agregar los ingredientes filtrados al dropdown
+    ingredientesDisponibles.forEach(([ingrediente, cantidad]) => {
         const opcion = document.createElement("option");
         opcion.value = ingrediente;
-        opcion.textContent = ingrediente + " (" + inventario[ingrediente] + ")";
+        opcion.textContent = ingrediente + " (" + cantidad + ")";
         ingredientesSelect.appendChild(opcion);
-    }
+    });
 }
 
 
