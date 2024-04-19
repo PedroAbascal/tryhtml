@@ -380,30 +380,33 @@ document.getElementById("registro-btn").addEventListener("click", function() {
 
         // Evento para el botón de agregar ingredientes de receta
         document.getElementById("agregar-ingredientes-receta").addEventListener("click", function() {
-            const recetaSeleccionada = document.getElementById("recetas").value;
-            const recetaEncontrada = recetas.find(receta => receta.nombre === recetaSeleccionada);
+    const recetaSeleccionada = document.getElementById("recetas").value;
+    const recetaEncontrada = recetas.find(receta => receta.nombre === recetaSeleccionada);
 
-            if (recetaEncontrada) {
-                for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.materiales)) {
-                    if (inventario[ingrediente] >= cantidad) {
-                        if (recetaPersonalizada.materiales.hasOwnProperty(ingrediente)) {
-                            recetaPersonalizada.materiales[ingrediente] += cantidad;
-                        } else {
-                            recetaPersonalizada.materiales[ingrediente] = cantidad;
-                        }
-                        inventario[ingrediente] -= cantidad;
-                    } else {
-                        agregarEvento("No tienes suficientes ingredientes para esta receta.");
-                        return; // Salir de la función si no hay suficientes ingredientes
-                    }
-                }
-                mostrarInventario();
-                mostrarRecetaPersonalizada();
-                agregarEvento("Ingredientes de receta agregados con éxito.");
-            } else {
-                agregarEvento("Error: Receta seleccionada no encontrada.");
+    if (recetaEncontrada) {
+        let ingredientesSuficientes = true;
+        for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.materiales)) {
+            if (inventario[ingrediente] < cantidad) {
+                ingredientesSuficientes = false;
+                alert(`No tienes suficientes "${ingrediente}" en el inventario.`);
+                break; // Salir del bucle si no hay suficientes ingredientes
             }
-        });
+        }
+        
+        if (ingredientesSuficientes) {
+            for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.materiales)) {
+                recetaPersonalizada.materiales[ingrediente] = (recetaPersonalizada.materiales[ingrediente] || 0) + cantidad;
+                inventario[ingrediente] -= cantidad;
+            }
+            mostrarInventario();
+            mostrarRecetaPersonalizada();
+            agregarEvento("Ingredientes de receta agregados con éxito.");
+        }
+    } else {
+        agregarEvento("Error: Receta seleccionada no encontrada.");
+    }
+});
+
 
         // Evento para el botón de generar item
         document.getElementById("generar-item").addEventListener("click", generarItem);
