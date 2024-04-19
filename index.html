@@ -268,11 +268,16 @@
 // Función para agregar ingredientes al inventario
   function agregarIngredientes(listaIngredientes) {
     console.log("Ingredientes recibidos:", listaIngredientes);
+      console.log("Inventario actualizado:", inventario);
     listaIngredientes.forEach(ingrediente => {
+        console.log("Inventario actualizado:", inventario);
         console.log("Agregando al inventario:", ingrediente.nombre, "Cantidad:", ingrediente.cantidad);
+        console.log("Inventario actualizado:", inventario);
         inventario[ingrediente.nombre] += ingrediente.cantidad;
+        console.log("Inventario actualizado:", inventario);
     });
     mostrarInventario();
+    
 }
 
 
