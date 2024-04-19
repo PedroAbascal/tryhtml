@@ -143,17 +143,18 @@
     const ingredientesSelect = document.getElementById("ingredientes-select");
     ingredientesSelect.innerHTML = "";
 
-    // Filtrar los ingredientes que tienen una cantidad mayor que 0
-    const ingredientesDisponibles = Object.entries(inventario).filter(([ingrediente, cantidad]) => cantidad > 0);
-
-    // Agregar los ingredientes filtrados al dropdown
-    ingredientesDisponibles.forEach(([ingrediente, cantidad]) => {
-        const opcion = document.createElement("option");
-        opcion.value = ingrediente;
-        opcion.textContent = ingrediente + " (" + cantidad + ")";
-        ingredientesSelect.appendChild(opcion);
-    });
+    for (const ingrediente in inventario) {
+        if (inventario[ingrediente] > 0) { // Solo mostramos los ingredientes con cantidad mayor a 0
+            const opcion = document.createElement("option");
+            opcion.value = ingrediente;
+            opcion.textContent = ingrediente + " (" + inventario[ingrediente] + ")";
+            ingredientesSelect.appendChild(opcion);
+        }
+    }
 }
+
+// Ocultar el elemento que mostraba la lista completa de inventario
+document.getElementById("inventario-section").style.display = "none";
 
 
         function mostrarItemsCreados() {
