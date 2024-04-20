@@ -230,8 +230,17 @@ document.getElementById("inventario-section").style.display = "none";
         for (const [ingrediente, cantidad] of Object.entries(recetaCoincidente.materiales)) {
             inventario[ingrediente] -= cantidad;
         }
-        
-        // Verificamos si la receta coincide con una receta conocida
+
+        // Eliminar los ingredientes del inventario que tienen una cantidad igual a cero
+        for (const ingrediente in inventario) {
+            if (inventario[ingrediente] === 0) {
+                delete inventario[ingrediente];
+            }
+        }
+
+        // Actualizar la lista de selección de ingredientes
+        mostrarListaIngredientes();
+
         const itemGenerado = recetaCoincidente.nombre;
         itemsCreados.push(itemGenerado);
         mostrarItemsCreados();
@@ -241,10 +250,9 @@ document.getElementById("inventario-section").style.display = "none";
             mostrarRecetas(); // Mostramos las recetas conocidas actualizadas
         }
 
-        // Mostrar el inventario actualizado
-        mostrarInventario();
-        
         alert("¡Item generado exitosamente: " + itemGenerado + "!");
+        // Actualizar el inventario mostrado
+        mostrarInventario();
     } else {
         alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
     }
