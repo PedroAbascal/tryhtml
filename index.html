@@ -6,44 +6,51 @@
     <title>Generador de Items y Pociones de D&D 5e</title>
     <style>
         /* Estilos CSS pueden ser añadidos aquí */
-        .ingredient-icon {
-            width: 24px;
-            height: 24px;
-            vertical-align: middle;
-        }
         .section {
-            display: inline-block;
-            vertical-align: top;
-            margin-right: 20px;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    
-    <h1>Generador de Items y Pociones de D&D 5e</h1>
-
     <div id="inicio-sesion" class="section">
-        <!-- Formulario de inicio de sesión -->
+        <h2>Iniciar Sesión</h2>
+        <label for="username">Nombre de Usuario:</label>
+        <input type="text" id="username">
+        <label for="password">Contraseña:</label>
+        <input type="password" id="password">
+        <button id="login-btn">Iniciar Sesión</button>
+        <button id="registro-btn">Registrarse</button>
     </div>
 
-    <div id="inventario-section" class="section" style="display: none;">
-        <!-- Sección de inventario -->
+    <div id="guardar-estado-section" class="section" style="display: none;">
+        <button id="guardar-localstorage-btn">Guardar Estado</button>
     </div>
 
     <div id="items-creados-section" class="section" style="display: none;">
-        <!-- Sección de items creados -->
+        <h2>Items Creados</h2>
+        <ul id="lista-items-creados">
+            <!-- Aquí se mostrarán los items creados -->
+        </ul>
     </div>
 
-    <div id="generador-section" class="section" style="display: none;">
-        <!-- Sección de generador de items -->
+    <div id="recetas-section" class="section" style="display: none;">
+        <h2>Selecciona una receta</h2>
+        <label for="recetas">Receta:</label>
+        <select id="recetas">
+            <!-- Las opciones serán agregadas dinámicamente -->
+        </select>
+        <button id="agregar-ingredientes-receta">Agregar Ingredientes de Receta</button>
+        <button id="generar-item">Generar Item</button>
     </div>
 
     <div id="ingredientes-section" class="section" style="display: none;">
-        <!-- Sección de ingredientes -->
-    </div>
-
-    <div id="event-log" class="section" style="display: none;">
-        <!-- Log de eventos -->
+        <h2>Selecciona un ingrediente</h2>
+        <select id="ingredientes-select">
+            <!-- Puedes añadir más opciones aquí -->
+        </select>
+        <input type="number" id="cantidad-ingredientes" value="1" min="1">
+        <button id="agregar-ingrediente">Agregar Ingrediente</button>
+        <button id="limpiar-receta">Limpiar Receta</button>
     </div>
 
     <script>
