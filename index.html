@@ -6,51 +6,44 @@
     <title>Generador de Items y Pociones de D&D 5e</title>
     <style>
         /* Estilos CSS pueden ser añadidos aquí */
+        .ingredient-icon {
+            width: 24px;
+            height: 24px;
+            vertical-align: middle;
+        }
         .section {
-            margin-bottom: 20px;
+            display: inline-block;
+            vertical-align: top;
+            margin-right: 20px;
         }
     </style>
 </head>
 <body>
+    
+    <h1>Generador de Items y Pociones de D&D 5e</h1>
+
     <div id="inicio-sesion" class="section">
-        <h2>Iniciar Sesión</h2>
-        <label for="username">Nombre de Usuario:</label>
-        <input type="text" id="username">
-        <label for="password">Contraseña:</label>
-        <input type="password" id="password">
-        <button id="login-btn">Iniciar Sesión</button>
-        <button id="registro-btn">Registrarse</button>
+        <!-- Formulario de inicio de sesión -->
     </div>
 
-    <div id="guardar-estado-section" class="section" style="display: none;">
-        <button id="guardar-localstorage-btn">Guardar Estado</button>
+    <div id="inventario-section" class="section" style="display: none;">
+        <!-- Sección de inventario -->
     </div>
 
     <div id="items-creados-section" class="section" style="display: none;">
-        <h2>Items Creados</h2>
-        <ul id="lista-items-creados">
-            <!-- Aquí se mostrarán los items creados -->
-        </ul>
+        <!-- Sección de items creados -->
     </div>
 
-    <div id="recetas-section" class="section" style="display: none;">
-        <h2>Selecciona una receta</h2>
-        <label for="recetas">Receta:</label>
-        <select id="recetas">
-            <!-- Las opciones serán agregadas dinámicamente -->
-        </select>
-        <button id="agregar-ingredientes-receta">Agregar Ingredientes de Receta</button>
-        <button id="generar-item">Generar Item</button>
+    <div id="generador-section" class="section" style="display: none;">
+        <!-- Sección de generador de items -->
     </div>
 
     <div id="ingredientes-section" class="section" style="display: none;">
-        <h2>Selecciona un ingrediente</h2>
-        <select id="ingredientes-select">
-            <!-- Puedes añadir más opciones aquí -->
-        </select>
-        <input type="number" id="cantidad-ingredientes" value="1" min="1">
-        <button id="agregar-ingrediente">Agregar Ingrediente</button>
-        <button id="limpiar-receta">Limpiar Receta</button>
+        <!-- Sección de ingredientes -->
+    </div>
+
+    <div id="event-log" class="section" style="display: none;">
+        <!-- Log de eventos -->
     </div>
 
     <script>
@@ -117,7 +110,7 @@
         }
 
         // Ocultar el elemento que mostraba la lista completa de inventario
-        // document.getElementById("inventario-section").style.display = "none";
+        document.getElementById("inventario-section").style.display = "none";
 
         function mostrarItemsCreados() {
             const itemsList = document.getElementById("lista-items-creados");
@@ -263,7 +256,21 @@
             console.log("Inventario actualizado:", inventario);
             mostrarInventario();
         }
-        
+
+        // Eventos para los botones de agregar ingredientes
+        document.getElementById("agregar-basico").addEventListener("click", function() {
+            agregarIngredientes(ingredientesBasico);
+        });
+
+        document.getElementById("agregar-intermedio").addEventListener("click", function() {
+            agregarIngredientes(ingredientesIntermedio);
+        });
+
+        document.getElementById("agregar-avanzado").addEventListener("click", function() {
+            agregarIngredientes(ingredientesAvanzado);
+        });
+
+
         // Evento para el botón de iniciar sesión
         document.getElementById("login-btn").addEventListener("click", function() {
             const username = document.getElementById("username").value;
@@ -297,7 +304,7 @@
             if (usuarioActual) {
                 // Ocultar formulario de inicio de sesión y mostrar secciones relevantes
                 document.getElementById("inicio-sesion").style.display = "none";
-                //document.getElementById("inventario-section").style.display = "inline-block";
+                document.getElementById("inventario-section").style.display = "inline-block";
                 document.getElementById("items-creados-section").style.display = "inline-block";
                 document.getElementById("generador-section").style.display = "inline-block";
                 document.getElementById("ingredientes-section").style.display = "inline-block";
@@ -382,24 +389,10 @@
         });
 
         // Evento para el botón de cerrar sesión
-        //document.getElementById("logout-btn").addEventListener("click", function() {
-          //  localStorage.removeItem("usuarioActual");
-          //  location.reload(); // Recargar la página después de cerrar sesión
-       // });
-
-        // Eventos para los botones de agregar ingredientes
-
-    document.getElementById("agregar-basico").addEventListener("click", function() {
-        agregarIngredientes(ingredientesBasico);
-    });
-
-    document.getElementById("agregar-intermedio").addEventListener("click", function() {
-        agregarIngredientes(ingredientesIntermedio);
-    });
-
-    document.getElementById("agregar-avanzado").addEventListener("click", function() {
-        agregarIngredientes(ingredientesAvanzado);
-    });
+        document.getElementById("logout-btn").addEventListener("click", function() {
+            localStorage.removeItem("usuarioActual");
+            location.reload(); // Recargar la página después de cerrar sesión
+        });
     </script>
 </body>
 </html>
