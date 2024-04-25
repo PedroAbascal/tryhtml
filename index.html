@@ -297,7 +297,7 @@
             if (usuarioActual) {
                 // Ocultar formulario de inicio de sesión y mostrar secciones relevantes
                 document.getElementById("inicio-sesion").style.display = "none";
-                document.getElementById("inventario-section").style.display = "inline-block";
+                //document.getElementById("inventario-section").style.display = "inline-block";
                 document.getElementById("items-creados-section").style.display = "inline-block";
                 document.getElementById("generador-section").style.display = "inline-block";
                 document.getElementById("ingredientes-section").style.display = "inline-block";
@@ -382,9 +382,9 @@
         });
 
         // Evento para el botón de cerrar sesión
-        document.getElementById("logout-btn").addEventListener("click", function() {
-            localStorage.removeItem("usuarioActual");
-            location.reload(); // Recargar la página después de cerrar sesión
+        //document.getElementById("logout-btn").addEventListener("click", function() {
+          //  localStorage.removeItem("usuarioActual");
+          //  location.reload(); // Recargar la página después de cerrar sesión
         });
 
         // Eventos para los botones de agregar ingredientes
