@@ -24,7 +24,9 @@
         #generador-section,
         #ingredientes-section,
         #event-log,
-        #agregar-inventario-section
+        #agregar-inventario-section,
+        #guardar-localstorage-btn
+        
         {
             display: none;
         }
@@ -47,7 +49,7 @@
 
     <!-- Botón Guardar Estado -->
     <div class="section">
-        <button id="guardar-localstorage-btn" style="display: none;">Guardar Estado</button>
+        <button id="guardar-localstorage-btn" >Guardar Estado</button>
     </div>
 
     <!-- Lista de Items Creados -->
@@ -330,7 +332,7 @@ document.getElementById("login-btn").addEventListener("click", function() {
         // Simulación de inicio de sesión exitoso
         agregarEvento("Inicio de sesión exitoso para el usuario: " + username);
         document.getElementById("inicio-sesion").style.display = "none";
-        // document.getElementById("inventario-section").style.display = "inline-block";
+        document.getElementById("guardar-localstorage-btn").style.display = "inline-block";
         document.getElementById("items-creados-section").style.display = "inline-block";
         document.getElementById("generador-section").style.display = "inline-block";
         document.getElementById("ingredientes-section").style.display = "inline-block";
