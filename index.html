@@ -11,16 +11,20 @@
             height: 24px;
             vertical-align: middle;
         }
-        #event-log {
-            border: 1px solid #ccc;
-            padding: 10px;
-            max-height: 200px;
-            overflow-y: scroll;
-        }
         .section {
             display: inline-block;
             vertical-align: top;
             margin-right: 20px;
+        }
+        #inicio-sesion {
+            display: block;
+        }
+        #inventario-section,
+        #items-creados-section,
+        #generador-section,
+        #ingredientes-section,
+        #event-log {
+            display: none;
         }
     </style>
 </head>
@@ -28,6 +32,7 @@
     
     <h1>Generador de Items y Pociones de D&D 5e</h1>
 
+    <!-- Inicio de Sesión -->
     <div id="inicio-sesion" class="section">
         <h2>Iniciar Sesión</h2>
         <label for="username">Nombre de Usuario:</label>
@@ -38,50 +43,51 @@
         <button id="registro-btn">Registrarse</button>
     </div>
 
-    <div id="inventario-section" class="section" style="display: none;">
-        <button id="guardar-localstorage-btn">Guardar Estado</button>
-        <ul id="inventario">
-            <!-- Aquí se mostrarán las cantidades de ingredientes restantes -->
-        </ul>
+    <!-- Botón Guardar Estado -->
+    <div class="section">
+        <button id="guardar-localstorage-btn" style="display: none;">Guardar Estado</button>
     </div>
 
-    <div id="items-creados-section" class="section" style="display: none;">
+    <!-- Lista de Items Creados -->
+    <div id="items-creados-section" class="section">
         <h2>Items Creados</h2>
         <ul id="lista-items-creados">
             <!-- Aquí se mostrarán los items creados -->
         </ul>
     </div>
 
-    <div id="generador-section" class="section" style="display: none;">
+    <!-- Seleccionar Receta, Agregar Ingredientes de Receta y Generar Item -->
+    <div id="generador-section" class="section">
         <label for="recetas">Selecciona una receta:</label>
         <select id="recetas">
             <!-- Las opciones serán agregadas dinámicamente -->
-            <option value="Poción de curación">Poción de curación</option>
-            <option value="Espada larga">Espada larga</option>
-            <!-- Agrega más opciones de recetas conocidas según sea necesario -->
         </select>
         <button id="agregar-ingredientes-receta">Agregar Ingredientes de Receta</button>
         <button id="generar-item">Generar Item</button>
     </div>
 
-    <div id="ingredientes-section" class="section" style="display: none;">
+    <!-- Seleccionar un Ingrediente, Selector de Cantidad, Agregar Ingrediente y Limpiar Receta -->
+    <div id="ingredientes-section" class="section">
         <h2>Selecciona un ingrediente</h2>
         <ul id="lista-receta"></ul>
         <select id="ingredientes-select">
             <!-- Puedes añadir más opciones aquí -->
-            
         </select>
         <input type="number" id="cantidad-ingredientes" value="1" min="1">
         <button id="agregar-ingrediente">Agregar Ingrediente</button>
         <button id="limpiar-receta">Limpiar Receta</button>
-         
+    </div>
+
+    <!-- Botones para Agregar Ingredientes Básicos, Intermedios y Avanzados -->
+    <div class="section">
         <h2>Agregar Ingredientes al Inventario</h2>
         <button id="agregar-basico">Agregar Ingredientes Básicos</button>
         <button id="agregar-intermedio">Agregar Ingredientes Intermedios</button>
         <button id="agregar-avanzado">Agregar Ingredientes Avanzados</button>
     </div>
 
-    <div id="event-log" class="section" style="display: none;">
+    <!-- Log de Eventos -->
+    <div id="event-log" class="section">
         <h2>Eventos</h2>
         <ul id="log-list">
             <!-- Aquí se mostrarán los eventos -->
