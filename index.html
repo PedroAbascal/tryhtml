@@ -263,23 +263,7 @@
             console.log("Inventario actualizado:", inventario);
             mostrarInventario();
         }
-
-        // Eventos para los botones de agregar ingredientes
-       window.onload = function() {
-    document.getElementById("agregar-basico").addEventListener("click", function() {
-        agregarIngredientes(ingredientesBasico);
-    });
-
-    document.getElementById("agregar-intermedio").addEventListener("click", function() {
-        agregarIngredientes(ingredientesIntermedio);
-    });
-
-    document.getElementById("agregar-avanzado").addEventListener("click", function() {
-        agregarIngredientes(ingredientesAvanzado);
-    });
-};
-
-
+        
         // Evento para el botón de iniciar sesión
         document.getElementById("login-btn").addEventListener("click", function() {
             const username = document.getElementById("username").value;
@@ -402,6 +386,20 @@
             localStorage.removeItem("usuarioActual");
             location.reload(); // Recargar la página después de cerrar sesión
         });
+
+        // Eventos para los botones de agregar ingredientes
+
+    document.getElementById("agregar-basico").addEventListener("click", function() {
+        agregarIngredientes(ingredientesBasico);
+    });
+
+    document.getElementById("agregar-intermedio").addEventListener("click", function() {
+        agregarIngredientes(ingredientesIntermedio);
+    });
+
+    document.getElementById("agregar-avanzado").addEventListener("click", function() {
+        agregarIngredientes(ingredientesAvanzado);
+    });
     </script>
 </body>
 </html>
