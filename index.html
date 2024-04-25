@@ -265,17 +265,19 @@
         }
 
         // Eventos para los botones de agregar ingredientes
-        document.getElementById("agregar-basico").addEventListener("click", function() {
-            agregarIngredientes(ingredientesBasico);
-        });
+       window.onload = function() {
+    document.getElementById("agregar-basico").addEventListener("click", function() {
+        agregarIngredientes(ingredientesBasico);
+    });
 
-        document.getElementById("agregar-intermedio").addEventListener("click", function() {
-            agregarIngredientes(ingredientesIntermedio);
-        });
+    document.getElementById("agregar-intermedio").addEventListener("click", function() {
+        agregarIngredientes(ingredientesIntermedio);
+    });
 
-        document.getElementById("agregar-avanzado").addEventListener("click", function() {
-            agregarIngredientes(ingredientesAvanzado);
-        });
+    document.getElementById("agregar-avanzado").addEventListener("click", function() {
+        agregarIngredientes(ingredientesAvanzado);
+    });
+};
 
 
         // Evento para el botón de iniciar sesión
