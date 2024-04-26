@@ -6,30 +6,28 @@
     <title>Generador de Items y Pociones de D&D 5e</title>
     <style>
         /* Estilos CSS pueden ser añadidos aquí */
-        .ingredient-icon {
-            width: 50px;
-            height: 50px;
-            background-color: #ccc;
-            border: 1px solid #999;
-            border-radius: 50%;
-            display: inline-block;
-            margin: 10px;
-            cursor: pointer;
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
         }
 
-        .receta-personalizada {
-            border: 2px dashed #999;
-            padding: 20px;
-            margin-top: 20px;
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .section {
-            display: inline-block;
-            vertical-align: top;
-            margin-right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
-        .section h2 {
+        .section > * {
             margin-bottom: 10px;
         }
 
@@ -43,105 +41,83 @@
         #ingredientes-section,
         #event-log,
         #agregar-inventario-section,
-        #guardar-localstorage-btn,
-        #receta-personalizada {
+        #guardar-localstorage-btn {
             display: none;
         }
     </style>
 </head>
 <body>
     
-    <h1>Generador de Items y Pociones de D&D 5e</h1>
+    <div class="container">
 
-    <!-- Inicio de Sesión -->
-    <div id="inicio-sesion" class="section">
-        <h2>Iniciar Sesión</h2>
-        <label for="username">Nombre de Usuario:</label>
-        <input type="text" id="username">
-        <label for="password">Contraseña:</label>
-        <input type="password" id="password">
-        <button id="login-btn">Iniciar Sesión</button>
-        <button id="registro-btn">Registrarse</button>
-    </div>
+        <h1>Generador de Items y Pociones de D&D 5e</h1>
 
-    <!-- Botón Guardar Estado -->
-    <div class="section">
-        <button id="guardar-localstorage-btn">Guardar Estado</button>
-    </div>
+        <!-- Inicio de Sesión -->
+        <div id="inicio-sesion" class="section">
+            <h2>Iniciar Sesión</h2>
+            <label for="username">Nombre de Usuario:</label>
+            <input type="text" id="username">
+            <label for="password">Contraseña:</label>
+            <input type="password" id="password">
+            <button id="login-btn">Iniciar Sesión</button>
+            <button id="registro-btn">Registrarse</button>
+        </div>
 
-    <!-- Lista de Items Creados -->
-    <div id="items-creados-section" class="section">
-        <h2>Items Creados</h2>
-        <ul id="lista-items-creados">
-            <!-- Aquí se mostrarán los items creados -->
-        </ul>
-    </div>
+        <!-- Botón Guardar Estado -->
+        <div class="section">
+            <button id="guardar-localstorage-btn" >Guardar Estado</button>
+        </div>
 
-    <!-- Seleccionar Receta, Agregar Ingredientes de Receta y Generar Item -->
-    <div id="generador-section" class="section">
-        <label for="recetas">Selecciona una receta:</label>
-        <select id="recetas">
-            <!-- Las opciones serán agregadas dinámicamente -->
-        </select>
-        <button id="agregar-ingredientes-receta">Agregar Ingredientes de Receta</button>
-        <button id="generar-item">Generar Item</button>
-    </div>
+        <!-- Lista de Items Creados -->
+        <div id="items-creados-section" class="section">
+            <h2>Items Creados</h2>
+            <ul id="lista-items-creados">
+                <!-- Aquí se mostrarán los items creados -->
+            </ul>
+        </div>
 
-    <!-- Seleccionar un Ingrediente, Selector de Cantidad, Agregar Ingrediente y Limpiar Receta -->
-    <div id="ingredientes-section" class="section">
-    <h2>Selecciona un ingrediente</h2>
-    <div id="ingredientes">
-        <div class="ingredient-icon" draggable="true" ondragstart="drag(event)" id="Agua"></div>
-        <div class="ingredient-icon" draggable="true" ondragstart="drag(event)" id="Hierbas"></div>
-        <div class="ingredient-icon" draggable="true" ondragstart="drag(event)" id="Raíz de mandrágora"></div>
-        <!-- Agrega más ingredientes aquí si es necesario -->
-    </div>
-    <input type="number" id="cantidad-ingredientes" value="1" min="1">
-    <button id="agregar-ingrediente">Agregar Ingrediente</button>
-    <button id="limpiar-receta">Limpiar Receta</button>
-</div>
+        <!-- Seleccionar Receta, Agregar Ingredientes de Receta y Generar Item -->
+        <div id="generador-section" class="section">
+            <label for="recetas">Selecciona una receta:</label>
+            <select id="recetas">
+                <!-- Las opciones serán agregadas dinámicamente -->
+            </select>
+            <button id="agregar-ingredientes-receta">Agregar Ingredientes de Receta</button>
+            <button id="generar-item">Generar Item</button>
+        </div>
 
-<!-- Receta Personalizada -->
-<div id="receta-personalizada" class="receta-personalizada" ondrop="drop(event)" ondragover="allowDrop(event)">
-    <h2>Receta Personalizada</h2>
-    <ul id="lista-receta"></ul>
-</div>
-    <!-- Log de Eventos -->
-    <div id="event-log" class="section">
-        <h2>Eventos</h2>
-        <ul id="log-list">
-            <!-- Aquí se mostrarán los eventos -->
-        </ul>
-    </div>
+        <!-- Seleccionar un Ingrediente, Selector de Cantidad, Agregar Ingrediente y Limpiar Receta -->
+        <div id="ingredientes-section" class="section">
+            <h2>Selecciona un ingrediente</h2>
+            <ul id="lista-receta"></ul>
+            <select id="ingredientes-select">
+                <!-- Puedes añadir más opciones aquí -->
+            </select>
+            <input type="number" id="cantidad-ingredientes" value="1" min="1">
+            <button id="agregar-ingrediente">Agregar Ingrediente</button>
+            <button id="limpiar-receta">Limpiar Receta</button>
+        </div>
 
-    <!-- Receta Personalizada -->
-    <div id="receta-personalizada" class="receta-personalizada" ondrop="drop(event)" ondragover="allowDrop(event)">
-        <h2>Receta Personalizada</h2>
-        <ul id="lista-receta"></ul>
+        <!-- Botones para Agregar Ingredientes Básicos, Intermedios y Avanzados -->
+        <div id="agregar-inventario-section" class="section">
+            <h2>Agregar Ingredientes al Inventario</h2>
+            <button id="agregar-basico">Agregar Ingredientes Básicos</button>
+            <button id="agregar-intermedio">Agregar Ingredientes Intermedios</button>
+            <button id="agregar-avanzado">Agregar Ingredientes Avanzados</button>
+        </div>
+
+        <!-- Log de Eventos -->
+        <div id="event-log" class="section">
+            <h2>Eventos</h2>
+            <ul id="log-list">
+                <!-- Aquí se mostrarán los eventos -->
+            </ul>
+        </div>
+    
     </div>
 
     <script>
         // JavaScript puede ser añadido aquí
-        function allowDrop(ev) {
-            ev.preventDefault();
-        }
-        
-        function drag(ev) {
-            ev.dataTransfer.setData("text", ev.target.id);
-        }
-        
-        function drop(ev) {
-            ev.preventDefault();
-            var data = ev.dataTransfer.getData("text");
-            var ingrediente = document.getElementById(data);
-            var listaReceta = document.getElementById("lista-receta");
-            var listItem = document.createElement("li");
-            listItem.textContent = "Ingrediente: " + data;
-            listaReceta.appendChild(listItem);
-            ev.target.appendChild(ingrediente);
-        }
-
-        // Resto del código JavaScript...
         let usuariosRegistrados = [
             { nombre: "usuario1", contraseña: "usuario1" },
             { nombre: "usuario2", contraseña: "usuario2" },
@@ -163,14 +139,14 @@
         };
 
         let inventario = {
-            Agua: 10,
-            Hierbas: 5,
-            "Raíz de mandrágora": 3,
-            Metal: 0,
-            Madera: 0,
+    Agua: 10,
+    Hierbas: 5,
+    "Raíz de mandrágora": 3,
+    Metal: 0,
+    Madera: 0,
             Oro: 0,
             Diamante: 0
-        };
+};
 
         const ingredientesBasico = [
             { nombre: "Agua", cantidad: 5 },
@@ -190,6 +166,47 @@
 
         let itemsCreados = [];
 
+        function mostrarInventario() {
+    const ingredientesSelect = document.getElementById("ingredientes-select");
+    ingredientesSelect.innerHTML = "";
+
+    for (const ingrediente in inventario) {
+        if (inventario[ingrediente] > 0) { // Solo mostramos los ingredientes con cantidad mayor a 0
+            const opcion = document.createElement("option");
+            opcion.value = ingrediente;
+            opcion.textContent = ingrediente + " (" + inventario[ingrediente] + ")";
+            ingredientesSelect.appendChild(opcion);
+        }
+    }
+}
+
+// Ocultar el elemento que mostraba la lista completa de inventario
+// document.getElementById("inventario-section").style.display = "none";
+
+
+        function mostrarItemsCreados() {
+            const itemsList = document.getElementById("lista-items-creados");
+            itemsList.innerHTML = ""; // Limpiamos la lista de items creados
+
+            itemsCreados.forEach(item => {
+                const listItem = document.createElement("li");
+                listItem.textContent = item;
+                itemsList.appendChild(listItem);
+            });
+        }
+
+        function mostrarRecetas() {
+            const recetasSelect = document.getElementById("recetas");
+            recetasSelect.innerHTML = ""; // Limpiamos el dropdown de recetas
+
+            recetasConocidas.forEach(receta => {
+                const option = document.createElement("option");
+                option.value = receta;
+                option.textContent = receta;
+                recetasSelect.appendChild(option);
+            });
+        }
+
         function mostrarRecetaPersonalizada() {
             const recetaList = document.getElementById("lista-receta");
             recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
@@ -201,42 +218,73 @@
             }
         }
 
-        function generarItem() {
-            // Verificamos si los ingredientes seleccionados coinciden con alguna receta conocida
-            const recetaCoincidente = recetas.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
+        function agregarIngrediente() {
+    const ingredienteSeleccionado = document.getElementById("ingredientes-select").value;
+    const cantidadSeleccionada = parseInt(document.getElementById("cantidad-ingredientes").value);
 
-            if (recetaCoincidente) {
-                // Restar los ingredientes del inventario
-                for (const [ingrediente, cantidad] of Object.entries(recetaCoincidente.materiales)) {
-                    inventario[ingrediente] -= cantidad;
-                }
-
-                // Eliminar los ingredientes del inventario que tienen una cantidad igual a cero
-                for (const ingrediente in inventario) {
-                    if (inventario[ingrediente] === 0) {
-                        delete inventario[ingrediente];
-                    }
-                }
-
-                // Actualizar la lista de selección de ingredientes
-                mostrarInventario();
-
-                const itemGenerado = recetaCoincidente.nombre;
-                itemsCreados.push(itemGenerado);
-                mostrarItemsCreados();
-
-                if (!recetasConocidas.includes(itemGenerado)) {
-                    recetasConocidas.push(itemGenerado);
-                    mostrarRecetas(); // Mostramos las recetas conocidas actualizadas
-                }
-
-                alert("¡Item generado exitosamente: " + itemGenerado + "!");
-                // Actualizar el inventario mostrado
-                mostrarInventario();
+    if (ingredienteSeleccionado && cantidadSeleccionada > 0) {
+        if (inventario[ingredienteSeleccionado] >= cantidadSeleccionada) {
+            if (recetaPersonalizada.materiales.hasOwnProperty(ingredienteSeleccionado)) {
+                recetaPersonalizada.materiales[ingredienteSeleccionado] += cantidadSeleccionada;
             } else {
-                alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
+                recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
+            }
+            inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
+            mostrarInventario();
+            mostrarRecetaPersonalizada();
+        } else {
+            agregarEvento("No tienes suficientes " + ingredienteSeleccionado + " en el inventario.");
+        }
+    } else {
+        agregarEvento("Por favor, selecciona un ingrediente y una cantidad válida.");
+    }
+}
+
+        function limpiarReceta() {
+            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
+                inventario[ingrediente] += cantidad;
+            }
+            recetaPersonalizada.materiales = {};
+            mostrarInventario();
+            mostrarRecetaPersonalizada();
+        }
+
+    function generarItem() {
+    // Verificamos si los ingredientes seleccionados coinciden con alguna receta conocida
+    const recetaCoincidente = recetas.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
+
+    if (recetaCoincidente) {
+        // Restar los ingredientes del inventario
+        for (const [ingrediente, cantidad] of Object.entries(recetaCoincidente.materiales)) {
+            inventario[ingrediente] -= cantidad;
+        }
+
+        // Eliminar los ingredientes del inventario que tienen una cantidad igual a cero
+        for (const ingrediente in inventario) {
+            if (inventario[ingrediente] === 0) {
+                delete inventario[ingrediente];
             }
         }
+
+        // Actualizar la lista de selección de ingredientes
+        mostrarInventario();
+
+        const itemGenerado = recetaCoincidente.nombre;
+        itemsCreados.push(itemGenerado);
+        mostrarItemsCreados();
+
+        if (!recetasConocidas.includes(itemGenerado)) {
+            recetasConocidas.push(itemGenerado);
+            mostrarRecetas(); // Mostramos las recetas conocidas actualizadas
+        }
+
+        alert("¡Item generado exitosamente: " + itemGenerado + "!");
+        // Actualizar el inventario mostrado
+        mostrarInventario();
+    } else {
+        alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
+    }
+}
 
         function sonMismosIngredientes(receta1, receta2) {
             const ingredientes1 = receta1.materiales;
@@ -257,33 +305,207 @@
             listItem.textContent = evento;
             logList.appendChild(listItem);
         }
+        // Función para obtener el usuario actual desde localStorage
+        function getUsuarioActual() {
+        return localStorage.getItem("usuarioActual");
+        }
+// Función para agregar ingredientes al inventario
+ function agregarIngredientes(listaIngredientes) {
+    listaIngredientes.forEach(ingrediente => {
+        const nombreIngrediente = ingrediente.nombre;
+        const cantidadIngrediente = ingrediente.cantidad;
+        
+        // Comprobamos si el ingrediente ya existe en el inventario
+        if (inventario.hasOwnProperty(nombreIngrediente)) {
+            inventario[nombreIngrediente] += cantidadIngrediente;
+            console.log(`Agregando ingrediente: ${nombreIngrediente} Cantidad: ${cantidadIngrediente}`);
+        } else {
+            console.log(`El ingrediente ${nombreIngrediente} no existe en el inventario.`);
+        }
+    });
+    console.log("Inventario actualizado:", inventario);
+     mostrarInventario();
+}
+
+// Eventos para los botones de agregar ingredientes
+        document.getElementById("agregar-basico").addEventListener("click", function() {
+            agregarIngredientes(ingredientesBasico);
+        });
+
+        document.getElementById("agregar-intermedio").addEventListener("click", function() {
+            agregarIngredientes(ingredientesIntermedio);
+        });
+
+        document.getElementById("agregar-avanzado").addEventListener("click", function() {
+            agregarIngredientes(ingredientesAvanzado);
+        });
+
+        
+      // Evento para el botón de iniciar sesión
+document.getElementById("login-btn").addEventListener("click", function() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    const usuario = usuariosRegistrados.find(user => user.nombre === username && user.contraseña === password);
+    if (usuario) {
+        // Simulación de inicio de sesión exitoso
+        agregarEvento("Inicio de sesión exitoso para el usuario: " + username);
+        document.getElementById("inicio-sesion").style.display = "none";
+        document.getElementById("guardar-localstorage-btn").style.display = "inline-block";
+        document.getElementById("items-creados-section").style.display = "inline-block";
+        document.getElementById("generador-section").style.display = "inline-block";
+        document.getElementById("ingredientes-section").style.display = "inline-block";
+        document.getElementById("agregar-inventario-section").style.display = "inline-block";
+        // document.getElementById("resultado").style.display = "inline-block";
+        // Establecer usuario actual en localStorage
+        console.log("Usuario actual establecido en localStorage:", username);
+        localStorage.setItem("usuarioActual", username);
+        
+        // Cargar datos del usuario desde localStorage
+        cargarEstadoUsuario(username);
+        mostrarInventario();
+        mostrarRecetaPersonalizada();
+        mostrarRecetas();
+    } else {
+        alert("Inicio de sesión fallido: ¡Nombre de usuario o contraseña incorrectos!");
+    }
+});
+// Verificar si hay un usuario actual almacenado en localStorage al cargar la página
+window.addEventListener("load", function() {
+    const usuarioActual = getUsuarioActual();
+    if (usuarioActual) {
+        // Ocultar formulario de inicio de sesión y mostrar secciones relevantes
+        document.getElementById("inicio-sesion").style.display = "none";
+        document.getElementById("inventario-section").style.display = "inline-block";
+        document.getElementById("items-creados-section").style.display = "inline-block";
+        document.getElementById("generador-section").style.display = "inline-block";
+        document.getElementById("ingredientes-section").style.display = "inline-block";
+        document.getElementById("resultado").style.display = "inline-block";
+        // Cargar datos del usuario desde localStorage
+        cargarEstadoUsuario(usuarioActual);
+    }
+});
+       // Evento para el botón de registro
+document.getElementById("registro-btn").addEventListener("click", function() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    if (username && password) {
+        // Verificar si el usuario ya existe
+        const usuarioExistente = usuariosRegistrados.find(user => user.nombre === username);
+        if (usuarioExistente) {
+            agregarEvento("Registro fallido: ¡El nombre de usuario ya está en uso!");
+        } else {
+            // Simulación de registro exitoso
+            agregarEvento("Usuario registrado exitosamente: " + username);
+            document.getElementById("inicio-sesion").style.display = "none";
+            document.getElementById("inventario-section").style.display = "inline-block";
+            document.getElementById("items-creados-section").style.display = "inline-block";
+            document.getElementById("generador-section").style.display = "inline-block";
+            document.getElementById("ingredientes-section").style.display = "inline-block";
+            document.getElementById("resultado").style.display = "inline-block";
+            // Guardar el nombre de usuario en localStorage
+            localStorage.setItem("usuarioActual", username);
+            // Agregar nuevo usuario registrado a la lista
+            usuariosRegistrados.push({ nombre: username, contraseña: password });
+            // Guardar estado del usuario en cookies
+            guardarEstadoUsuario(username);
+        }
+    } else {
+        agregarEvento("Registro fallido: ¡Ingrese un nombre de usuario y contraseña!");
+    }
+});
+
+
+        // Evento para el botón de agregar ingredientes de receta
+        document.getElementById("agregar-ingredientes-receta").addEventListener("click", function() {
+    const recetaSeleccionada = document.getElementById("recetas").value;
+    const recetaEncontrada = recetas.find(receta => receta.nombre === recetaSeleccionada);
+
+    if (recetaEncontrada) {
+        let ingredientesSuficientes = true;
+        for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.materiales)) {
+            if (inventario[ingrediente] < cantidad) {
+                ingredientesSuficientes = false;
+                alert(`No tienes suficientes "${ingrediente}" en el inventario.`);
+                break; // Salir del bucle si no hay suficientes ingredientes
+            }
+        }
+        
+        if (ingredientesSuficientes) {
+            for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.materiales)) {
+                recetaPersonalizada.materiales[ingrediente] = (recetaPersonalizada.materiales[ingrediente] || 0) + cantidad;
+                inventario[ingrediente] -= cantidad;
+            }
+            mostrarInventario();
+            mostrarRecetaPersonalizada();
+            agregarEvento("Ingredientes de receta agregados con éxito.");
+        }
+    } else {
+        agregarEvento("Error: Receta seleccionada no encontrada.");
+    }
+});
+
 
         // Evento para el botón de generar item
         document.getElementById("generar-item").addEventListener("click", generarItem);
 
-        // Evento para el botón de iniciar sesión
-        document.getElementById("login-btn").addEventListener("click", function() {
-            const username = document.getElementById("username").value;
-            const password = document.getElementById("password").value;
-            const usuario = usuariosRegistrados.find(user => user.nombre === username && user.contraseña === password);
-            if (usuario) {
-                // Simulación de inicio de sesión exitoso
-                agregarEvento("Inicio de sesión exitoso para el usuario: " + username);
-                document.getElementById("inicio-sesion").style.display = "none";
-                document.getElementById("guardar-localstorage-btn").style.display = "inline-block";
-                document.getElementById("items-creados-section").style.display = "inline-block";
-                document.getElementById("generador-section").style.display = "inline-block";
-                document.getElementById("ingredientes-section").style.display = "inline-block";
-                // Establecer usuario actual en localStorage
-                console.log("Usuario actual establecido en localStorage:", username);
-                localStorage.setItem("usuarioActual", username);
-                
-                // Restaurar estado guardado del inventario
-                //restaurarInventario();
-            } else {
-                alert("Nombre de usuario o contraseña incorrectos");
+        // Evento para el botón de agregar ingrediente a la receta personalizada
+        document.getElementById("agregar-ingrediente").addEventListener("click", agregarIngrediente);
+
+        // Evento para el botón de limpiar receta personalizada
+        document.getElementById("limpiar-receta").addEventListener("click", limpiarReceta);
+
+      // Función para guardar el estado del usuario en localStorage
+    function guardarEstadoUsuario(username) {
+    localStorage.setItem(username + "-itemsCreados", JSON.stringify(itemsCreados)); // Guardar items creados
+    localStorage.setItem(username + "-inventario", JSON.stringify(inventario)); // Guardar estado del inventario
+    localStorage.setItem("usuariosRegistrados", JSON.stringify(usuariosRegistrados)); // Guardar usuarios registrados
+    localStorage.setItem("usuarioActual", username); // Guardar usuario actual
+}
+
+       // Función para cargar el estado del usuario desde localStorage
+function cargarEstadoUsuario(username) {
+            const inventarioLocalStorage = localStorage.getItem(username + "-inventario");
+            if (inventarioLocalStorage) {
+                inventario = JSON.parse(inventarioLocalStorage);
             }
-        });
+
+            const itemsCreadosLocalStorage = localStorage.getItem(username + "-itemsCreados");
+            if (itemsCreadosLocalStorage) {
+                itemsCreados = JSON.parse(itemsCreadosLocalStorage);
+            }
+
+            const recetasConocidasLocalStorage = localStorage.getItem(username + "-recetasConocidas");
+            if (recetasConocidasLocalStorage) {
+                recetasConocidas = JSON.parse(recetasConocidasLocalStorage);
+            }
+        }
+
+        // Función para guardar el estado del usuario en localStorage
+        function guardarEstadoUsuario(username) {
+            localStorage.setItem(username + "-inventario", JSON.stringify(inventario));
+            localStorage.setItem(username + "-itemsCreados", JSON.stringify(itemsCreados));
+            localStorage.setItem(username + "-recetasConocidas", JSON.stringify(recetasConocidas));
+        }
+
+        
+// Evento para el botón de guardar información en localStorage
+document.getElementById("guardar-localstorage-btn").addEventListener("click", function() {
+    const username = localStorage.getItem("usuarioActual");
+    if (username) {
+        guardarEstadoUsuario(username);
+        alert("¡Información guardada en localStorage!");
+    } else {
+        alert("No hay usuario actualmente iniciado sesión.");
+    }
+});
+        // Función para obtener el nombre de usuario actual
+        function getUsuarioActual() {
+            return document.getElementById("username").value;
+        }
+
+        // Mostrar recetas iniciales
+        mostrarRecetas();
+
     </script>
 </body>
 </html>
