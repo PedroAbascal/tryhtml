@@ -89,18 +89,23 @@
 
     <!-- Seleccionar un Ingrediente, Selector de Cantidad, Agregar Ingrediente y Limpiar Receta -->
     <div id="ingredientes-section" class="section">
-        <h2>Selecciona un ingrediente</h2>
-        <div id="ingredientes">
-            <div class="ingredient-icon" draggable="true" ondragstart="drag(event)" id="Agua"></div>
-            <div class="ingredient-icon" draggable="true" ondragstart="drag(event)" id="Hierbas"></div>
-            <div class="ingredient-icon" draggable="true" ondragstart="drag(event)" id="Raíz de mandrágora"></div>
-            <!-- Agrega más ingredientes aquí si es necesario -->
-        </div>
-        <input type="number" id="cantidad-ingredientes" value="1" min="1">
-        <button id="agregar-ingrediente">Agregar Ingrediente</button>
-        <button id="limpiar-receta">Limpiar Receta</button>
+    <h2>Selecciona un ingrediente</h2>
+    <div id="ingredientes">
+        <div class="ingredient-icon" draggable="true" ondragstart="drag(event)" id="Agua"></div>
+        <div class="ingredient-icon" draggable="true" ondragstart="drag(event)" id="Hierbas"></div>
+        <div class="ingredient-icon" draggable="true" ondragstart="drag(event)" id="Raíz de mandrágora"></div>
+        <!-- Agrega más ingredientes aquí si es necesario -->
     </div>
+    <input type="number" id="cantidad-ingredientes" value="1" min="1">
+    <button id="agregar-ingrediente">Agregar Ingrediente</button>
+    <button id="limpiar-receta">Limpiar Receta</button>
+</div>
 
+<!-- Receta Personalizada -->
+<div id="receta-personalizada" class="receta-personalizada" ondrop="drop(event)" ondragover="allowDrop(event)">
+    <h2>Receta Personalizada</h2>
+    <ul id="lista-receta"></ul>
+</div>
     <!-- Log de Eventos -->
     <div id="event-log" class="section">
         <h2>Eventos</h2>
