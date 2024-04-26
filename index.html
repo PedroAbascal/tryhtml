@@ -351,6 +351,10 @@
             mostrarInventario();
         }
 
+        document.getElementById("generar-item").addEventListener("click", function() {
+    generarItem();
+});
+
         // Eventos para los botones de agregar ingredientes
         document.getElementById("agregar-basico").addEventListener("click", function() {
             agregarIngredientes(ingredientesBasico);
