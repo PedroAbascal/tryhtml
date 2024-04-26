@@ -86,23 +86,21 @@
         <button id="agregar-ingredientes-receta">Agregar Ingredientes de Receta</button>
         <button id="generar-item">Generar Item</button>
     </div>
+
+    <!-- Seleccionar un Ingrediente, Selector de Cantidad, Agregar Ingrediente y Limpiar Receta -->
+    <div id="ingredientes-section" class="section">
+        <h2>Selecciona un ingrediente</h2>
+       <div id="ingredientes">
+    <div class="ingredient-icon" draggable="true" ondragstart="drag(event)" id="ingrediente1">Ingrediente 1</div>
+    <div class="ingredient-icon" draggable="true" ondragstart="drag(event)" id="ingrediente2">Ingrediente 2</div>
+    <div class="ingredient-icon" draggable="true" ondragstart="drag(event)" id="ingrediente3">Ingrediente 3</div>
+    <!-- Agrega más ingredientes aquí si es necesario -->
+</div>
+
 <div id="receta-personalizada" class="receta-personalizada" ondrop="drop(event)" ondragover="allowDrop(event)">
     <h2>Receta Personalizada</h2>
     <ul id="lista-receta"></ul>
 </div>
-    <!-- Seleccionar un Ingrediente, Selector de Cantidad, Agregar Ingrediente y Limpiar Receta -->
-    <div id="ingredientes-section" class="section">
-        <h2>Selecciona un ingrediente</h2>
-        <div id="ingredientes">
-            <div class="ingredient-icon" draggable="true" ondragstart="drag(event)" id="Agua"></div>
-            <div class="ingredient-icon" draggable="true" ondragstart="drag(event)" id="Hierbas"></div>
-            <div class="ingredient-icon" draggable="true" ondragstart="drag(event)" id="Raíz de mandrágora"></div>
-            <!-- Agrega más ingredientes aquí si es necesario -->
-        </div>
-        <input type="number" id="cantidad-ingredientes" value="1" min="1">
-        <button id="agregar-ingrediente">Agregar Ingrediente</button>
-        <button id="limpiar-receta">Limpiar Receta</button>
-    </div>
 
     <!-- Botones para Agregar Ingredientes Básicos, Intermedios y Avanzados -->
     <div id="agregar-inventario-section" class="section">
