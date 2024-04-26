@@ -235,15 +235,18 @@
         }
 
         function mostrarRecetaPersonalizada() {
-            const recetaList = document.getElementById("lista-receta");
-            recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
+    const recetaList = document.getElementById("lista-receta");
+    recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
 
-            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
-                const listItem = document.createElement("li");
-                listItem.textContent = `${ingrediente}: ${cantidad}`;
-                recetaList.appendChild(listItem);
-            }
-        }
+    for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
+        const listItem = document.createElement("li");
+        listItem.textContent = `${ingrediente}: ${cantidad}`;
+        recetaList.appendChild(listItem);
+    }
+
+    // Mostrar el contenedor de la receta personalizada
+    document.getElementById("receta-personalizada").style.display = "block";
+}
 
         function agregarIngrediente() {
     const ingredienteSeleccionado = document.getElementById("ingredientes-select").value;
