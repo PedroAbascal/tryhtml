@@ -119,7 +119,7 @@
 
     <!-- Receta Personalizada -->
     <div id="receta-personalizada" class="receta-personalizada" ondrop="drop(event)" ondragover="allowDrop(event)">
-        <h2>Receta Personalizada</h2>
+        //<h2>Receta Personalizada</h2>
         <ul id="lista-receta"></ul>
     </div>
 
@@ -273,41 +273,37 @@
         }
 
         function generarItem() {
-            // Verificamos si los ingredientes seleccionados coinciden con alguna receta conocida
-            const recetaCoincidente = recetas.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
+    const recetaCoincidente = recetas.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
 
-            if (recetaCoincidente) {
-                // Restar los ingredientes del inventario
-                for (const [ingrediente, cantidad] of Object.entries(recetaCoincidente.materiales)) {
-                    inventario[ingrediente] -= cantidad;
-                }
+    if (recetaCoincidente) {
+        // Restar los ingredientes del inventario
+        for (const [ingrediente, cantidad] of Object.entries(recetaCoincidente.materiales)) {
+            inventario[ingrediente] -= cantidad;
+        }
 
-                // Eliminar los ingredientes del inventario que tienen una cantidad igual a cero
-                for (const ingrediente in inventario) {
-                    if (inventario[ingrediente] === 0) {
-                        delete inventario[ingrediente];
-                    }
-                }
-
-                // Actualizar la lista de selección de ingredientes
-                mostrarInventario();
-
-                const itemGenerado = recetaCoincidente.nombre;
-                itemsCreados.push(itemGenerado);
-                mostrarItemsCreados();
-
-                if (!recetasConocidas.includes(itemGenerado)) {
-                    recetasConocidas.push(itemGenerado);
-                    mostrarRecetas(); // Mostramos las recetas conocidas actualizadas
-                }
-
-                alert("¡Item generado exitosamente: " + itemGenerado + "!");
-                // Actualizar el inventario mostrado
-                mostrarInventario();
-            } else {
-                alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
+        // Eliminar los ingredientes del inventario que tienen una cantidad igual a cero
+        for (const ingrediente in inventario) {
+            if (inventario[ingrediente] === 0) {
+                delete inventario[ingrediente];
             }
         }
+
+        const itemGenerado = recetaCoincidente.nombre;
+        itemsCreados.push(itemGenerado);
+        mostrarItemsCreados();
+
+        // Si el item generado no está en la lista de recetas conocidas, agregarlo
+        if (!recetasConocidas.includes(itemGenerado)) {
+            recetasConocidas.push(itemGenerado);
+            mostrarRecetas(); // Mostramos las recetas conocidas actualizadas
+        }
+
+        alert("¡Item generado exitosamente: " + itemGenerado + "!");
+        mostrarInventario();
+    } else {
+        alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
+    }
+}
 
         function sonMismosIngredientes(receta1, receta2) {
             const ingredientes1 = receta1.materiales;
