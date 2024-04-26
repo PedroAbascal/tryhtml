@@ -78,13 +78,14 @@
 
         <!-- Seleccionar Receta, Agregar Ingredientes de Receta y Generar Item -->
         <div id="generador-section" class="section">
-            <label for="recetas">Selecciona una receta:</label>
-            <select id="recetas">
-                <!-- Las opciones serán agregadas dinámicamente -->
-            </select>
-            <button id="agregar-ingredientes-receta">Agregar Ingredientes de Receta</button>
-            <button id="generar-item">Generar Item</button>
-        </div>
+    <label for="recetas">Selecciona una receta:</label>
+    <select id="recetas">
+        <!-- Las opciones serán agregadas dinámicamente -->
+    </select>
+    <button id="agregar-ingredientes-receta">Agregar Ingredientes de Receta</button>
+    <button id="generar-item">Generar Item</button>
+    <button id="procesar-ingrediente">Procesar Ingrediente</button>
+</div>
 
         <!-- Seleccionar un Ingrediente, Selector de Cantidad, Agregar Ingrediente y Limpiar Receta -->
         <div id="ingredientes-section" class="section">
@@ -298,6 +299,49 @@
             return true;
         }
 
+        let recetasProcesarIngredientes = [
+    {
+        nombre: "Poción de salud",
+        materiales: { Agua: 1, Hierbas: 1, "Raíz de mandrágora": 1 },
+        nuevoIngrediente: "Poción de salud",
+        cantidadNuevoIngrediente: 1
+    },
+    // Puedes añadir más recetas para procesar ingredientes aquí
+];
+
+function procesarIngrediente() {
+    const ingredienteSeleccionado = document.getElementById("ingredientes-select").value;
+    const cantidadSeleccionada = parseInt(document.getElementById("cantidad-ingredientes").value);
+
+    if (ingredienteSeleccionado && cantidadSeleccionada > 0) {
+        const recetaCoincidente = recetasProcesarIngredientes.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
+
+        if (recetaCoincidente) {
+            const nuevoIngrediente = recetaCoincidente.nuevoIngrediente;
+            const cantidadNuevoIngrediente = recetaCoincidente.cantidadNuevoIngrediente;
+            
+            if (nuevoIngrediente && cantidadNuevoIngrediente) {
+                if (inventario.hasOwnProperty(nuevoIngrediente)) {
+                    inventario[nuevoIngrediente] += cantidadNuevoIngrediente;
+                } else {
+                    inventario[nuevoIngrediente] = cantidadNuevoIngrediente;
+                }
+
+                mostrarInventario();
+                recetaPersonalizada.materiales = {};
+                mostrarRecetaPersonalizada();
+                agregarEvento(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
+            } else {
+                agregarEvento("Error: La receta coincide pero no se especificó un nuevo ingrediente.");
+            }
+        } else {
+            agregarEvento("Error: No hay una receta de procesamiento de ingredientes que coincida con los ingredientes seleccionados.");
+        }
+    } else {
+        agregarEvento("Por favor, selecciona un ingrediente y una cantidad válida.");
+    }
+}
+
         // Función para agregar un evento al log
         function agregarEvento(evento) {
             const logList = document.getElementById("log-list");
@@ -342,7 +386,7 @@
 
         
       // Evento para el botón de iniciar sesión
-document.getElementById("login-btn").addEventListener("click", function() {
+    document.getElementById("login-btn").addEventListener("click", function() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
     const usuario = usuariosRegistrados.find(user => user.nombre === username && user.contraseña === password);
@@ -355,6 +399,7 @@ document.getElementById("login-btn").addEventListener("click", function() {
         document.getElementById("generador-section").style.display = "inline-block";
         document.getElementById("ingredientes-section").style.display = "inline-block";
         document.getElementById("agregar-inventario-section").style.display = "inline-block";
+        document.getElementById("procesar-ingrediente").style.display = "inline-block"; // Mostrar el botón "Procesar Ingrediente"
         // document.getElementById("resultado").style.display = "inline-block";
         // Establecer usuario actual en localStorage
         console.log("Usuario actual establecido en localStorage:", username);
