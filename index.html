@@ -255,6 +255,30 @@
 
         // Evento para el botón de generar item
         document.getElementById("generar-item").addEventListener("click", generarItem);
+
+        // Evento para el botón de iniciar sesión
+        document.getElementById("login-btn").addEventListener("click", function() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            const usuario = usuariosRegistrados.find(user => user.nombre === username && user.contraseña === password);
+            if (usuario) {
+                // Simulación de inicio de sesión exitoso
+                agregarEvento("Inicio de sesión exitoso para el usuario: " + username);
+                document.getElementById("inicio-sesion").style.display = "none";
+                document.getElementById("guardar-localstorage-btn").style.display = "inline-block";
+                document.getElementById("items-creados-section").style.display = "inline-block";
+                document.getElementById("generador-section").style.display = "inline-block";
+                document.getElementById("ingredientes-section").style.display = "inline-block";
+                // Establecer usuario actual en localStorage
+                console.log("Usuario actual establecido en localStorage:", username);
+                localStorage.setItem("usuarioActual", username);
+                
+                // Restaurar estado guardado del inventario
+                //restaurarInventario();
+            } else {
+                alert("Nombre de usuario o contraseña incorrectos");
+            }
+        });
     </script>
 </body>
 </html>
