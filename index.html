@@ -508,6 +508,9 @@ document.getElementById("registro-btn").addEventListener("click", function() {
     localStorage.setItem("usuarioActual", username); // Guardar usuario actual
 }
 
+
+        document.getElementById("agregar-ingrediente").addEventListener("click", procesarIngrediente);
+        
        // Función para cargar el estado del usuario desde localStorage
 function cargarEstadoUsuario(username) {
             const inventarioLocalStorage = localStorage.getItem(username + "-inventario");
