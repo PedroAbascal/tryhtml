@@ -506,6 +506,7 @@ document.getElementById("registro-btn").addEventListener("click", function() {
     localStorage.setItem(username + "-inventario", JSON.stringify(inventario)); // Guardar estado del inventario
     localStorage.setItem("usuariosRegistrados", JSON.stringify(usuariosRegistrados)); // Guardar usuarios registrados
     localStorage.setItem("usuarioActual", username); // Guardar usuario actual
+    localStorage.setItem(username + "-recetasProcesarIngredientes", JSON.stringify(recetasProcesarIngredientes)); // Guardar recetas de procesar ingredientes
 }
 
 
@@ -527,6 +528,10 @@ function cargarEstadoUsuario(username) {
             if (recetasConocidasLocalStorage) {
                 recetasConocidas = JSON.parse(recetasConocidasLocalStorage);
             }
+    const recetasProcesarIngredientesLocalStorage = localStorage.getItem(username + "-recetasProcesarIngredientes"); // Cargar recetas de procesar ingredientes
+    if (recetasProcesarIngredientesLocalStorage) {
+        recetasProcesarIngredientes = JSON.parse(recetasProcesarIngredientesLocalStorage);
+    }
         }
 
         // Función para guardar el estado del usuario en localStorage
