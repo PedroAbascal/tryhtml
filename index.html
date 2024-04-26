@@ -6,7 +6,7 @@
     <title>Generador de Items y Pociones de D&D 5e</title>
     <style>
         /* Estilos CSS pueden ser añadidos aquí */
-         body {
+        body {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -30,87 +30,90 @@
         .section > * {
             margin-bottom: 10px;
         }
-        
+
         #inicio-sesion {
             display: block;
         }
+
         #inventario-section,
         #items-creados-section,
         #generador-section,
         #ingredientes-section,
         #event-log,
         #agregar-inventario-section,
-        #guardar-localstorage-btn
-        
-        {
+        #guardar-localstorage-btn {
             display: none;
         }
     </style>
 </head>
 <body>
     
-    <h1>Generador de Items y Pociones de D&D 5e</h1>
+    <div class="container">
 
-    <!-- Inicio de Sesión -->
-    <div id="inicio-sesion" class="section">
-        <h2>Iniciar Sesión</h2>
-        <label for="username">Nombre de Usuario:</label>
-        <input type="text" id="username">
-        <label for="password">Contraseña:</label>
-        <input type="password" id="password">
-        <button id="login-btn">Iniciar Sesión</button>
-        <button id="registro-btn">Registrarse</button>
-    </div>
+        <h1>Generador de Items y Pociones de D&D 5e</h1>
 
-    <!-- Botón Guardar Estado -->
-    <div class="section">
-        <button id="guardar-localstorage-btn" >Guardar Estado</button>
-    </div>
+        <!-- Inicio de Sesión -->
+        <div id="inicio-sesion" class="section">
+            <h2>Iniciar Sesión</h2>
+            <label for="username">Nombre de Usuario:</label>
+            <input type="text" id="username">
+            <label for="password">Contraseña:</label>
+            <input type="password" id="password">
+            <button id="login-btn">Iniciar Sesión</button>
+            <button id="registro-btn">Registrarse</button>
+        </div>
 
-    <!-- Lista de Items Creados -->
-    <div id="items-creados-section" class="section">
-        <h2>Items Creados</h2>
-        <ul id="lista-items-creados">
-            <!-- Aquí se mostrarán los items creados -->
-        </ul>
-    </div>
+        <!-- Botón Guardar Estado -->
+        <div class="section">
+            <button id="guardar-localstorage-btn" >Guardar Estado</button>
+        </div>
 
-    <!-- Seleccionar Receta, Agregar Ingredientes de Receta y Generar Item -->
-    <div id="generador-section" class="section">
-        <label for="recetas">Selecciona una receta:</label>
-        <select id="recetas">
-            <!-- Las opciones serán agregadas dinámicamente -->
-        </select>
-        <button id="agregar-ingredientes-receta">Agregar Ingredientes de Receta</button>
-        <button id="generar-item">Generar Item</button>
-    </div>
+        <!-- Lista de Items Creados -->
+        <div id="items-creados-section" class="section">
+            <h2>Items Creados</h2>
+            <ul id="lista-items-creados">
+                <!-- Aquí se mostrarán los items creados -->
+            </ul>
+        </div>
 
-    <!-- Seleccionar un Ingrediente, Selector de Cantidad, Agregar Ingrediente y Limpiar Receta -->
-    <div id="ingredientes-section" class="section">
-        <h2>Selecciona un ingrediente</h2>
-        <ul id="lista-receta"></ul>
-        <select id="ingredientes-select">
-            <!-- Puedes añadir más opciones aquí -->
-        </select>
-        <input type="number" id="cantidad-ingredientes" value="1" min="1">
-        <button id="agregar-ingrediente">Agregar Ingrediente</button>
-        <button id="limpiar-receta">Limpiar Receta</button>
-    </div>
+        <!-- Seleccionar Receta, Agregar Ingredientes de Receta y Generar Item -->
+        <div id="generador-section" class="section">
+            <label for="recetas">Selecciona una receta:</label>
+            <select id="recetas">
+                <!-- Las opciones serán agregadas dinámicamente -->
+            </select>
+            <button id="agregar-ingredientes-receta">Agregar Ingredientes de Receta</button>
+            <button id="generar-item">Generar Item</button>
+        </div>
 
-    <!-- Botones para Agregar Ingredientes Básicos, Intermedios y Avanzados -->
-     <div id="agregar-inventario-section" class="section">
-        <h2>Agregar Ingredientes al Inventario</h2>
-        <button id="agregar-basico">Agregar Ingredientes Básicos</button>
-        <button id="agregar-intermedio">Agregar Ingredientes Intermedios</button>
-        <button id="agregar-avanzado">Agregar Ingredientes Avanzados</button>
-    </div>
+        <!-- Seleccionar un Ingrediente, Selector de Cantidad, Agregar Ingrediente y Limpiar Receta -->
+        <div id="ingredientes-section" class="section">
+            <h2>Selecciona un ingrediente</h2>
+            <ul id="lista-receta"></ul>
+            <select id="ingredientes-select">
+                <!-- Puedes añadir más opciones aquí -->
+            </select>
+            <input type="number" id="cantidad-ingredientes" value="1" min="1">
+            <button id="agregar-ingrediente">Agregar Ingrediente</button>
+            <button id="limpiar-receta">Limpiar Receta</button>
+        </div>
 
-    <!-- Log de Eventos -->
-    <div id="event-log" class="section">
-        <h2>Eventos</h2>
-        <ul id="log-list">
-            <!-- Aquí se mostrarán los eventos -->
-        </ul>
+        <!-- Botones para Agregar Ingredientes Básicos, Intermedios y Avanzados -->
+        <div id="agregar-inventario-section" class="section">
+            <h2>Agregar Ingredientes al Inventario</h2>
+            <button id="agregar-basico">Agregar Ingredientes Básicos</button>
+            <button id="agregar-intermedio">Agregar Ingredientes Intermedios</button>
+            <button id="agregar-avanzado">Agregar Ingredientes Avanzados</button>
+        </div>
+
+        <!-- Log de Eventos -->
+        <div id="event-log" class="section">
+            <h2>Eventos</h2>
+            <ul id="log-list">
+                <!-- Aquí se mostrarán los eventos -->
+            </ul>
+        </div>
+    
     </div>
 
     <script>
