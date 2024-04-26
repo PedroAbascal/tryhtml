@@ -146,7 +146,8 @@
     Metal: 0,
     Madera: 0,
             Oro: 0,
-            Diamante: 0
+            Diamante: 0,
+            "Pasta de Hierbas Curativas": 0
 };
 
         const ingredientesBasico = [
@@ -301,9 +302,9 @@
 
         let recetasProcesarIngredientes = [
     {
-        nombre: "Poción de salud",
+        nombre: "Pasta de Hierbas Curativas",
         materiales: { Agua: 1, Hierbas: 1, "Raíz de mandrágora": 1 },
-        nuevoIngrediente: "Poción de salud",
+        nuevoIngrediente: "Pasta de Hierbas Curativas",
         cantidadNuevoIngrediente: 1
     },
     // Puedes añadir más recetas para procesar ingredientes aquí
@@ -330,15 +331,15 @@ function procesarIngrediente() {
                 mostrarInventario();
                 recetaPersonalizada.materiales = {};
                 mostrarRecetaPersonalizada();
-                agregarEvento(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
+                alert(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
             } else {
-                agregarEvento("Error: La receta coincide pero no se especificó un nuevo ingrediente.");
+                alert("Error: La receta coincide pero no se especificó un nuevo ingrediente.");
             }
         } else {
-            agregarEvento("Error: No hay una receta de procesamiento de ingredientes que coincida con los ingredientes seleccionados.");
+            alert("Error: No hay una receta de procesamiento de ingredientes que coincida con los ingredientes seleccionados.");
         }
     } else {
-        agregarEvento("Por favor, selecciona un ingrediente y una cantidad válida.");
+        alert("Por favor, selecciona un ingrediente y una cantidad válida.");
     }
 }
 
