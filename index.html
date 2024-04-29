@@ -412,19 +412,12 @@ const ingredientesAvanzado = [
             // Crear el elemento li
             const item = document.createElement("li");
             item.classList.add("ingredient-item");
+            item.draggable = true; // Hacer el elemento arrastrable
 
             // Crear el elemento de imagen (icono)
             const icono = document.createElement("img");
             icono.src = inventario[nombre].icono;
             icono.alt = nombre;
-
-            // Agregar evento para mostrar el nombre del ingrediente al pasar el mouse sobre el icono
-            icono.addEventListener("mouseenter", () => {
-                const tooltip = document.createElement("span");
-                tooltip.classList.add("tooltip");
-                tooltip.textContent = nombre;
-                icono.appendChild(tooltip);
-            });
 
             // Crear el elemento de cantidad
             const cantidadSpan = document.createElement("span");
@@ -436,6 +429,12 @@ const ingredientesAvanzado = [
 
             // Agregar el item a la lista
             listaIngredientes.appendChild(item);
+
+            // Agregar manejadores de eventos para el arrastre
+            item.addEventListener("dragstart", (event) => {
+                // Establecer los datos a transferir durante el arrastre
+                event.dataTransfer.setData("text/plain", nombre);
+            });
         }
     });
 }
