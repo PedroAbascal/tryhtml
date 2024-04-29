@@ -407,7 +407,7 @@ const ingredientesAvanzado = [
     listaIngredientes.innerHTML = ""; // Limpiar la lista antes de agregar los elementos
 
     // Iterar sobre cada elemento en el inventario
-    for (const [nombre, cantidad] of Object.entries(inventario)) {
+    Object.entries(inventario).forEach(([nombre, cantidad]) => {
         if (cantidad > 0) { // Mostrar solo ingredientes con cantidad mayor a 0
             const item = document.createElement("li");
             item.classList.add("ingredient-item");
