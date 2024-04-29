@@ -123,14 +123,10 @@
         <div id="ingredientes-section" class="section">
             <h2>Selecciona un ingrediente</h2>
             <ul id="lista-receta">
-                background-color: rgba(255, 165, 0, 0.5); /* Amarillo anaranjado con una transparencia del 50% */
-                padding: 10px; /* Añade un espacio alrededor del texto para que el fondo sea visible */
-                border-radius: 5px; /* Para suavizar los bordes del fondo */
             </ul>
             
-            <select id="ingredientes-select">
-                <!-- Puedes añadir más opciones aquí -->
-            </select>
+            /* <select id="ingredientes-select"></select> */
+            <ul id="lista-ingredientes" class="ingredient-list">
             <input type="number" id="cantidad-ingredientes" value="1" min="1">
             <button id="agregar-ingrediente">Agregar Ingrediente</button>
             <button id="limpiar-receta">Limpiar Receta</button>
@@ -408,18 +404,34 @@
 
         let itemsCreados = [];
 
-        function mostrarInventario() {
-    const ingredientesSelect = document.getElementById("ingredientes-select");
-    ingredientesSelect.innerHTML = "";
+        function mostrarInventario(ingredientes) {
+            const listaIngredientes = document.getElementById("lista-ingredientes");
+            listaIngredientes.innerHTML = ""; // Limpiar la lista antes de agregar los elementos
 
-    for (const ingrediente in inventario) {
-        if (inventario[ingrediente] > 0) { // Solo mostramos los ingredientes con cantidad mayor a 0
-            const opcion = document.createElement("option");
-            opcion.value = ingrediente;
-            opcion.textContent = ingrediente + " (" + inventario[ingrediente] + ")";
-            ingredientesSelect.appendChild(opcion);
-        }
-    }
+            // Iterar sobre cada ingrediente y generar un elemento li para mostrarlo
+                ingredientes.forEach(ingrediente => {
+                    if (ingrediente.cantidad > 0) { // Mostrar solo ingredientes con cantidad mayor a 0
+                        const item = document.createElement("li");
+                        item.classList.add("ingredient-item");
+                        item.classList.add(ingrediente.categoria); // Agregar clase de categoría para filtrado
+                        item.innerHTML = `
+                <img src="${ingrediente.icono}" alt="${ingrediente.nombre}" title="${ingrediente.nombre}">
+                <span>${ingrediente.cantidad}</span>
+            `;
+            listaIngredientes.appendChild(item);
+                }
+            });
+            // Agregar evento para mostrar el nombre del ingrediente al pasar el mouse sobre el icono
+            const items = document.querySelectorAll(".ingredient-item");
+                items.forEach(item => {
+            const nombre = item.querySelector("img").getAttribute("alt");
+                item.addEventListener("mouseenter", () => {
+                item.innerHTML += `<span class="nombre-ingrediente">${nombre}</span>`;
+        });
+            item.addEventListener("mouseleave", () => {
+            item.querySelector(".nombre-ingrediente").remove();
+        });
+    });
 }
 
 // Ocultar el elemento que mostraba la lista completa de inventario
