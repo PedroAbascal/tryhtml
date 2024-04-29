@@ -472,23 +472,38 @@ const listaIngredientes = document.getElementById("lista-ingredientes");
     });
 
     // Manejador de evento para el evento drop en la lista de receta
-    listaReceta.addEventListener("drop", (event) => {
-        // Prevenir el comportamiento predeterminado para evitar la apertura de la URL del elemento arrastrado
-        event.preventDefault();
+    // Manejador de evento para el evento drop en la lista de receta
+listaReceta.addEventListener("drop", (event) => {
+    // Prevenir el comportamiento predeterminado para evitar la apertura de la URL del elemento arrastrado
+    event.preventDefault();
 
-        // Obtener el nombre del ingrediente arrastrado
-        const nombreIngrediente = event.dataTransfer.getData("text/plain");
+    // Obtener el nombre del ingrediente arrastrado
+    const nombreIngrediente = event.dataTransfer.getData("text/plain");
 
-        // Crear un nuevo elemento de lista con el nombre del ingrediente
-        const nuevoIngrediente = document.createElement("li");
-        nuevoIngrediente.textContent = nombreIngrediente;
+    // Crear un nuevo elemento de lista similar al inventario con el nombre del ingrediente, el icono y la cantidad
+    const nuevoIngrediente = document.createElement("li");
+    nuevoIngrediente.classList.add("ingredient-item"); // Agregar la misma clase que los elementos del inventario para estilos similares
+    nuevoIngrediente.draggable = true; // Hacer el elemento arrastrable
 
-        // Agregar el nuevo ingrediente a la lista de receta
-        listaReceta.appendChild(nuevoIngrediente);
+    // Crear el elemento de imagen (icono)
+    const icono = document.createElement("img");
+    icono.src = inventario[nombreIngrediente].icono;
+    icono.alt = nombreIngrediente;
 
-        // Alertar al usuario que el ingrediente fue agregado a la receta (puedes modificar esto según tu preferencia)
-        alert(`¡${nombreIngrediente} ha sido agregado a la receta!`);
-    });
+    // Crear el elemento de cantidad
+    const cantidadSpan = document.createElement("span");
+    cantidadSpan.textContent = inventario[nombreIngrediente].cantidad; // Obtener la cantidad del inventario
+
+    // Agregar los elementos al nuevo ingrediente
+    nuevoIngrediente.appendChild(icono);
+    nuevoIngrediente.appendChild(cantidadSpan);
+
+    // Agregar el nuevo ingrediente a la lista de receta
+    listaReceta.appendChild(nuevoIngrediente);
+
+    // Alertar al usuario que el ingrediente fue agregado a la receta (puedes modificar esto según tu preferencia)
+    alert(`¡${nombreIngrediente} ha sido agregado a la receta!`);
+});
 
     // Otras lógicas relacionadas con el inventario
 }
