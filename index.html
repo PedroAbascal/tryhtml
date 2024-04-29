@@ -586,7 +586,7 @@ const listaIngredientes = document.getElementById("lista-ingredientes");
 
         alert("¡Item generado exitosamente: " + itemGenerado + "!");
         // Actualizar el inventario mostrado
-        // manejarInventario(inventario);
+        manejarInventario(inventario);
     } else {
         alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
     }
@@ -673,7 +673,7 @@ function procesarIngrediente() {
         }
     });
     console.log("Inventario actualizado:", inventario);
-    // manejarInventario(inventario);
+    manejarInventario(inventario);
 }
 
 // Eventos para los botones de agregar ingredientes
