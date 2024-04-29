@@ -420,15 +420,18 @@ const ingredientesAvanzado = [
                 }
             });
             // Agregar evento para mostrar el nombre del ingrediente al pasar el mouse sobre el icono
-            const items = document.querySelectorAll(".ingredient-item");
-                items.forEach(item => {
-            const nombre = item.querySelector("img").getAttribute("alt");
-                item.addEventListener("mouseenter", () => {
-                item.innerHTML += `<span class="nombre-ingrediente">${nombre}</span>`;
+           item.addEventListener("mouseenter", () => {
+            const tooltip = document.createElement("span");
+            tooltip.classList.add("tooltip");
+            tooltip.textContent = ingrediente.nombre;
+            item.appendChild(tooltip);
         });
+
             item.addEventListener("mouseleave", () => {
-            item.querySelector(".nombre-ingrediente").remove();
-        });
+            const tooltip = item.querySelector(".tooltip");
+            if (tooltip) {
+            item.removeChild(tooltip);
+        }
     });
 }
 
