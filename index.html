@@ -408,25 +408,26 @@ const ingredientesAvanzado = [
 
             // Iterar sobre cada ingrediente y generar un elemento li para mostrarlo
                 ingredientes.forEach(ingrediente => {
-                    if (ingrediente.cantidad > 0) { // Mostrar solo ingredientes con cantidad mayor a 0
-                        const item = document.createElement("li");
-                        item.classList.add("ingredient-item");
-                        item.classList.add(ingrediente.categoria); // Agregar clase de categoría para filtrado
-                        item.innerHTML = `
-                <img src="${ingrediente.icono}">
-                <span>${ingrediente.cantidad}</span>
-            `;
-            listaIngredientes.appendChild(item);
-                }
-            });
-            // Agregar evento para mostrar el nombre del ingrediente al pasar el mouse sobre el icono
-           item.addEventListener("mouseenter", () => {
+    if (ingrediente.cantidad > 0) { // Mostrar solo ingredientes con cantidad mayor a 0
+        const item = document.createElement("li");
+        item.classList.add("ingredient-item");
+        item.classList.add(ingrediente.categoria); // Agregar clase de categoría para filtrado
+        item.innerHTML = `
+            <img src="${ingrediente.icono}" alt="${ingrediente.nombre}" title="${ingrediente.nombre}">
+            <span>${ingrediente.cantidad}</span>
+        `;
+
+        // Agregar evento para mostrar el nombre del ingrediente al pasar el mouse sobre el icono
+        item.addEventListener("mouseenter", () => {
             const tooltip = document.createElement("span");
             tooltip.classList.add("tooltip");
             tooltip.textContent = ingrediente.nombre;
             item.appendChild(tooltip);
         });
 
+        // Agregar el elemento item a donde corresponda en tu documento
+    }
+});
             item.addEventListener("mouseleave", () => {
             const tooltip = item.querySelector(".tooltip");
             if (tooltip) {
