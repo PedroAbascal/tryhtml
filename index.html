@@ -402,24 +402,46 @@ const ingredientesAvanzado = [
 
         let itemsCreados = [];
 
-        function mostrarInventario(ingredientes) {
-            const listaIngredientes = document.getElementById("lista-ingredientes");
+        function mostrarInventario(inventario) {
+    const listaIngredientes = document.getElementById("lista-ingredientes");
     listaIngredientes.innerHTML = ""; // Limpiar la lista antes de agregar los elementos
 
     // Iterar sobre cada elemento en el inventario
     Object.entries(inventario).forEach(([nombre, cantidad]) => {
         if (cantidad > 0) { // Mostrar solo ingredientes con cantidad mayor a 0
+            // Crear el elemento li
             const item = document.createElement("li");
             item.classList.add("ingredient-item");
-            item.innerHTML = `
-                <span>${nombre}</span>
-                <span>${cantidad}</span>
-            `;
 
-            // Agregar el elemento item a donde corresponda en tu documento
+            // Crear el elemento de imagen (icono)
+            const icono = document.createElement("img");
+            icono.src = inventario[nombre].icono;
+            icono.alt = nombre;
+
+            // Agregar evento para mostrar el nombre del ingrediente al pasar el mouse sobre el icono
+            icono.addEventListener("mouseenter", () => {
+                const tooltip = document.createElement("span");
+                tooltip.classList.add("tooltip");
+                tooltip.textContent = nombre;
+                icono.appendChild(tooltip);
+            });
+
+            // Crear el elemento de cantidad
+            const cantidadSpan = document.createElement("span");
+            cantidadSpan.textContent = cantidad;
+
+            // Agregar los elementos al item
+            item.appendChild(icono);
+            item.appendChild(cantidadSpan);
+
+            // Agregar el item a la lista
             listaIngredientes.appendChild(item);
-    }
-});}
+        }
+    });
+}
+
+// Llamada a la función para mostrar el inventario completo
+mostrarInventario(inventario);
 
 // Ocultar el elemento que mostraba la lista completa de inventario
 // document.getElementById("inventario-section").style.display = "none";
