@@ -430,7 +430,6 @@ const ingredientesAvanzado = [
             item.querySelector(".nombre-ingrediente").remove();
         });
     });
-            mostrarIngredientes(ingredientesBasicos);
 }
 
 // Ocultar el elemento que mostraba la lista completa de inventario
@@ -483,7 +482,7 @@ const ingredientesAvanzado = [
                 recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
             }
             inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
-            mostrarInventario();
+            mostrarInventario(ingredientesBasico);
             mostrarRecetaPersonalizada();
         } else {
             agregarEvento("No tienes suficientes " + ingredienteSeleccionado + " en el inventario.");
@@ -498,7 +497,7 @@ const ingredientesAvanzado = [
                 inventario[ingrediente] += cantidad;
             }
             recetaPersonalizada.materiales = {};
-            mostrarInventario();
+            mostrarInventario(ingredientesBasico);
             mostrarRecetaPersonalizada();
         }
 
@@ -520,7 +519,7 @@ const ingredientesAvanzado = [
         }
 
         // Actualizar la lista de selección de ingredientes
-        mostrarInventario();
+        mostrarInventario(ingredientesBasico);
 
         const itemGenerado = recetaCoincidente.nombre;
         itemsCreados.push(itemGenerado);
@@ -533,7 +532,7 @@ const ingredientesAvanzado = [
 
         alert("¡Item generado exitosamente: " + itemGenerado + "!");
         // Actualizar el inventario mostrado
-        mostrarInventario();
+        mostrarInventario(ingredientesBasico);
     } else {
         alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
     }
@@ -579,7 +578,7 @@ function procesarIngrediente() {
                     inventario[nuevoIngrediente] = cantidadNuevoIngrediente;
                 }
 
-                mostrarInventario();
+                mostrarInventario(ingredientesBasico);
                 recetaPersonalizada.materiales = {};
                 mostrarRecetaPersonalizada();
                 alert(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
@@ -620,7 +619,7 @@ function procesarIngrediente() {
         }
     });
     console.log("Inventario actualizado:", inventario);
-     mostrarInventario();
+     mostrarInventario(ingredientesBasico);
 }
 
 // Eventos para los botones de agregar ingredientes
@@ -659,7 +658,7 @@ function procesarIngrediente() {
         
         // Cargar datos del usuario desde localStorage
         cargarEstadoUsuario(username);
-        mostrarInventario();
+        mostrarInventario(ingredientesBasico);
         mostrarRecetaPersonalizada();
         mostrarRecetas();
         mostrarItemsCreados();
@@ -733,7 +732,7 @@ document.getElementById("registro-btn").addEventListener("click", function() {
                 recetaPersonalizada.materiales[ingrediente] = (recetaPersonalizada.materiales[ingrediente] || 0) + cantidad;
                 inventario[ingrediente] -= cantidad;
             }
-            mostrarInventario();
+            mostrarInventario(ingredientesBasico);
             mostrarRecetaPersonalizada();
             agregarEvento("Ingredientes de receta agregados con éxito.");
         }
