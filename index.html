@@ -402,45 +402,53 @@ const ingredientesAvanzado = [
 
         let itemsCreados = [];
 
-        function mostrarInventario(inventario) {
-    const listaIngredientes = document.getElementById("lista-ingredientes");
-    listaIngredientes.innerHTML = ""; // Limpiar la lista antes de agregar los elementos
+        function manejarInventario(inventario) {
+    // Lógica para crear el inventario y mostrar los elementos en la interfaz de usuario
 
-    // Iterar sobre cada elemento en el inventario
-    Object.entries(inventario).forEach(([nombre, cantidad]) => {
-        if (cantidad > 0) { // Mostrar solo ingredientes con cantidad mayor a 0
-            // Crear el elemento li
-            const item = document.createElement("li");
-            item.classList.add("ingredient-item");
-            item.draggable = true; // Hacer el elemento arrastrable
+    // Obtener la lista de recetas y el inventario
+    const listaReceta = document.getElementById("lista-receta");
+    const inventarioItems = document.querySelectorAll(".inventory-item");
 
-            // Crear el elemento de imagen (icono)
-            const icono = document.createElement("img");
-            icono.src = inventario[nombre].icono;
-            icono.alt = nombre;
-
-            // Crear el elemento de cantidad
-            const cantidadSpan = document.createElement("span");
-            cantidadSpan.textContent = cantidad;
-
-            // Agregar los elementos al item
-            item.appendChild(icono);
-            item.appendChild(cantidadSpan);
-
-            // Agregar el item a la lista
-            listaIngredientes.appendChild(item);
-
-            // Agregar manejadores de eventos para el arrastre
-            item.addEventListener("dragstart", (event) => {
-                // Establecer los datos a transferir durante el arrastre
-                event.dataTransfer.setData("text/plain", nombre);
-            });
-        }
+    // Manejador de evento para el evento dragstart en los elementos del inventario
+    inventarioItems.forEach(item => {
+        item.addEventListener("dragstart", (event) => {
+            // Establecer los datos de transferencia con el nombre del ingrediente
+            event.dataTransfer.setData("text/plain", item.textContent.trim());
+        });
     });
+
+    // Manejador de evento para el evento dragover en la lista de receta
+    listaReceta.addEventListener("dragover", (event) => {
+        // Prevenir el comportamiento predeterminado para permitir soltar
+        event.preventDefault();
+    });
+
+    // Manejador de evento para el evento drop en la lista de receta
+    listaReceta.addEventListener("drop", (event) => {
+        // Prevenir el comportamiento predeterminado para evitar la apertura de la URL del elemento arrastrado
+        event.preventDefault();
+
+        // Obtener el nombre del ingrediente arrastrado
+        const nombreIngrediente = event.dataTransfer.getData("text/plain");
+
+        // Crear un nuevo elemento de lista con el nombre del ingrediente
+        const nuevoIngrediente = document.createElement("li");
+        nuevoIngrediente.textContent = nombreIngrediente;
+
+        // Agregar el nuevo ingrediente a la lista de receta
+        listaReceta.appendChild(nuevoIngrediente);
+
+        // Alertar al usuario que el ingrediente fue agregado a la receta (puedes modificar esto según tu preferencia)
+        alert(`¡${nombreIngrediente} ha sido agregado a la receta!`);
+    });
+
+    // Otras lógicas relacionadas con el inventario
 }
 
+// Llamar a la función para manejar el inventario
+
 // Llamada a la función para mostrar el inventario completo
-mostrarInventario(inventario);
+manejarInventario(inventario);
 
 // Ocultar el elemento que mostraba la lista completa de inventario
 // document.getElementById("inventario-section").style.display = "none";
@@ -492,7 +500,7 @@ mostrarInventario(inventario);
                 recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
             }
             inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
-            mostrarInventario(inventario);
+            manejarInventario(inventario);
             mostrarRecetaPersonalizada();
         } else {
             agregarEvento("No tienes suficientes " + ingredienteSeleccionado + " en el inventario.");
@@ -507,7 +515,7 @@ mostrarInventario(inventario);
                 inventario[ingrediente] += cantidad;
             }
             recetaPersonalizada.materiales = {};
-            mostrarInventario(inventario);
+            manejarInventario(inventario);
             mostrarRecetaPersonalizada();
         }
 
@@ -529,7 +537,7 @@ mostrarInventario(inventario);
         }
 
         // Actualizar la lista de selección de ingredientes
-        mostrarInventario(inventario);
+        manejarInventario(inventario);
 
         const itemGenerado = recetaCoincidente.nombre;
         itemsCreados.push(itemGenerado);
@@ -542,7 +550,7 @@ mostrarInventario(inventario);
 
         alert("¡Item generado exitosamente: " + itemGenerado + "!");
         // Actualizar el inventario mostrado
-        mostrarInventario(inventario);
+        manejarInventario(inventario);
     } else {
         alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
     }
@@ -588,7 +596,7 @@ function procesarIngrediente() {
                     inventario[nuevoIngrediente] = cantidadNuevoIngrediente;
                 }
 
-                mostrarInventario(inventario);
+                manejarInventario(inventario);
                 recetaPersonalizada.materiales = {};
                 mostrarRecetaPersonalizada();
                 alert(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
@@ -629,7 +637,7 @@ function procesarIngrediente() {
         }
     });
     console.log("Inventario actualizado:", inventario);
-     mostrarInventario(inventario);
+     manejarInventario(inventario);
 }
 
 // Eventos para los botones de agregar ingredientes
@@ -663,12 +671,12 @@ function procesarIngrediente() {
         document.getElementById("procesar-ingrediente").style.display = "inline-block"; // Mostrar el botón "Procesar Ingrediente"
         // document.getElementById("resultado").style.display = "inline-block";
         // Establecer usuario actual en localStorage
-        console.log("Usuario actual establecido en localStorage:", username);
+        alert("Usuario actual establecido en localStorage:", username);
         localStorage.setItem("usuarioActual", username);
         
         // Cargar datos del usuario desde localStorage
         cargarEstadoUsuario(username);
-        mostrarInventario(inventario);
+        manejarInventario(inventario);
         mostrarRecetaPersonalizada();
         mostrarRecetas();
         mostrarItemsCreados();
@@ -742,12 +750,12 @@ document.getElementById("registro-btn").addEventListener("click", function() {
                 recetaPersonalizada.materiales[ingrediente] = (recetaPersonalizada.materiales[ingrediente] || 0) + cantidad;
                 inventario[ingrediente] -= cantidad;
             }
-            mostrarInventario(inventario);
+            manejarInventario(inventario);
             mostrarRecetaPersonalizada();
-            agregarEvento("Ingredientes de receta agregados con éxito.");
+            alert("Ingredientes de receta agregados con éxito.");
         }
     } else {
-        agregarEvento("Error: Receta seleccionada no encontrada.");
+        alert("Error: Receta seleccionada no encontrada.");
     }
 });
 
