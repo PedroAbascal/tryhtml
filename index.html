@@ -418,23 +418,17 @@ const ingredientesAvanzado = [
         `;
 
         // Agregar evento para mostrar el nombre del ingrediente al pasar el mouse sobre el icono
-        item.addEventListener("mouseenter", () => {
+        item.addEventListener("mouseenter", function() {
             const tooltip = document.createElement("span");
             tooltip.classList.add("tooltip");
             tooltip.textContent = ingrediente.nombre;
-            item.appendChild(tooltip);
+            this.appendChild(tooltip); // "this" hace referencia al elemento "item"
         });
 
         // Agregar el elemento item a donde corresponda en tu documento
+        listaIngredientes.appendChild(item);
     }
 });
-            item.addEventListener("mouseleave", () => {
-            const tooltip = item.querySelector(".tooltip");
-            if (tooltip) {
-            item.removeChild(tooltip);
-        }
-    });
-}
 
 // Ocultar el elemento que mostraba la lista completa de inventario
 // document.getElementById("inventario-section").style.display = "none";
