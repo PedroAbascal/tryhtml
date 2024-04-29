@@ -169,58 +169,58 @@
 
         let recetasConocidas = [];
         let recetas = [
-            { nombre: "Poción de curación", materiales: { Agua: 1, Hierbas: 1, "Raíz de mandrágora": 1 }, efecto: "Cura 2d4 + 2 puntos de golpe." },
-            { nombre: "Espada larga", materiales: { Metal: 2, Madera: 1 }, efecto: "Arma cuerpo a cuerpo que causa 1d8 de daño cortante." },
+            { nombre: "Poción de curación", ingredientes: { Agua: 1, Hierbas: 1, "Raíz de mandrágora": 1 }, efecto: "Cura 2d4 + 2 puntos de golpe." },
+            { nombre: "Espada larga", ingredientes: { Metal: 2, Madera: 1 }, efecto: "Arma cuerpo a cuerpo que causa 1d8 de daño cortante." },
             // Puedes añadir más recetas aquí
             {
         nombre: "Poción de curación",
-        materiales: { "Néctar de flores": 1, "Escamas de pez": 1, "Polen de abeja": 1 },
+        ingredientes: { "Néctar de flores": 1, "Escamas de pez": 1, "Polen de abeja": 1 },
         efecto: "Cura 2d4 + 2 puntos de golpe."
     },
     {
         nombre: "Espada de élfica",
-        materiales: { "Orejas de elfo": 2, "Pluma de cuervo": 1, "Escamas de dragón bebé": 1 },
+        ingredientes: { "Orejas de elfo": 2, "Pluma de cuervo": 1, "Escamas de dragón bebé": 1 },
         efecto: "Arma cuerpo a cuerpo que causa 1d8 de daño cortante."
     },
     {
         nombre: "Poción de velocidad",
-        materiales: { "Polvo de hada": 1, "Savia de árbol antiguo": 1, "Piedra de luna": 1 },
+        ingredientes: { "Polvo de hada": 1, "Savia de árbol antiguo": 1, "Piedra de luna": 1 },
         efecto: "Aumenta la velocidad de movimiento en 30 pies durante 1 hora."
     },
     {
         nombre: "Piedra de fuego",
-        materiales: { "Lágrimas de fénix": 1, "Esencia de estrella": 1, "Sangre de titán": 1 },
+        ingredientes: { "Lágrimas de fénix": 1, "Esencia de estrella": 1, "Sangre de titán": 1 },
         efecto: "Al lanzarla al suelo, crea una explosión de fuego en un radio de 20 pies."
     },
     {
         nombre: "Armadura de titán",
-        materiales: { "Residuo de meteorito": 5, "Piedra de alma": 1, "Escencia de dragón antiguo": 1 },
+        ingredientes: { "Residuo de meteorito": 5, "Piedra de alma": 1, "Escencia de dragón antiguo": 1 },
         efecto: "Armadura que otorga resistencia a todos los daños y aumenta la fuerza en 2 puntos."
     },
     // Agrega más recetas aquí si es necesario
     {
         nombre: "Elixir de invisibilidad",
-        materiales: { "Polvo de invisibilidad": 1, "Lágrimas de sombra": 1, "Pluma de murciélago": 1 },
+        ingredientes: { "Polvo de invisibilidad": 1, "Lágrimas de sombra": 1, "Pluma de murciélago": 1 },
         efecto: "Te vuelve invisible durante 1 hora."
     },
     {
         nombre: "Arco del cazador",
-        materiales: { "Cuerno de ciervo": 2, "Pelo de lobo": 1, "Pluma de águila": 1 },
+        ingredientes: { "Cuerno de ciervo": 2, "Pelo de lobo": 1, "Pluma de águila": 1 },
         efecto: "Arco que causa daño extra a criaturas bestiales."
     },
     {
         nombre: "Poción de resistencia",
-        materiales: { "Fluido de resistencia": 1, "Planta de vigor": 1, "Escarabajo endurecido": 1 },
+        ingredientes: { "Fluido de resistencia": 1, "Planta de vigor": 1, "Escarabajo endurecido": 1 },
         efecto: "Aumenta la resistencia a daño durante 1 hora."
     },
     {
         nombre: "Gema de teletransporte",
-        materiales: { "Cristal de cuarzo": 1, "Pluma de ave migratoria": 1, "Energía astral": 1 },
+        ingredientes: { "Cristal de cuarzo": 1, "Pluma de ave migratoria": 1, "Energía astral": 1 },
         efecto: "Te teletransporta a un lugar conocido."
     },
     {
         nombre: "Capa de camuflaje",
-        materiales: { "Pieles de camaleón": 2, "Hilo de araña": 1, "Planta mimética": 1 },
+        ingredientes: { "Pieles de camaleón": 2, "Hilo de araña": 1, "Planta mimética": 1 },
         efecto: "Te permite camuflarte en tu entorno."
     },
     // Agrega más recetas aquí si es necesario
@@ -229,7 +229,7 @@
 
         let recetaPersonalizada = {
             nombre: "Receta personalizada",
-            materiales: {}
+            ingredientes: {}
         };
 
         let inventario = {
@@ -517,7 +517,7 @@ const listaIngredientes = document.getElementById("lista-ingredientes");
             const recetaList = document.getElementById("lista-receta");
             recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
 
-            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
+            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.ingredientes)) {
                 const listItem = document.createElement("li");
                 listItem.textContent = `${ingrediente}: ${cantidad}`;
                 recetaList.appendChild(listItem);
@@ -530,10 +530,10 @@ const listaIngredientes = document.getElementById("lista-ingredientes");
 
     if (ingredienteSeleccionado && cantidadSeleccionada > 0) {
         if (inventario[ingredienteSeleccionado] >= cantidadSeleccionada) {
-            if (recetaPersonalizada.materiales.hasOwnProperty(ingredienteSeleccionado)) {
-                recetaPersonalizada.materiales[ingredienteSeleccionado] += cantidadSeleccionada;
+            if (recetaPersonalizada.ingredientes.hasOwnProperty(ingredienteSeleccionado)) {
+                recetaPersonalizada.ingredientes[ingredienteSeleccionado] += cantidadSeleccionada;
             } else {
-                recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
+                recetaPersonalizada.ingredientes[ingredienteSeleccionado] = cantidadSeleccionada;
             }
             inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
             // manejarInventario(inventario);
@@ -547,10 +547,10 @@ const listaIngredientes = document.getElementById("lista-ingredientes");
 }
 
         function limpiarReceta() {
-            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
+            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.ingredientes)) {
                 inventario[ingrediente] += cantidad;
             }
-            recetaPersonalizada.materiales = {};
+            recetaPersonalizada.ingredientes = {};
             // manejarInventario(inventario);
             mostrarRecetaPersonalizada();
         }
@@ -561,7 +561,7 @@ const listaIngredientes = document.getElementById("lista-ingredientes");
 
     if (recetaCoincidente) {
         // Restar los ingredientes del inventario
-        for (const [ingrediente, cantidad] of Object.entries(recetaCoincidente.materiales)) {
+        for (const [ingrediente, cantidad] of Object.entries(recetaCoincidente.ingredientes)) {
             inventario[ingrediente] -= cantidad;
         }
 
@@ -593,8 +593,8 @@ const listaIngredientes = document.getElementById("lista-ingredientes");
 }
 
         function sonMismosIngredientes(receta1, receta2) {
-            const ingredientes1 = receta1.materiales;
-            const ingredientes2 = receta2.materiales;
+            const ingredientes1 = receta1.ingredientes;
+            const ingredientes2 = receta2.ingredientes;
             const keys1 = Object.keys(ingredientes1);
             const keys2 = Object.keys(ingredientes2);
             if (keys1.length !== keys2.length) return false;
@@ -607,7 +607,7 @@ const listaIngredientes = document.getElementById("lista-ingredientes");
         let recetasProcesarIngredientes = [
     {
         nombre: "Pasta de Hierbas Curativas",
-        materiales: { Agua: 1, Hierbas: 1, "Raíz de mandrágora": 1 },
+        ingredientes: { Agua: 1, Hierbas: 1, "Raíz de mandrágora": 1 },
         nuevoIngrediente: "Pasta de Hierbas Curativas",
         cantidadNuevoIngrediente: 1
     },
@@ -633,7 +633,7 @@ function procesarIngrediente() {
                 }
 
                 manejarInventario(inventario);
-                recetaPersonalizada.materiales = {};
+                recetaPersonalizada.ingredientes = {};
                 mostrarRecetaPersonalizada();
                 alert(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
             } else {
@@ -773,7 +773,7 @@ document.getElementById("registro-btn").addEventListener("click", function() {
 
     if (recetaEncontrada) {
         let ingredientesSuficientes = true;
-        for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.materiales)) {
+        for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.ingredientes)) {
             if (inventario[ingrediente] < cantidad) {
                 ingredientesSuficientes = false;
                 alert(`No tienes suficientes "${ingrediente}" en el inventario.`);
@@ -782,8 +782,8 @@ document.getElementById("registro-btn").addEventListener("click", function() {
         }
         
         if (ingredientesSuficientes) {
-            for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.materiales)) {
-                recetaPersonalizada.materiales[ingrediente] = (recetaPersonalizada.materiales[ingrediente] || 0) + cantidad;
+            for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.ingredientes)) {
+                recetaPersonalizada.ingredientes[ingrediente] = (recetaPersonalizada.ingredientes[ingrediente] || 0) + cantidad;
                 inventario[ingrediente] -= cantidad;
             }
             manejarInventario(inventario);
