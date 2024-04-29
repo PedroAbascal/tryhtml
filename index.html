@@ -68,6 +68,9 @@
         }
 
         #lista-receta {
+            background-color: rgba(252, 190, 43, 0.5);
+            padding: 10px; /* Añade un espacio alrededor del texto para que el fondo sea visible */
+            border-radius: 5px; /* Para suavizar los bordes del fondo */
             min-height: 100px; /* Establecer una altura mínima */
             max-height: 200px; /* Establecer una altura máxima */
             overflow-y: auto; /* Permitir desplazamiento vertical si el contenido excede la altura máxima */
@@ -483,15 +486,9 @@ const listaIngredientes = document.getElementById("lista-ingredientes");
 
     // Otras lógicas relacionadas con el inventario
 }
-
-// Llamar a la función para manejar el inventario
-
-// Llamada a la función para mostrar el inventario completo
-manejarInventario(inventario);
-
+        
 // Ocultar el elemento que mostraba la lista completa de inventario
 // document.getElementById("inventario-section").style.display = "none";
-
 
         function mostrarItemsCreados() {
             const itemsList = document.getElementById("lista-items-creados");
@@ -539,7 +536,7 @@ manejarInventario(inventario);
                 recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
             }
             inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
-            manejarInventario(inventario);
+            // manejarInventario(inventario);
             mostrarRecetaPersonalizada();
         } else {
             agregarEvento("No tienes suficientes " + ingredienteSeleccionado + " en el inventario.");
@@ -554,7 +551,7 @@ manejarInventario(inventario);
                 inventario[ingrediente] += cantidad;
             }
             recetaPersonalizada.materiales = {};
-            manejarInventario(inventario);
+            // manejarInventario(inventario);
             mostrarRecetaPersonalizada();
         }
 
@@ -589,7 +586,7 @@ manejarInventario(inventario);
 
         alert("¡Item generado exitosamente: " + itemGenerado + "!");
         // Actualizar el inventario mostrado
-        manejarInventario(inventario);
+        // manejarInventario(inventario);
     } else {
         alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
     }
@@ -676,7 +673,7 @@ function procesarIngrediente() {
         }
     });
     console.log("Inventario actualizado:", inventario);
-     manejarInventario(inventario);
+    // manejarInventario(inventario);
 }
 
 // Eventos para los botones de agregar ingredientes
