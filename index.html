@@ -423,24 +423,27 @@ const ingredientesAvanzado = [
     listaIngredientes.innerHTML = ""; // Limpiar la lista antes de agregar los elementos
     
     // Iterar sobre cada elemento en el inventario
-    Object.entries(inventario).forEach(([nombre, cantidad]) => {
-        if (cantidad > 0) { // Mostrar solo ingredientes con cantidad mayor a 0
+    Object.entries(inventario).forEach(([nombre, detalles]) => {
+    // Verificar si detalles es un objeto
+    if (typeof detalles === 'object' && detalles !== null) {
+        const { cantidad, icono } = detalles;
+        if (cantidad > 0) {
             // Crear el elemento li
             const item = document.createElement("li");
             item.classList.add("inventory-item");
             item.draggable = true; // Hacer el elemento arrastrable
 
             // Crear el elemento de imagen (icono)
-            const icono = document.createElement("img");
-            icono.src = inventario[nombre].icono;
-            icono.alt = nombre;
+            const iconoImg = document.createElement("img");
+            iconoImg.src = icono;
+            iconoImg.alt = nombre;
 
             // Crear el elemento de cantidad
             const cantidadSpan = document.createElement("span");
             cantidadSpan.textContent = cantidad;
 
             // Agregar los elementos al item
-            item.appendChild(icono);
+            item.appendChild(iconoImg);
             item.appendChild(cantidadSpan);
 
             // Agregar el item a la lista
@@ -452,7 +455,8 @@ const ingredientesAvanzado = [
                 event.dataTransfer.setData("text/plain", nombre);
             });
         }
-    });
+    }
+});
 
     // Obtener la lista de recetas y el inventario
     const listaReceta = document.getElementById("lista-receta");
