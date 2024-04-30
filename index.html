@@ -579,7 +579,7 @@ const ingredientesAvanzado = [
         }
 
         // Actualizar la lista de selección de ingredientes
-        manejarInventario(inventario);
+        //manejarInventario(inventario);
 
         const itemGenerado = recetaCoincidente.nombre;
         itemsCreados.push(itemGenerado);
@@ -592,7 +592,7 @@ const ingredientesAvanzado = [
 
         alert("¡Item generado exitosamente: " + itemGenerado + "!");
         // Actualizar el inventario mostrado
-        manejarInventario(inventario);
+        //manejarInventario(inventario);
     } else {
         alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
     }
@@ -638,7 +638,7 @@ function procesarIngrediente() {
                     inventario[nuevoIngrediente] = cantidadNuevoIngrediente;
                 }
 
-                manejarInventario(inventario);
+                //manejarInventario(inventario);
                 recetaPersonalizada.ingredientes = {};
                 mostrarRecetaPersonalizada();
                 alert(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
@@ -679,7 +679,7 @@ function procesarIngrediente() {
         }
     });
     console.log("Inventario actualizado:", inventario);
-    manejarInventario(inventario);
+    //manejarInventario(inventario);
 }
 
 // Eventos para los botones de agregar ingredientes
@@ -718,7 +718,7 @@ function procesarIngrediente() {
         
         // Cargar datos del usuario desde localStorage
         cargarEstadoUsuario(username);
-        manejarInventario(inventario);
+        //manejarInventario(inventario);
         mostrarRecetaPersonalizada();
         mostrarRecetas();
         mostrarItemsCreados();
@@ -798,7 +798,7 @@ document.getElementById("registro-btn").addEventListener("click", function() {
                 recetaPersonalizada.ingredientes[ingrediente] = (recetaPersonalizada.ingredientes[ingrediente] || 0) + cantidad;
                 inventario[ingrediente] -= cantidad;
             }
-            manejarInventario(inventario);
+            //manejarInventario(inventario);
             mostrarRecetaPersonalizada();
             alert("Ingredientes de receta agregados con éxito.");
         }
