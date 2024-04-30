@@ -741,7 +741,13 @@ window.addEventListener("load", function() {
         cargarEstadoUsuario(usuarioActual);
     }
 });
-       // Evento para el botón de registro
+       document.addEventListener("DOMContentLoaded", function() {
+    // Llamar a la función manejarInventario después de que el DOM esté completamente cargado
+    manejarInventario(inventario);
+});
+        
+        
+        // Evento para el botón de registro
 document.getElementById("registro-btn").addEventListener("click", function() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
