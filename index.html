@@ -421,11 +421,7 @@ const ingredientesAvanzado = [
     // Lógica para crear el inventario y mostrar los elementos en la interfaz de usuario
     const listaIngredientes = document.getElementById("lista-ingredientes");
     listaIngredientes.innerHTML = ""; // Limpiar la lista antes de agregar los elementos
-    // Obtener el elemento ul que representa la lista de recetas
-        const listaReceta = document.getElementById("lista-receta");
-    // Establecer el atributo draggable en true
-    listaReceta.setAttribute("draggable", "true");
-
+    
     // Iterar sobre cada elemento en el inventario
     Object.entries(inventario).forEach(([nombre, cantidad]) => {
         if (cantidad > 0) { // Mostrar solo ingredientes con cantidad mayor a 0
@@ -460,6 +456,10 @@ const ingredientesAvanzado = [
 
     // Obtener la lista de recetas y el inventario
     const listaReceta = document.getElementById("lista-receta");
+        // Establecer el atributo draggable en true
+        listaReceta.setAttribute("draggable", "true");
+
+        
             alert("listaReceta Get element");
 
     // Manejador de evento para el evento drop en la lista de receta
