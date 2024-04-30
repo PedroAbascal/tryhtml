@@ -456,9 +456,11 @@ const ingredientesAvanzado = [
 
     // Obtener la lista de recetas y el inventario
     const listaReceta = document.getElementById("lista-receta");
+            alert("listaReceta Get element");
 
     // Manejador de evento para el evento drop en la lista de receta
     listaReceta.addEventListener("drop", (event) => {
+        alert("listaReceta drop event");
         // Prevenir el comportamiento predeterminado para evitar la apertura de la URL del elemento arrastrado
         event.preventDefault();
 
