@@ -417,7 +417,7 @@ const ingredientesAvanzado = [
 
         let itemsCreados = [];
         
-    function manejarInventario(inventario) {
+   function manejarInventario(inventario) {
     // Lógica para crear el inventario y mostrar los elementos en la interfaz de usuario
     const listaIngredientes = document.getElementById("lista-ingredientes");
     listaIngredientes.innerHTML = ""; // Limpiar la lista antes de agregar los elementos
@@ -462,6 +462,36 @@ const ingredientesAvanzado = [
             }
         }
     });
+
+    // Obtener la lista de recetas y el inventario
+    const listaReceta = document.getElementById("lista-receta");
+    // Establecer el atributo draggable en true
+    listaReceta.setAttribute("draggable", "true");
+    
+    console.log("Lista de ingredientes:", listaIngredientes); // Agregar console.log para depurar
+    console.log("Lista de receta:", listaReceta); // Agregar console.log para depurar
+
+    // Manejador de evento para el evento drop en la lista de receta
+    listaReceta.addEventListener("drop", (event) => {
+        // Prevenir el comportamiento predeterminado para evitar la apertura de la URL del elemento arrastrado
+        event.preventDefault();
+
+        // Obtener el nombre del ingrediente arrastrado
+        const nombreIngrediente = event.dataTransfer.getData("text/plain");
+
+        // Crear un nuevo elemento de lista con el nombre del ingrediente
+        const nuevoIngrediente = document.createElement("li");
+        nuevoIngrediente.textContent = nombreIngrediente;
+
+        // Agregar el nuevo ingrediente a la lista de receta
+        listaReceta.appendChild(nuevoIngrediente);
+
+        // Alertar al usuario que el ingrediente fue agregado a la receta (puedes modificar esto según tu preferencia)
+        alert(`¡${nombreIngrediente} ha sido agregado a la receta!`);
+    });
+
+    // Otras lógicas relacionadas con el inventario
+}
 
     // Obtener la lista de recetas y el inventario
     const listaReceta = document.getElementById("lista-receta");
