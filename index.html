@@ -420,15 +420,18 @@ const ingredientesAvanzado = [
     function manejarInventario(inventario) {
     // Lógica para crear el inventario y mostrar los elementos en la interfaz de usuario
     const listaIngredientes = document.getElementById("lista-ingredientes");
-    console.log("Lista de ingredientes:", listaIngredientes); // Verificar si se obtiene correctamente
-
     listaIngredientes.innerHTML = ""; // Limpiar la lista antes de agregar los elementos
-
+    
     // Iterar sobre cada elemento en el inventario
     Object.entries(inventario).forEach(([nombre, detalles]) => {
+        console.log(`Procesando ingrediente: ${nombre}`); // Agregar console.log para depurar
+
         // Verificar si detalles es un objeto
         if (typeof detalles === 'object' && detalles !== null) {
             const { cantidad, icono } = detalles;
+            console.log(`Cantidad de ${nombre}: ${cantidad}`); // Agregar console.log para depurar
+            console.log(`Icono de ${nombre}: ${icono}`); // Agregar console.log para depurar
+
             if (cantidad > 0) {
                 // Crear el elemento li
                 const item = document.createElement("li");
@@ -462,15 +465,14 @@ const ingredientesAvanzado = [
 
     // Obtener la lista de recetas y el inventario
     const listaReceta = document.getElementById("lista-receta");
-    console.log("Lista de receta:", listaReceta); // Verificar si se obtiene correctamente
-
     // Establecer el atributo draggable en true
     listaReceta.setAttribute("draggable", "true");
-    console.log("Lista de receta draggable:", listaReceta.draggable); // Verificar si se establece correctamente
+    
+    console.log("Lista de ingredientes:", listaIngredientes); // Agregar console.log para depurar
+    console.log("Lista de receta:", listaReceta); // Agregar console.log para depurar
 
     // Manejador de evento para el evento drop en la lista de receta
     listaReceta.addEventListener("drop", (event) => {
-        console.log("Evento de soltar en lista de receta:", event); // Verificar si se dispara correctamente
         // Prevenir el comportamiento predeterminado para evitar la apertura de la URL del elemento arrastrado
         event.preventDefault();
 
