@@ -77,9 +77,9 @@
         }
 
         #lista-ingredientes {
-            // min-height: 100px; /* Establecer una altura mínima */
-            // max-height: 200px; /* Establecer una altura máxima */
-            // overflow-y: auto; /* Permitir desplazamiento vertical si el contenido excede la altura máxima */
+            min-height: 100px; /* Establecer una altura mínima */
+            max-height: 200px; /* Establecer una altura máxima */
+            overflow-y: auto; /* Permitir desplazamiento vertical si el contenido excede la altura máxima */
         }
 
         #inventario-section,
@@ -423,7 +423,7 @@ const ingredientesAvanzado = [
     
     // Iterar sobre cada elemento en el inventario
     Object.entries(inventario).forEach(([nombre, detalles]) => {
-        console.log(`Procesando ingrediente: ${nombre}`); // Agregar console.log para depurar
+        // console.log(`Procesando ingrediente: ${nombre}`); // Agregar console.log para depurar
 
         // Verificar si detalles es un objeto
         if (typeof detalles === 'object' && detalles !== null) {
@@ -436,6 +436,7 @@ const ingredientesAvanzado = [
                 const item = document.createElement("li");
                 item.classList.add("inventory-item");
                 item.draggable = true; // Hacer el elemento arrastrable
+                console.log(" done ")
 
                 // Crear el elemento de imagen (icono)
                 const iconoImg = document.createElement("img");
