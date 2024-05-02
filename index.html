@@ -420,33 +420,39 @@ const ingredientesAvanzado = [
     const listaIngredientes = document.getElementById("lista-ingredientes");
     listaIngredientes.innerHTML = ""; // Limpiar la lista antes de agregar los elementos
     
-    Object.entries(inventario).forEach(([nombre, detalles]) => {
-        if (typeof detalles === 'object' && detalles !== null) {
-            const { cantidad, icono } = detalles;
+    // Verificar si el inventario es un objeto y está definido
+    if (typeof inventario === 'object' && inventario !== null) {
+        // Iterar sobre el inventario solo si es un objeto válido
+        Object.entries(inventario).forEach(([nombre, detalles]) => {
+            if (typeof detalles === 'object' && detalles !== null) {
+                const { cantidad, icono } = detalles;
 
-            if (cantidad > 0) {
-                const item = document.createElement("li");
-                item.classList.add("inventory-item");
-                item.draggable = true;
+                if (cantidad > 0) {
+                    const item = document.createElement("li");
+                    item.classList.add("inventory-item");
+                    item.draggable = true;
 
-                const iconoImg = document.createElement("img");
-                iconoImg.src = icono;
-                iconoImg.alt = nombre;
+                    const iconoImg = document.createElement("img");
+                    iconoImg.src = icono;
+                    iconoImg.alt = nombre;
 
-                const cantidadSpan = document.createElement("span");
-                cantidadSpan.textContent = cantidad;
+                    const cantidadSpan = document.createElement("span");
+                    cantidadSpan.textContent = cantidad;
 
-                item.appendChild(iconoImg);
-                item.appendChild(cantidadSpan);
+                    item.appendChild(iconoImg);
+                    item.appendChild(cantidadSpan);
 
-                listaIngredientes.appendChild(item);
+                    listaIngredientes.appendChild(item);
 
-                item.addEventListener("dragstart", (event) => {
-                    event.dataTransfer.setData("text/plain", nombre);
-                });
+                    item.addEventListener("dragstart", (event) => {
+                        event.dataTransfer.setData("text/plain", nombre);
+                    });
+                }
             }
-        }
-    });
+        });
+    } else {
+        console.error("El inventario no es un objeto válido.");
+    }
 }
 
 // Función para actualizar el inventario en localStorage
