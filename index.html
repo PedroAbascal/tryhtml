@@ -416,81 +416,48 @@ const ingredientesAvanzado = [
 
         let itemsCreados = [];
         
-   function manejarInventario(inventario) {
-    // Lógica para crear el inventario y mostrar los elementos en la interfaz de usuario
+   function mostrarInventario(inventario) {
     const listaIngredientes = document.getElementById("lista-ingredientes");
     listaIngredientes.innerHTML = ""; // Limpiar la lista antes de agregar los elementos
     
-    // Iterar sobre cada elemento en el inventario
     Object.entries(inventario).forEach(([nombre, detalles]) => {
-        // console.log(`Procesando ingrediente: ${nombre}`); // Agregar console.log para depurar
-
-        // Verificar si detalles es un objeto
         if (typeof detalles === 'object' && detalles !== null) {
             const { cantidad, icono } = detalles;
-            console.log(`Cantidad de ${nombre}: ${cantidad}`); // Agregar console.log para depurar
-            console.log(`Icono de ${nombre}: ${icono}`); // Agregar console.log para depurar
 
             if (cantidad > 0) {
-                // Crear el elemento li
                 const item = document.createElement("li");
                 item.classList.add("inventory-item");
-                item.draggable = true; // Hacer el elemento arrastrable
-                console.log(" done ")
+                item.draggable = true;
 
-                // Crear el elemento de imagen (icono)
                 const iconoImg = document.createElement("img");
                 iconoImg.src = icono;
                 iconoImg.alt = nombre;
 
-                // Crear el elemento de cantidad
                 const cantidadSpan = document.createElement("span");
                 cantidadSpan.textContent = cantidad;
 
-                // Agregar los elementos al item
                 item.appendChild(iconoImg);
                 item.appendChild(cantidadSpan);
 
-                // Agregar el item a la lista
                 listaIngredientes.appendChild(item);
 
-                // Agregar manejadores de eventos para el arrastre
                 item.addEventListener("dragstart", (event) => {
-                    // Establecer los datos a transferir durante el arrastre
                     event.dataTransfer.setData("text/plain", nombre);
                 });
             }
         }
     });
+}
 
-    // Obtener la lista de recetas y el inventario
-    const listaReceta = document.getElementById("lista-receta");
-    // Establecer el atributo draggable en true
-    listaReceta.setAttribute("draggable", "true");
-    
-    console.log("Lista de ingredientes:", listaIngredientes); // Agregar console.log para depurar
-    console.log("Lista de receta:", listaReceta); // Agregar console.log para depurar
+// Función para actualizar el inventario en localStorage
+function actualizarInventario(username, inventario) {
+    localStorage.setItem(username + "-inventario", JSON.stringify(inventario));
+}
 
-    // Manejador de evento para el evento drop en la lista de receta
-    listaReceta.addEventListener("drop", (event) => {
-        // Prevenir el comportamiento predeterminado para evitar la apertura de la URL del elemento arrastrado
-        event.preventDefault();
-
-        // Obtener el nombre del ingrediente arrastrado
-        const nombreIngrediente = event.dataTransfer.getData("text/plain");
-
-        // Crear un nuevo elemento de lista con el nombre del ingrediente
-        const nuevoIngrediente = document.createElement("li");
-        nuevoIngrediente.textContent = nombreIngrediente;
-
-        // Agregar el nuevo ingrediente a la lista de receta
-        listaReceta.appendChild(nuevoIngrediente);
-
-        // Alertar al usuario que el ingrediente fue agregado a la receta (puedes modificar esto según tu preferencia)
-        alert(`¡${nombreIngrediente} ha sido agregado a la receta!`);
-    });
-
-    // Otras lógicas relacionadas con el inventario
+// Función para manejar el inventario (visualización y actualización)
+function manejarInventario(username, inventario) {
+    mostrarInventario(inventario);
+    actualizarInventario(username, inventario);
 }
         
 // Ocultar el elemento que mostraba la lista completa de inventario
@@ -530,7 +497,7 @@ const ingredientesAvanzado = [
             }
         }
 
-        function agregarIngrediente() {
+    function agregarIngrediente() {
     const ingredienteSeleccionado = document.getElementById("ingredientes-select").value;
     const cantidadSeleccionada = parseInt(document.getElementById("cantidad-ingredientes").value);
 
