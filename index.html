@@ -128,9 +128,9 @@
                 border-radius: 5px; /* Para suavizar los bordes del fondo */
             </ul>
             
-            <select id="ingredientes-select">
-                <!-- Puedes añadir más opciones aquí -->
-            </select>
+            <ul id="lista-ingredientes" class="ingredientes-lista">
+        <!-- Los ingredientes del inventario se añadirán aquí dinámicamente -->
+    </ul>
             <input type="number" id="cantidad-ingredientes" value="1" min="1">
             <button id="agregar-ingrediente">Agregar Ingrediente</button>
             <button id="limpiar-receta">Limpiar Receta</button>
@@ -361,65 +361,99 @@
 };
 
         const ingredientesBasico = [
-            { nombre: "Agua", cantidad: 5 },
-            { nombre: "Hierbas", cantidad: 5 },
-            { nombre: "Raíz de mandrágora", cantidad: 5 },
-            { nombre: "Néctar de flores", cantidad: 50 },
-            { nombre: "Escamas de pez", cantidad: 50 },
-            { nombre: "Polen de abeja", cantidad: 50 },
-            { nombre: "Pulpa de frutas", cantidad: 50 },
-            { nombre: "Tierra fértil", cantidad: 50 },
-            { nombre: "Musgo fresco", cantidad: 50 },
-            { nombre: "Agua de manantial", cantidad: 50 },
-            { nombre: "Pluma de cuervo", cantidad: 50 },
-            { nombre: "Hojas de menta", cantidad: 50 },
-            { nombre: "Rocío de la mañana", cantidad: 50 }
-        ];
+    { nombre: "Agua", cantidad: 5, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Hierbas", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Raíz de mandrágora", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Néctar de flores", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Escamas de pez", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Polen de abeja", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Pulpa de frutas", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Tierra fértil", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Musgo fresco", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Agua de manantial", cantidad: 50, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Pluma de cuervo", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Hojas de menta", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Rocío de la mañana", cantidad: 50, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" }
+];
 
-        const ingredientesIntermedio = [
-            { nombre: "Metal", cantidad: 3 },
-            { nombre: "Madera", cantidad: 3 },
-            { nombre: "Orejas de elfo", cantidad: 50 },
-    { nombre: "Escamas de dragón bebé", cantidad: 50 },
-    { nombre: "Polvo de hada", cantidad: 50 },
-    { nombre: "Savia de árbol antiguo", cantidad: 50 },
-    { nombre: "Piedra de luna", cantidad: 50 },
-    { nombre: "Lengua de basilisco", cantidad: 50 },
-    { nombre: "Escamas de salamandra", cantidad: 50 },
-    { nombre: "Ojo de gato", cantidad: 50 },
-    { nombre: "Colmillo de lobo", cantidad: 50 },
-    { nombre: "Garra de oso", cantidad: 50 }
-        ];
+const ingredientesIntermedio = [
+    { nombre: "Metal", cantidad: 3, categoria: "Metalico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Madera", cantidad: 3, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Orejas de elfo", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Escamas de dragón bebé", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Polvo de hada", cantidad: 50, categoria: "Magico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Savia de árbol antiguo", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Piedra de luna", cantidad: 50, categoria: "Cristalino", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Lengua de basilisco", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Escamas de salamandra", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Ojo de gato", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Colmillo de lobo", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Garra de oso", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" }
+];
 
-        const ingredientesAvanzado = [
-            { nombre: "Oro", cantidad: 1 },
-            { nombre: "Diamante", cantidad: 1 },
-            { nombre: "Lágrimas de fénix", cantidad: 50 },
-    { nombre: "Esencia de estrella", cantidad: 50 },
-    { nombre: "Sangre de titán", cantidad: 50 },
-    { nombre: "Luz de luna llena", cantidad: 50 },
-    { nombre: "Residuo de meteorito", cantidad: 50 },
-    { nombre: "Piedra de alma", cantidad: 50 },
-    { nombre: "Escencia de dragón antiguo", cantidad: 50 },
-    { nombre: "Corazón de elemental", cantidad: 50 },
-    { nombre: "Polvo de unicornio", cantidad: 50 },
-    { nombre: "Aura de hada", cantidad: 50 },
-        ];
-
+const ingredientesAvanzado = [
+    { nombre: "Oro", cantidad: 1, categoria: "Metalico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Diamante", cantidad: 1, categoria: "Cristalino", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Lágrimas de fénix", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Esencia de estrella", cantidad: 50, categoria: "Magico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Sangre de titán", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Luz de luna llena", cantidad: 50, categoria: "Magico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Residuo de meteorito", cantidad: 50, categoria: "Cristalino", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Piedra de alma", cantidad: 50, categoria: "Cristalino", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Escencia de dragón antiguo", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Corazón de elemental", cantidad: 50, categoria: "Magico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Polvo de unicornio", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Aura de hada", cantidad: 50, categoria: "Magico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" }
+];
         let itemsCreados = [];
 
-        function mostrarInventario() {
-    const ingredientesSelect = document.getElementById("ingredientes-select");
-    ingredientesSelect.innerHTML = "";
+        const listaIngredientes = document.getElementById("lista-ingredientes");
 
-    for (const ingrediente in inventario) {
-        if (inventario[ingrediente] > 0) { // Solo mostramos los ingredientes con cantidad mayor a 0
-            const opcion = document.createElement("option");
-            opcion.value = ingrediente;
-            opcion.textContent = ingrediente + " (" + inventario[ingrediente] + ")";
-            ingredientesSelect.appendChild(opcion);
-        }
-    }
+// Función para obtener los ingredientes del inventario desde el localStorage
+function obtenerIngredientesInventario() {
+    // Verificar si hay datos en el localStorage
+    const datosInventario = localStorage.getItem("inventario");
+    // Si hay datos en el localStorage, parsearlos a un objeto JavaScript
+    // De lo contrario, devolver un array vacío
+    return datosInventario ? JSON.parse(datosInventario) : [];
+}
+
+// Función para renderizar la lista de ingredientes en la interfaz de usuario
+function renderizarIngredientes(ingredientes) {
+    // Limpiar la lista de ingredientes antes de volver a renderizar
+    listaIngredientes.innerHTML = "";
+    
+    // Iterar sobre cada ingrediente en el inventario
+    ingredientes.forEach(ingrediente => {
+        // Crear un nuevo elemento li para el ingrediente
+        const ingredienteItem = document.createElement("li");
+        
+        // Crear un elemento de imagen para el icono del ingrediente
+        const icono = document.createElement("img");
+        icono.src = ingrediente.icono;
+        icono.alt = ingrediente.nombre; // Establecer el nombre del ingrediente como texto alternativo
+        
+        // Crear un elemento span para la cantidad del ingrediente
+        const cantidad = document.createElement("span");
+        cantidad.textContent = ingrediente.cantidad; // Establecer la cantidad del ingrediente
+        
+        // Añadir el icono y la cantidad como hijos del elemento li
+        ingredienteItem.appendChild(icono);
+        ingredienteItem.appendChild(cantidad);
+        
+        // Añadir el elemento li a la lista de ingredientes
+        listaIngredientes.appendChild(ingredienteItem);
+        
+        // Agregar evento para mostrar el nombre del ingrediente como tooltip al pasar el mouse sobre el icono
+        icono.addEventListener("mouseover", () => {
+            tooltip.textContent = ingrediente.nombre;
+        });
+        
+        // Agregar evento para ocultar el tooltip cuando se retira el mouse del icono
+        icono.addEventListener("mouseout", () => {
+            tooltip.textContent = "";
+        });
+    });
 }
 
 // Ocultar el elemento que mostraba la lista completa de inventario
@@ -472,7 +506,7 @@
                 recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
             }
             inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
-            mostrarInventario();
+           renderizarIngredientes(inventario);;
             mostrarRecetaPersonalizada();
         } else {
             agregarEvento("No tienes suficientes " + ingredienteSeleccionado + " en el inventario.");
@@ -487,7 +521,7 @@
                 inventario[ingrediente] += cantidad;
             }
             recetaPersonalizada.materiales = {};
-            mostrarInventario();
+           renderizarIngredientes(inventario);;
             mostrarRecetaPersonalizada();
         }
 
@@ -509,7 +543,7 @@
         }
 
         // Actualizar la lista de selección de ingredientes
-        mostrarInventario();
+       renderizarIngredientes(inventario);;
 
         const itemGenerado = recetaCoincidente.nombre;
         itemsCreados.push(itemGenerado);
@@ -522,7 +556,7 @@
 
         alert("¡Item generado exitosamente: " + itemGenerado + "!");
         // Actualizar el inventario mostrado
-        mostrarInventario();
+       renderizarIngredientes(inventario);;
     } else {
         alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
     }
@@ -568,7 +602,7 @@ function procesarIngrediente() {
                     inventario[nuevoIngrediente] = cantidadNuevoIngrediente;
                 }
 
-                mostrarInventario();
+               renderizarIngredientes(inventario);;
                 recetaPersonalizada.materiales = {};
                 mostrarRecetaPersonalizada();
                 alert(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
@@ -609,7 +643,7 @@ function procesarIngrediente() {
         }
     });
     console.log("Inventario actualizado:", inventario);
-     mostrarInventario();
+    renderizarIngredientes(inventario);;
 }
 
 // Eventos para los botones de agregar ingredientes
@@ -648,7 +682,7 @@ function procesarIngrediente() {
         
         // Cargar datos del usuario desde localStorage
         cargarEstadoUsuario(username);
-        mostrarInventario();
+       renderizarIngredientes(inventario);;
         mostrarRecetaPersonalizada();
         mostrarRecetas();
         mostrarItemsCreados();
@@ -722,7 +756,7 @@ document.getElementById("registro-btn").addEventListener("click", function() {
                 recetaPersonalizada.materiales[ingrediente] = (recetaPersonalizada.materiales[ingrediente] || 0) + cantidad;
                 inventario[ingrediente] -= cantidad;
             }
-            mostrarInventario();
+           renderizarIngredientes(inventario);;
             mostrarRecetaPersonalizada();
             agregarEvento("Ingredientes de receta agregados con éxito.");
         }
