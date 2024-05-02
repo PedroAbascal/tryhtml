@@ -67,21 +67,6 @@
             display: block;
         }
 
-        #lista-receta {
-            background-color: rgba(252, 190, 43, 0.5);
-            padding: 10px; /* Añade un espacio alrededor del texto para que el fondo sea visible */
-            border-radius: 5px; /* Para suavizar los bordes del fondo */
-            min-height: 100px; /* Establecer una altura mínima */
-            max-height: 200px; /* Establecer una altura máxima */
-            overflow-y: auto; /* Permitir desplazamiento vertical si el contenido excede la altura máxima */
-        }
-
-        #lista-ingredientes {
-            min-height: 100px; /* Establecer una altura mínima */
-            max-height: 200px; /* Establecer una altura máxima */
-            overflow-y: auto; /* Permitir desplazamiento vertical si el contenido excede la altura máxima */
-        }
-
         #inventario-section,
         #items-creados-section,
         #generador-section,
@@ -137,8 +122,15 @@
         <!-- Seleccionar un Ingrediente, Selector de Cantidad, Agregar Ingrediente y Limpiar Receta -->
         <div id="ingredientes-section" class="section">
             <h2>Selecciona un ingrediente</h2>
-            <ul id="lista-receta"></ul>
-            <ul id="lista-ingredientes"> //class="ingredient-list"
+            <ul id="lista-receta">
+                background-color: rgba(255, 165, 0, 0.5); /* Amarillo anaranjado con una transparencia del 50% */
+                padding: 10px; /* Añade un espacio alrededor del texto para que el fondo sea visible */
+                border-radius: 5px; /* Para suavizar los bordes del fondo */
+            </ul>
+            
+            <select id="ingredientes-select">
+                <!-- Puedes añadir más opciones aquí -->
+            </select>
             <input type="number" id="cantidad-ingredientes" value="1" min="1">
             <button id="agregar-ingrediente">Agregar Ingrediente</button>
             <button id="limpiar-receta">Limpiar Receta</button>
@@ -174,58 +166,58 @@
 
         let recetasConocidas = [];
         let recetas = [
-            { nombre: "Poción de curación", ingredientes: { Agua: 1, Hierbas: 1, "Raíz de mandrágora": 1 }, efecto: "Cura 2d4 + 2 puntos de golpe." },
-            { nombre: "Espada larga", ingredientes: { Metal: 2, Madera: 1 }, efecto: "Arma cuerpo a cuerpo que causa 1d8 de daño cortante." },
+            { nombre: "Poción de curación", materiales: { Agua: 1, Hierbas: 1, "Raíz de mandrágora": 1 }, efecto: "Cura 2d4 + 2 puntos de golpe." },
+            { nombre: "Espada larga", materiales: { Metal: 2, Madera: 1 }, efecto: "Arma cuerpo a cuerpo que causa 1d8 de daño cortante." },
             // Puedes añadir más recetas aquí
             {
         nombre: "Poción de curación",
-        ingredientes: { "Néctar de flores": 1, "Escamas de pez": 1, "Polen de abeja": 1 },
+        materiales: { "Néctar de flores": 1, "Escamas de pez": 1, "Polen de abeja": 1 },
         efecto: "Cura 2d4 + 2 puntos de golpe."
     },
     {
         nombre: "Espada de élfica",
-        ingredientes: { "Orejas de elfo": 2, "Pluma de cuervo": 1, "Escamas de dragón bebé": 1 },
+        materiales: { "Orejas de elfo": 2, "Pluma de cuervo": 1, "Escamas de dragón bebé": 1 },
         efecto: "Arma cuerpo a cuerpo que causa 1d8 de daño cortante."
     },
     {
         nombre: "Poción de velocidad",
-        ingredientes: { "Polvo de hada": 1, "Savia de árbol antiguo": 1, "Piedra de luna": 1 },
+        materiales: { "Polvo de hada": 1, "Savia de árbol antiguo": 1, "Piedra de luna": 1 },
         efecto: "Aumenta la velocidad de movimiento en 30 pies durante 1 hora."
     },
     {
         nombre: "Piedra de fuego",
-        ingredientes: { "Lágrimas de fénix": 1, "Esencia de estrella": 1, "Sangre de titán": 1 },
+        materiales: { "Lágrimas de fénix": 1, "Esencia de estrella": 1, "Sangre de titán": 1 },
         efecto: "Al lanzarla al suelo, crea una explosión de fuego en un radio de 20 pies."
     },
     {
         nombre: "Armadura de titán",
-        ingredientes: { "Residuo de meteorito": 5, "Piedra de alma": 1, "Escencia de dragón antiguo": 1 },
+        materiales: { "Residuo de meteorito": 5, "Piedra de alma": 1, "Escencia de dragón antiguo": 1 },
         efecto: "Armadura que otorga resistencia a todos los daños y aumenta la fuerza en 2 puntos."
     },
     // Agrega más recetas aquí si es necesario
     {
         nombre: "Elixir de invisibilidad",
-        ingredientes: { "Polvo de invisibilidad": 1, "Lágrimas de sombra": 1, "Pluma de murciélago": 1 },
+        materiales: { "Polvo de invisibilidad": 1, "Lágrimas de sombra": 1, "Pluma de murciélago": 1 },
         efecto: "Te vuelve invisible durante 1 hora."
     },
     {
         nombre: "Arco del cazador",
-        ingredientes: { "Cuerno de ciervo": 2, "Pelo de lobo": 1, "Pluma de águila": 1 },
+        materiales: { "Cuerno de ciervo": 2, "Pelo de lobo": 1, "Pluma de águila": 1 },
         efecto: "Arco que causa daño extra a criaturas bestiales."
     },
     {
         nombre: "Poción de resistencia",
-        ingredientes: { "Fluido de resistencia": 1, "Planta de vigor": 1, "Escarabajo endurecido": 1 },
+        materiales: { "Fluido de resistencia": 1, "Planta de vigor": 1, "Escarabajo endurecido": 1 },
         efecto: "Aumenta la resistencia a daño durante 1 hora."
     },
     {
         nombre: "Gema de teletransporte",
-        ingredientes: { "Cristal de cuarzo": 1, "Pluma de ave migratoria": 1, "Energía astral": 1 },
+        materiales: { "Cristal de cuarzo": 1, "Pluma de ave migratoria": 1, "Energía astral": 1 },
         efecto: "Te teletransporta a un lugar conocido."
     },
     {
         nombre: "Capa de camuflaje",
-        ingredientes: { "Pieles de camaleón": 2, "Hilo de araña": 1, "Planta mimética": 1 },
+        materiales: { "Pieles de camaleón": 2, "Hilo de araña": 1, "Planta mimética": 1 },
         efecto: "Te permite camuflarte en tu entorno."
     },
     // Agrega más recetas aquí si es necesario
@@ -234,7 +226,7 @@
 
         let recetaPersonalizada = {
             nombre: "Receta personalizada",
-            ingredientes: {}
+            materiales: {}
         };
 
         let inventario = {
@@ -369,105 +361,70 @@
 };
 
         const ingredientesBasico = [
-    { nombre: "Agua", cantidad: 5, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Hierbas", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Raíz de mandrágora", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Néctar de flores", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Escamas de pez", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Polen de abeja", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Pulpa de frutas", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Tierra fértil", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Musgo fresco", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Agua de manantial", cantidad: 50, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Pluma de cuervo", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Hojas de menta", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Rocío de la mañana", cantidad: 50, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" }
-];
+            { nombre: "Agua", cantidad: 5 },
+            { nombre: "Hierbas", cantidad: 5 },
+            { nombre: "Raíz de mandrágora", cantidad: 5 },
+            { nombre: "Néctar de flores", cantidad: 50 },
+            { nombre: "Escamas de pez", cantidad: 50 },
+            { nombre: "Polen de abeja", cantidad: 50 },
+            { nombre: "Pulpa de frutas", cantidad: 50 },
+            { nombre: "Tierra fértil", cantidad: 50 },
+            { nombre: "Musgo fresco", cantidad: 50 },
+            { nombre: "Agua de manantial", cantidad: 50 },
+            { nombre: "Pluma de cuervo", cantidad: 50 },
+            { nombre: "Hojas de menta", cantidad: 50 },
+            { nombre: "Rocío de la mañana", cantidad: 50 }
+        ];
 
-const ingredientesIntermedio = [
-    { nombre: "Metal", cantidad: 3, categoria: "Metalico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Madera", cantidad: 3, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Orejas de elfo", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Escamas de dragón bebé", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Polvo de hada", cantidad: 50, categoria: "Magico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Savia de árbol antiguo", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Piedra de luna", cantidad: 50, categoria: "Cristalino", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Lengua de basilisco", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Escamas de salamandra", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Ojo de gato", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Colmillo de lobo", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Garra de oso", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" }
-];
+        const ingredientesIntermedio = [
+            { nombre: "Metal", cantidad: 3 },
+            { nombre: "Madera", cantidad: 3 },
+            { nombre: "Orejas de elfo", cantidad: 50 },
+    { nombre: "Escamas de dragón bebé", cantidad: 50 },
+    { nombre: "Polvo de hada", cantidad: 50 },
+    { nombre: "Savia de árbol antiguo", cantidad: 50 },
+    { nombre: "Piedra de luna", cantidad: 50 },
+    { nombre: "Lengua de basilisco", cantidad: 50 },
+    { nombre: "Escamas de salamandra", cantidad: 50 },
+    { nombre: "Ojo de gato", cantidad: 50 },
+    { nombre: "Colmillo de lobo", cantidad: 50 },
+    { nombre: "Garra de oso", cantidad: 50 }
+        ];
 
-const ingredientesAvanzado = [
-    { nombre: "Oro", cantidad: 1, categoria: "Metalico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Diamante", cantidad: 1, categoria: "Cristalino", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Lágrimas de fénix", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Esencia de estrella", cantidad: 50, categoria: "Magico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Sangre de titán", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Luz de luna llena", cantidad: 50, categoria: "Magico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Residuo de meteorito", cantidad: 50, categoria: "Cristalino", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Piedra de alma", cantidad: 50, categoria: "Cristalino", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Escencia de dragón antiguo", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Corazón de elemental", cantidad: 50, categoria: "Magico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Polvo de unicornio", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Aura de hada", cantidad: 50, categoria: "Magico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" }
-    ];
+        const ingredientesAvanzado = [
+            { nombre: "Oro", cantidad: 1 },
+            { nombre: "Diamante", cantidad: 1 },
+            { nombre: "Lágrimas de fénix", cantidad: 50 },
+    { nombre: "Esencia de estrella", cantidad: 50 },
+    { nombre: "Sangre de titán", cantidad: 50 },
+    { nombre: "Luz de luna llena", cantidad: 50 },
+    { nombre: "Residuo de meteorito", cantidad: 50 },
+    { nombre: "Piedra de alma", cantidad: 50 },
+    { nombre: "Escencia de dragón antiguo", cantidad: 50 },
+    { nombre: "Corazón de elemental", cantidad: 50 },
+    { nombre: "Polvo de unicornio", cantidad: 50 },
+    { nombre: "Aura de hada", cantidad: 50 },
+        ];
 
         let itemsCreados = [];
-        
-   function mostrarInventario(inventario) {
-    const listaIngredientes = document.getElementById("lista-ingredientes");
-    listaIngredientes.innerHTML = ""; // Limpiar la lista antes de agregar los elementos
-    
-    // Verificar si el inventario es un objeto y está definido
-    if (typeof inventario === 'object' && inventario !== null) {
-        // Iterar sobre el inventario solo si es un objeto válido
-        Object.entries(inventario).forEach(([nombre, detalles]) => {
-            if (typeof detalles === 'object' && detalles !== null) {
-                const { cantidad, icono } = detalles;
 
-                if (cantidad > 0) {
-                    const item = document.createElement("li");
-                    item.classList.add("inventory-item");
-                    item.draggable = true;
+        function mostrarInventario() {
+    const ingredientesSelect = document.getElementById("ingredientes-select");
+    ingredientesSelect.innerHTML = "";
 
-                    const iconoImg = document.createElement("img");
-                    iconoImg.src = icono;
-                    iconoImg.alt = nombre;
-
-                    const cantidadSpan = document.createElement("span");
-                    cantidadSpan.textContent = cantidad;
-
-                    item.appendChild(iconoImg);
-                    item.appendChild(cantidadSpan);
-
-                    listaIngredientes.appendChild(item);
-
-                    item.addEventListener("dragstart", (event) => {
-                        event.dataTransfer.setData("text/plain", nombre);
-                    });
-                }
-            }
-        });
-    } else {
-        console.error("El inventario no es un objeto válido.");
+    for (const ingrediente in inventario) {
+        if (inventario[ingrediente] > 0) { // Solo mostramos los ingredientes con cantidad mayor a 0
+            const opcion = document.createElement("option");
+            opcion.value = ingrediente;
+            opcion.textContent = ingrediente + " (" + inventario[ingrediente] + ")";
+            ingredientesSelect.appendChild(opcion);
+        }
     }
 }
 
-// Función para actualizar el inventario en localStorage
-function actualizarInventario(username, inventario) {
-    localStorage.setItem(username + "-inventario", JSON.stringify(inventario));
-}
-
-// Función para manejar el inventario (visualización y actualización)
-function manejarInventario(username, inventario) {
-    mostrarInventario(inventario);
-    actualizarInventario(username, inventario);
-}
-        
 // Ocultar el elemento que mostraba la lista completa de inventario
 // document.getElementById("inventario-section").style.display = "none";
+
 
         function mostrarItemsCreados() {
             const itemsList = document.getElementById("lista-items-creados");
@@ -496,26 +453,26 @@ function manejarInventario(username, inventario) {
             const recetaList = document.getElementById("lista-receta");
             recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
 
-            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.ingredientes)) {
+            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
                 const listItem = document.createElement("li");
                 listItem.textContent = `${ingrediente}: ${cantidad}`;
                 recetaList.appendChild(listItem);
             }
         }
 
-    function agregarIngrediente() {
+        function agregarIngrediente() {
     const ingredienteSeleccionado = document.getElementById("ingredientes-select").value;
     const cantidadSeleccionada = parseInt(document.getElementById("cantidad-ingredientes").value);
 
     if (ingredienteSeleccionado && cantidadSeleccionada > 0) {
         if (inventario[ingredienteSeleccionado] >= cantidadSeleccionada) {
-            if (recetaPersonalizada.ingredientes.hasOwnProperty(ingredienteSeleccionado)) {
-                recetaPersonalizada.ingredientes[ingredienteSeleccionado] += cantidadSeleccionada;
+            if (recetaPersonalizada.materiales.hasOwnProperty(ingredienteSeleccionado)) {
+                recetaPersonalizada.materiales[ingredienteSeleccionado] += cantidadSeleccionada;
             } else {
-                recetaPersonalizada.ingredientes[ingredienteSeleccionado] = cantidadSeleccionada;
+                recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
             }
             inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
-            manejarInventario(inventario);
+            mostrarInventario();
             mostrarRecetaPersonalizada();
         } else {
             agregarEvento("No tienes suficientes " + ingredienteSeleccionado + " en el inventario.");
@@ -526,11 +483,11 @@ function manejarInventario(username, inventario) {
 }
 
         function limpiarReceta() {
-            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.ingredientes)) {
+            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
                 inventario[ingrediente] += cantidad;
             }
-            recetaPersonalizada.ingredientes = {};
-            manejarInventario(inventario);
+            recetaPersonalizada.materiales = {};
+            mostrarInventario();
             mostrarRecetaPersonalizada();
         }
 
@@ -540,7 +497,7 @@ function manejarInventario(username, inventario) {
 
     if (recetaCoincidente) {
         // Restar los ingredientes del inventario
-        for (const [ingrediente, cantidad] of Object.entries(recetaCoincidente.ingredientes)) {
+        for (const [ingrediente, cantidad] of Object.entries(recetaCoincidente.materiales)) {
             inventario[ingrediente] -= cantidad;
         }
 
@@ -552,7 +509,7 @@ function manejarInventario(username, inventario) {
         }
 
         // Actualizar la lista de selección de ingredientes
-        manejarInventario(inventario);
+        mostrarInventario();
 
         const itemGenerado = recetaCoincidente.nombre;
         itemsCreados.push(itemGenerado);
@@ -565,15 +522,15 @@ function manejarInventario(username, inventario) {
 
         alert("¡Item generado exitosamente: " + itemGenerado + "!");
         // Actualizar el inventario mostrado
-        manejarInventario(inventario);
+        mostrarInventario();
     } else {
         alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
     }
 }
 
         function sonMismosIngredientes(receta1, receta2) {
-            const ingredientes1 = receta1.ingredientes;
-            const ingredientes2 = receta2.ingredientes;
+            const ingredientes1 = receta1.materiales;
+            const ingredientes2 = receta2.materiales;
             const keys1 = Object.keys(ingredientes1);
             const keys2 = Object.keys(ingredientes2);
             if (keys1.length !== keys2.length) return false;
@@ -586,7 +543,7 @@ function manejarInventario(username, inventario) {
         let recetasProcesarIngredientes = [
     {
         nombre: "Pasta de Hierbas Curativas",
-        ingredientes: { Agua: 1, Hierbas: 1, "Raíz de mandrágora": 1 },
+        materiales: { Agua: 1, Hierbas: 1, "Raíz de mandrágora": 1 },
         nuevoIngrediente: "Pasta de Hierbas Curativas",
         cantidadNuevoIngrediente: 1
     },
@@ -611,8 +568,8 @@ function procesarIngrediente() {
                     inventario[nuevoIngrediente] = cantidadNuevoIngrediente;
                 }
 
-                manejarInventario(inventario);
-                recetaPersonalizada.ingredientes = {};
+                mostrarInventario();
+                recetaPersonalizada.materiales = {};
                 mostrarRecetaPersonalizada();
                 alert(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
             } else {
@@ -652,7 +609,7 @@ function procesarIngrediente() {
         }
     });
     console.log("Inventario actualizado:", inventario);
-    manejarInventario(inventario);
+     mostrarInventario();
 }
 
 // Eventos para los botones de agregar ingredientes
@@ -686,12 +643,12 @@ function procesarIngrediente() {
         document.getElementById("procesar-ingrediente").style.display = "inline-block"; // Mostrar el botón "Procesar Ingrediente"
         // document.getElementById("resultado").style.display = "inline-block";
         // Establecer usuario actual en localStorage
-        alert("Usuario actual establecido en localStorage:", username);
+        console.log("Usuario actual establecido en localStorage:", username);
         localStorage.setItem("usuarioActual", username);
         
         // Cargar datos del usuario desde localStorage
         cargarEstadoUsuario(username);
-        manejarInventario(inventario);
+        mostrarInventario();
         mostrarRecetaPersonalizada();
         mostrarRecetas();
         mostrarItemsCreados();
@@ -714,13 +671,7 @@ window.addEventListener("load", function() {
         cargarEstadoUsuario(usuarioActual);
     }
 });
-       document.addEventListener("DOMContentLoaded", function() {
-    // Llamar a la función manejarInventario después de que el DOM esté completamente cargado
-    manejarInventario(inventario);
-});
-        
-        
-        // Evento para el botón de registro
+       // Evento para el botón de registro
 document.getElementById("registro-btn").addEventListener("click", function() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
@@ -758,7 +709,7 @@ document.getElementById("registro-btn").addEventListener("click", function() {
 
     if (recetaEncontrada) {
         let ingredientesSuficientes = true;
-        for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.ingredientes)) {
+        for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.materiales)) {
             if (inventario[ingrediente] < cantidad) {
                 ingredientesSuficientes = false;
                 alert(`No tienes suficientes "${ingrediente}" en el inventario.`);
@@ -767,16 +718,16 @@ document.getElementById("registro-btn").addEventListener("click", function() {
         }
         
         if (ingredientesSuficientes) {
-            for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.ingredientes)) {
-                recetaPersonalizada.ingredientes[ingrediente] = (recetaPersonalizada.ingredientes[ingrediente] || 0) + cantidad;
+            for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.materiales)) {
+                recetaPersonalizada.materiales[ingrediente] = (recetaPersonalizada.materiales[ingrediente] || 0) + cantidad;
                 inventario[ingrediente] -= cantidad;
             }
-            manejarInventario(inventario);
+            mostrarInventario();
             mostrarRecetaPersonalizada();
-            alert("Ingredientes de receta agregados con éxito.");
+            agregarEvento("Ingredientes de receta agregados con éxito.");
         }
     } else {
-        alert("Error: Receta seleccionada no encontrada.");
+        agregarEvento("Error: Receta seleccionada no encontrada.");
     }
 });
 
@@ -785,10 +736,10 @@ document.getElementById("registro-btn").addEventListener("click", function() {
         document.getElementById("generar-item").addEventListener("click", generarItem);
 
         // Evento para el botón de agregar ingrediente a la receta personalizada
-        //document.getElementById("agregar-ingrediente").addEventListener("click", agregarIngrediente);
+        document.getElementById("agregar-ingrediente").addEventListener("click", agregarIngrediente);
 
         // Evento para el botón de limpiar receta personalizada
-        //document.getElementById("limpiar-receta").addEventListener("click", limpiarReceta);
+        document.getElementById("limpiar-receta").addEventListener("click", limpiarReceta);
 
       // Función para guardar el estado del usuario en localStorage
     function guardarEstadoUsuario(username) {
