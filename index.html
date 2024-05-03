@@ -488,8 +488,8 @@ function renderizarIngredientes() {
             tooltip.style.top = (event.pageY + 10) + "px"; // Posición Y del tooltip
         
         // Suponiendo que "nombre" es el nombre del ingrediente
-        tooltip.textContent = ingredienteItem.nombre;
-            console.log(ingredienteItem.nombre);
+        tooltip.textContent = icono.alt;
+            console.log(icono.alt);
         });
         // Agregar evento para ocultar el tooltip cuando se retira el mouse del icono
         icono.addEventListener("mouseout", () => {
