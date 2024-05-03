@@ -406,9 +406,12 @@ const ingredientesAvanzado = [
         
 // Función para obtener los ingredientes del inventario desde el localStorage
 function obtenerIngredientesInventario() {
-    const nombreUsuario = getUsuarioActual();
-    const clave = `${nombreUsuario}-inventario`;
-    const datosInventario = localStorage.getItem(clave);
+    // Obtener el usuario actual
+    const usuario = getUsuarioActual();
+    // Verificar si hay datos en el localStorage para el usuario actual
+    const datosInventario = localStorage.getItem(`${usuario}-inventario`);
+    // Si hay datos en el localStorage, parsearlos a un objeto JavaScript y devolverlos
+    // De lo contrario, devolver un array vacío
     return datosInventario ? JSON.parse(datosInventario) : [];
 }
 
