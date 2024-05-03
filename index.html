@@ -410,9 +410,13 @@ function obtenerIngredientesInventario() {
     const usuario = getUsuarioActual();
     // Verificar si hay datos en el localStorage para el usuario actual
     const datosInventario = localStorage.getItem(`${usuario}-inventario`);
+    console.log("Inventario obtenido:", inventario); // Agregar esta línea
     // Si hay datos en el localStorage, parsearlos a un objeto JavaScript y devolverlos
     // De lo contrario, devolver un array vacío
-    return datosInventario ? JSON.parse(datosInventario) : [];
+     if (!Array.isArray(inventario)) {
+        console.error("El inventario no es un array:", inventario); // Agregar esta línea
+        return; // Salir de la función si el inventario no es un array
+    
 }
 
 // Función para renderizar la lista de ingredientes en la interfaz de usuario
