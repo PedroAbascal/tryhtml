@@ -420,7 +420,7 @@ function obtenerIngredientesInventario() {
 // Función para obtener la URL del icono basado en el nombre del ingrediente
 function obtenerURLIcono(nombre) {
     // Buscar el nombre del ingrediente en la lista de ingredientes básicos
-    const ingredienteBasico = ingredientesBasicos.find(ingrediente => ingrediente.nombre === nombre);
+    const ingredienteBasico = ingredientesBasico.find(ingrediente => ingrediente.nombre === nombre);
     if (ingredienteBasico) {
         return ingredienteBasico.icono;
     }
