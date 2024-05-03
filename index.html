@@ -409,17 +409,12 @@ function obtenerIngredientesInventario() {
     // Obtener el nombre de usuario actual
     const usuarioActual = getUsuarioActual();
     
-    // Verificar si hay datos en el localStorage para el usuario actual
-    const datosUsuario = localStorage.getItem(usuarioActual);
+    // Verificar si hay datos en el localStorage para el inventario del usuario actual
+    const datosInventario = localStorage.getItem(`${usuarioActual}-inventario`);
     
-    // Si hay datos en el localStorage para el usuario actual, parsearlos a un objeto JavaScript
+    // Si hay datos en el localStorage para el inventario del usuario actual, parsearlos a un objeto JavaScript
     // De lo contrario, devolver un objeto vacío
-    if (datosUsuario) {
-        const usuario = JSON.parse(datosUsuario);
-        return usuario.inventario || {}; // Devolver el inventario del usuario si existe, o un objeto vacío si no existe
-    } else {
-        return {}; // Devolver un objeto vacío si no hay datos en el localStorage para el usuario actual
-    }
+    return datosInventario ? JSON.parse(datosInventario) : {};
 }
 
 
