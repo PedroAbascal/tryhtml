@@ -403,13 +403,12 @@ const ingredientesAvanzado = [
         let itemsCreados = [];
 
         const listaIngredientes = document.getElementById("lista-ingredientes");
-
+        
 // Función para obtener los ingredientes del inventario desde el localStorage
 function obtenerIngredientesInventario() {
-    // Verificar si hay datos en el localStorage
-    const datosInventario = localStorage.getItem("inventario");
-    // Si hay datos en el localStorage, parsearlos a un objeto JavaScript
-    // De lo contrario, devolver un array vacío
+    const nombreUsuario = getUsuarioActual();
+    const clave = `${nombreUsuario}-inventario`;
+    const datosInventario = localStorage.getItem(clave);
     return datosInventario ? JSON.parse(datosInventario) : [];
 }
 
@@ -417,8 +416,8 @@ function obtenerIngredientesInventario() {
 function renderizarIngredientes() {
     // Limpiar la lista de ingredientes antes de volver a renderizar
     listaIngredientes.innerHTML = "";
-    const datosInventario = localStorage.getItem("inventario");
-    const inventario = datosInventario ? JSON.parse(datosInventario) : [];
+    // Obtener el inventario del usuario actual
+    const inventario = obtenerIngredientesInventario();
     
     // Iterar sobre cada ingrediente en el inventario
     inventario.forEach(ingrediente => {
