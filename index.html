@@ -406,18 +406,16 @@ const ingredientesAvanzado = [
         
 // Función para obtener los ingredientes del inventario desde el localStorage
 function obtenerIngredientesInventario() {
-    // Obtener el usuario actual
-    const usuario = getUsuarioActual();
-    // Verificar si hay datos en el localStorage para el usuario actual
-    const datosInventario = localStorage.getItem(`${usuario}-inventario`);
-    console.log("Inventario obtenido:", inventario); // Agregar esta línea
-    // Si hay datos en el localStorage, parsearlos a un objeto JavaScript y devolverlos
-    // De lo contrario, devolver un array vacío
-     if (!Array.isArray(inventario)) {
-        console.error("El inventario no es un array:", inventario); // Agregar esta línea
-        return; // Salir de la función si el inventario no es un array
+    // Obtener el nombre de usuario actual
+    const usuarioActual = getUsuarioActual();
     
-}}
+    // Verificar si hay datos en el localStorage para el usuario actual
+    const datosUsuario = localStorage.getItem(usuarioActual);
+    
+    // Si hay datos en el localStorage para el usuario actual, parsearlos a un objeto JavaScript
+    // De lo contrario, devolver un objeto vacío
+    return datosUsuario ? JSON.parse(datosUsuario).inventario : {};
+}
 
 // Función para renderizar la lista de ingredientes en la interfaz de usuario
 function renderizarIngredientes() {
@@ -426,9 +424,13 @@ function renderizarIngredientes() {
     
     // Obtener el inventario del usuario actual
     const inventario = obtenerIngredientesInventario();
+    console.log("Inventario obtenido:", inventario);
+    
+    // Convertir el objeto de inventario en un array de pares clave-valor
+    const arrayInventario = Object.entries(inventario);
     
     // Iterar sobre cada ingrediente en el inventario
-    inventario.forEach(ingrediente => {
+    arrayInventario.forEach(([nombre, cantidad]) => {
         // Crear un nuevo elemento li para el ingrediente
         const ingredienteItem = document.createElement("li");
         
