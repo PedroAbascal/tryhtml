@@ -482,7 +482,7 @@ function renderizarIngredientes(ingredientes) {
 
         function mostrarRecetaPersonalizada() {
             const recetaList = document.getElementById("lista-receta");
-            recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
+             recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
 
             for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
                 const listItem = document.createElement("li");
@@ -680,7 +680,7 @@ function procesarIngrediente() {
         // Cargar datos del usuario desde localStorage
         cargarEstadoUsuario(username);
        renderizarIngredientes(inventario);;
-        mostrarRecetaPersonalizada();
+        // mostrarRecetaPersonalizada();
         mostrarRecetas();
         mostrarItemsCreados();
     } else {
