@@ -81,7 +81,10 @@
 <body>
     
     <div class="container">
-
+        
+        <!-- Agrega un elemento div con un ID específico para el tooltip -->
+        <div id="tooltip" style="position: absolute; display: none; background-color: rgba(0, 0, 0, 0.7); color: white; padding: 5px; border-radius: 5px;"></div>
+        
         <h1>Generador de Items y Pociones de D&D 5e</h1>
 
         <!-- Inicio de Sesión -->
@@ -474,16 +477,25 @@ function renderizarIngredientes() {
         // Añadir el elemento li a la lista de ingredientes
         listaIngredientes.appendChild(ingredienteItem);
         
+       // Obtener una referencia al elemento del tooltip
+        const tooltip = document.getElementById("tooltip");
+
         // Agregar evento para mostrar el nombre del ingrediente como tooltip al pasar el mouse sobre el icono
         icono.addEventListener("mouseover", () => {
-            tooltip.textContent = nombre;
-        });
+            // Mostrar el tooltip en la posición del mouse
+            tooltip.style.display = "block";
+            tooltip.style.left = (event.pageX + 10) + "px"; // Posición X del tooltip
+            tooltip.style.top = (event.pageY + 10) + "px"; // Posición Y del tooltip
         
+        // Suponiendo que "nombre" es el nombre del ingrediente
+        tooltip.textContent = ingrediente.nombre;
+        });
         // Agregar evento para ocultar el tooltip cuando se retira el mouse del icono
         icono.addEventListener("mouseout", () => {
-            tooltip.textContent = "";
+            // Ocultar el tooltip
+            tooltip.style.display = "none";
+            });
         });
-    });
 }
 
 // Ocultar el elemento que mostraba la lista completa de inventario
