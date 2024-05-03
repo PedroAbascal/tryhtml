@@ -405,19 +405,6 @@ const ingredientesAvanzado = [
         const listaIngredientes = document.getElementById("lista-ingredientes");
         
 // Función para obtener los ingredientes del inventario desde el localStorage
-function obtenerIngredientesInventario() {
-    // Obtener el nombre de usuario actual
-    const usuarioActual = getUsuarioActual();
-    
-    // Verificar si hay datos en el localStorage para el usuario actual
-    const datosUsuario = localStorage.getItem(usuarioActual);
-    
-    // Si hay datos en el localStorage para el usuario actual, parsearlos a un objeto JavaScript
-    // De lo contrario, devolver un objeto vacío
-    return datosUsuario ? JSON.parse(datosUsuario).inventario : {};
-}
-
-// Función para renderizar la lista de ingredientes en la interfaz de usuario
 function renderizarIngredientes() {
     // Limpiar la lista de ingredientes antes de volver a renderizar
     listaIngredientes.innerHTML = "";
@@ -434,25 +421,25 @@ function renderizarIngredientes() {
         // Crear un nuevo elemento li para el ingrediente
         const ingredienteItem = document.createElement("li");
         
-        // Crear un elemento de imagen para el icono del ingrediente
+        // Crear un elemento de imagen para el icono del ingrediente (suponiendo que haya una URL para el icono)
         const icono = document.createElement("img");
-        icono.src = ingrediente.icono;
-        icono.alt = ingrediente.nombre; // Establecer el nombre del ingrediente como texto alternativo
+        icono.src = null; // Función ficticia para obtener la URL del icono
+        icono.alt = nombre; // Establecer el nombre del ingrediente como texto alternativo
         
         // Crear un elemento span para la cantidad del ingrediente
-        const cantidad = document.createElement("span");
-        cantidad.textContent = ingrediente.cantidad; // Establecer la cantidad del ingrediente
+        const cantidadElement = document.createElement("span");
+        cantidadElement.textContent = cantidad; // Establecer la cantidad del ingrediente
         
         // Añadir el icono y la cantidad como hijos del elemento li
         ingredienteItem.appendChild(icono);
-        ingredienteItem.appendChild(cantidad);
+        ingredienteItem.appendChild(cantidadElement);
         
         // Añadir el elemento li a la lista de ingredientes
         listaIngredientes.appendChild(ingredienteItem);
         
         // Agregar evento para mostrar el nombre del ingrediente como tooltip al pasar el mouse sobre el icono
         icono.addEventListener("mouseover", () => {
-            tooltip.textContent = ingrediente.nombre;
+            tooltip.textContent = nombre;
         });
         
         // Agregar evento para ocultar el tooltip cuando se retira el mouse del icono
