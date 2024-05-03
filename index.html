@@ -489,6 +489,7 @@ function renderizarIngredientes() {
         
         // Suponiendo que "nombre" es el nombre del ingrediente
         tooltip.textContent = ingredienteItem.nombre;
+            console.log(ingredienteItem.nombre);
         });
         // Agregar evento para ocultar el tooltip cuando se retira el mouse del icono
         icono.addEventListener("mouseout", () => {
