@@ -414,14 +414,14 @@ function obtenerIngredientesInventario() {
 }
 
 // Función para renderizar la lista de ingredientes en la interfaz de usuario
-function renderizarIngredientes(ingredientes) {
+function renderizarIngredientes() {
     // Limpiar la lista de ingredientes antes de volver a renderizar
     listaIngredientes.innerHTML = "";
     const datosInventario = localStorage.getItem("inventario");
-    return datosInventario ? JSON.parse(datosInventario) : [];
+    const inventario = datosInventario ? JSON.parse(datosInventario) : [];
     
     // Iterar sobre cada ingrediente en el inventario
-    datosInventario.forEach(ingrediente => {
+    inventario.forEach(ingrediente => {
         // Crear un nuevo elemento li para el ingrediente
         const ingredienteItem = document.createElement("li");
         
