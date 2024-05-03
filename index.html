@@ -417,6 +417,8 @@ function obtenerIngredientesInventario() {
 function renderizarIngredientes(ingredientes) {
     // Limpiar la lista de ingredientes antes de volver a renderizar
     listaIngredientes.innerHTML = "";
+    const datosInventario = localStorage.getItem("inventario");
+    return datosInventario ? JSON.parse(datosInventario) : [];
     
     // Iterar sobre cada ingrediente en el inventario
     datosInventario.forEach(ingrediente => {
