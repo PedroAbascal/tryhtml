@@ -403,6 +403,21 @@ const ingredientesAvanzado = [
         let itemsCreados = [];
 
         const listaIngredientes = document.getElementById("lista-ingredientes");
+
+
+function obtenerIngredientesInventario() {
+    // Obtener el nombre de usuario actual
+    const usuarioActual = getUsuarioActual();
+    
+    // Verificar si hay datos en el localStorage para el usuario actual
+    const datosUsuario = localStorage.getItem(usuarioActual);
+    
+    // Si hay datos en el localStorage para el usuario actual, parsearlos a un objeto JavaScript
+    // De lo contrario, devolver un objeto vacío
+    return datosUsuario ? JSON.parse(datosUsuario).inventario : {};
+}
+
+
         
 // Función para obtener los ingredientes del inventario desde el localStorage
 function renderizarIngredientes() {
