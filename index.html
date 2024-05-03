@@ -417,7 +417,29 @@ function obtenerIngredientesInventario() {
     return datosInventario ? JSON.parse(datosInventario) : {};
 }
 
+// Función para obtener la URL del icono basado en el nombre del ingrediente
+function obtenerURLIcono(nombre) {
+    // Buscar el nombre del ingrediente en la lista de ingredientes básicos
+    const ingredienteBasico = ingredientesBasicos.find(ingrediente => ingrediente.nombre === nombre);
+    if (ingredienteBasico) {
+        return ingredienteBasico.icono;
+    }
 
+    // Buscar el nombre del ingrediente en la lista de ingredientes intermedios
+    const ingredienteIntermedio = ingredientesIntermedio.find(ingrediente => ingrediente.nombre === nombre);
+    if (ingredienteIntermedio) {
+        return ingredienteIntermedio.icono;
+    }
+
+    // Buscar el nombre del ingrediente en la lista de ingredientes avanzados
+    const ingredienteAvanzado = ingredientesAvanzado.find(ingrediente => ingrediente.nombre === nombre);
+    if (ingredienteAvanzado) {
+        return ingredienteAvanzado.icono;
+    }
+
+    // Devolver null si no se encontró el nombre del ingrediente en ninguna lista
+    return null;
+}
         
 // Función para obtener los ingredientes del inventario desde el localStorage
 function renderizarIngredientes() {
@@ -438,7 +460,7 @@ function renderizarIngredientes() {
         
         // Crear un elemento de imagen para el icono del ingrediente (suponiendo que haya una URL para el icono)
         const icono = document.createElement("img");
-        icono.src = null; // Función ficticia para obtener la URL del icono
+        icono.src = obtenerURLIcono(nombre); // Función ficticia para obtener la URL del icono
         icono.alt = nombre; // Establecer el nombre del ingrediente como texto alternativo
         
         // Crear un elemento span para la cantidad del ingrediente
