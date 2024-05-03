@@ -414,7 +414,12 @@ function obtenerIngredientesInventario() {
     
     // Si hay datos en el localStorage para el usuario actual, parsearlos a un objeto JavaScript
     // De lo contrario, devolver un objeto vacío
-    return datosUsuario ? JSON.parse(datosUsuario).inventario : {};
+    if (datosUsuario) {
+        const usuario = JSON.parse(datosUsuario);
+        return usuario.inventario || {}; // Devolver el inventario del usuario si existe, o un objeto vacío si no existe
+    } else {
+        return {}; // Devolver un objeto vacío si no hay datos en el localStorage para el usuario actual
+    }
 }
 
 
