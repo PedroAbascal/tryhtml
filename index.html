@@ -124,8 +124,8 @@
         <!-- Seleccionar un Ingrediente, Selector de Cantidad, Agregar Ingrediente y Limpiar Receta -->
         <div id="ingredientes-section" class="section">
             <h2>Selecciona un ingrediente</h2>
-            <ul id="lista-receta" style="min-height: 50px; min-width: 100px; background-color: rgba(252, 190, 43, 0.5); padding: 10px; border-radius: 5px; "></ul>
-            <ul id="lista-ingredientes" class="ingredientes-lista">
+            <ul id="lista-receta" style="min-height: 50px; min-width: 100px ;background-color: rgba(252, 190, 43, 0.5); padding: 10px; border-radius: 5px; "></ul>
+            <ul id="lista-ingredientes"  class="ingredientes-lista" style= "max-height: 200px; overflow: auto">
         <!-- Los ingredientes del inventario se añadirán aquí dinámicamente -->
     </ul>
             <input type="number" id="cantidad-ingredientes" value="1" min="1">
@@ -447,6 +447,8 @@ function renderizarIngredientes() {
     
     // Iterar sobre cada ingrediente en el inventario
     arrayInventario.forEach(([nombre, cantidad]) => {
+    // Filtrar los ingredientes con cantidad < 0
+    if (cantidad < 0) {
         // Crear un nuevo elemento li para el ingrediente
         const ingredienteItem = document.createElement("li");
         
@@ -472,7 +474,7 @@ function renderizarIngredientes() {
         // Añadir el elemento li a la lista de ingredientes
         listaIngredientes.appendChild(ingredienteItem);
         
-       // Obtener una referencia al elemento del tooltip
+        // Obtener una referencia al elemento del tooltip
         const tooltip = document.getElementById("tooltip");
 
         // Agregar evento para mostrar el nombre del ingrediente como tooltip al pasar el mouse sobre el icono
@@ -482,20 +484,23 @@ function renderizarIngredientes() {
             tooltip.style.left = (event.pageX + 10) + "px"; // Posición X del tooltip
             tooltip.style.top = (event.pageY + 10) + "px"; // Posición Y del tooltip
         
-        // Suponiendo que "nombre" es el nombre del ingrediente
-        tooltip.textContent = icono.alt;
+            // Suponiendo que "nombre" es el nombre del ingrediente
+            tooltip.textContent = icono.alt;
             console.log(icono.alt);
         });
+        
         // Agregar evento para ocultar el tooltip cuando se retira el mouse del icono
         icono.addEventListener("mouseout", () => {
             // Ocultar el tooltip
             tooltip.style.display = "none";
-            });
-        icono.addEventListener("dragstart", (event) => {
-        event.dataTransfer.setData("text/plain", nombre); // Establecer el nombre del ingrediente como dato de texto plano
         });
-    });
-}
+        
+        // Agregar evento de arrastrar para establecer el nombre del ingrediente como dato de texto plano
+        icono.addEventListener("dragstart", (event) => {
+            event.dataTransfer.setData("text/plain", nombre);
+        });
+    }
+});
 
 // Obtener el elemento <ul> donde se pueden soltar los elementos
 document.addEventListener("DOMContentLoaded", function() {
