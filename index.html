@@ -131,7 +131,7 @@
         <!-- Seleccionar un Ingrediente, Selector de Cantidad, Agregar Ingrediente y Limpiar Receta -->
         <div id="ingredientes-section" class="section">
             <h2>Selecciona un ingrediente</h2
-            <ul id="lista-receta"> </ul>
+            <ul id="lista-receta" > </ul>
             
             <ul id="lista-ingredientes" class="ingredientes-lista">
         <!-- Los ingredientes del inventario se añadirán aquí dinámicamente -->
@@ -588,7 +588,7 @@ function renderizarIngredientes() {
             }
             inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
            renderizarIngredientes(inventario);;
-            mostrarRecetaPersonalizada();
+            // mostrarRecetaPersonalizada();
         } else {
             agregarEvento("No tienes suficientes " + ingredienteSeleccionado + " en el inventario.");
         }
@@ -603,7 +603,7 @@ function renderizarIngredientes() {
             }
             recetaPersonalizada.materiales = {};
            renderizarIngredientes(inventario);;
-            mostrarRecetaPersonalizada();
+            // mostrarRecetaPersonalizada();
         }
 
     function generarItem() {
@@ -685,7 +685,7 @@ function procesarIngrediente() {
 
                renderizarIngredientes(inventario);;
                 recetaPersonalizada.materiales = {};
-                mostrarRecetaPersonalizada();
+                // mostrarRecetaPersonalizada();
                 alert(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
             } else {
                 alert("Error: La receta coincide pero no se especificó un nuevo ingrediente.");
@@ -834,7 +834,7 @@ document.getElementById("registro-btn").addEventListener("click", function() {
                 inventario[ingrediente] -= cantidad;
             }
            renderizarIngredientes(inventario);;
-            mostrarRecetaPersonalizada();
+           // mostrarRecetaPersonalizada();
             agregarEvento("Ingredientes de receta agregados con éxito.");
         }
     } else {
