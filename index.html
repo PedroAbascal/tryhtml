@@ -62,12 +62,7 @@
         .section > * {
             margin-bottom: 10px;
         }
-
-        .icono {
-        width: 50px; /* Tamaño fijo */
-        height: 50px; /* Se ajusta automáticamente */
-        }
-
+        
         #inicio-sesion {
             display: block;
         }
@@ -470,6 +465,10 @@ function renderizarIngredientes() {
         const icono = document.createElement("img");
         icono.src = obtenerURLIcono(nombre); // Función ficticia para obtener la URL del icono
         icono.alt = nombre; // Establecer el nombre del ingrediente como texto alternativo
+        
+        // Establecer el tamaño fijo del icono
+        icono.style.width = "50px";
+        icono.style.height = "50px";
         
         // Crear un elemento span para la cantidad del ingrediente
         const cantidadElement = document.createElement("span");
