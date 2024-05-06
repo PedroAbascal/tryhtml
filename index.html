@@ -566,7 +566,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
             renderizarIngredientes(); // Aquí no es necesario pasar el inventario como argumento
-            mostrarRecetaPersonalizada();
+            ();
         } else {
             agregarEvento("No tienes suficientes " + ingredienteSeleccionado + " en el inventario.");
         }
@@ -580,8 +580,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 inventario[ingrediente] += cantidad;
             }
             recetaPersonalizada.materiales = {};
-           renderizarIngredientes(inventario);;
-            // mostrarRecetaPersonalizada();
+            renderizarIngredientes(inventario);;
+            ();
         }
 
     function generarItem() {
@@ -663,7 +663,7 @@ function procesarIngrediente() {
 
                renderizarIngredientes(inventario);;
                 recetaPersonalizada.materiales = {};
-                // mostrarRecetaPersonalizada();
+                    mostrarRecetaPersonalizada();
                 alert(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
             } else {
                 alert("Error: La receta coincide pero no se especificó un nuevo ingrediente.");
@@ -737,8 +737,8 @@ function agregarIngredientes(listaIngredientes, cantidad) {
         
         // Cargar datos del usuario desde localStorage
         cargarEstadoUsuario(username);
-       renderizarIngredientes(inventario);;
-        // mostrarRecetaPersonalizada();
+        renderizarIngredientes(inventario);;
+        mostrarRecetaPersonalizada();
         mostrarRecetas();
         mostrarItemsCreados();
     } else {
