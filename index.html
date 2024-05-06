@@ -566,7 +566,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
             renderizarIngredientes(); // Aquí no es necesario pasar el inventario como argumento
-            ();
+            mostrarRecetaPersonalizada();
         } else {
             agregarEvento("No tienes suficientes " + ingredienteSeleccionado + " en el inventario.");
         }
@@ -581,7 +581,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             recetaPersonalizada.materiales = {};
             renderizarIngredientes(inventario);;
-            ();
+            mostrarRecetaPersonalizada();
         }
 
     function generarItem() {
