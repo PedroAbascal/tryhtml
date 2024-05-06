@@ -491,6 +491,9 @@ function renderizarIngredientes() {
             // Ocultar el tooltip
             tooltip.style.display = "none";
             });
+        icono.addEventListener("dragstart", (event) => {
+        event.dataTransfer.setData("text/plain", nombre); // Establecer el nombre del ingrediente como dato de texto plano
+        });
     });
 }
 
@@ -511,8 +514,6 @@ document.addEventListener("DOMContentLoaded", function() {
         
         // Obtener la cantidad del ingrediente arrastrado desde el campo de entrada
         const cantidad = parseInt(document.getElementById("cantidad-ingredientes").value);
-        console.log(nombreIngrediente)
-        console.log(cantidad)
         // Llamar a la función agregarIngrediente con los datos del ingrediente arrastrado
         agregarIngrediente(nombreIngrediente, cantidad);
         console.log(nombreIngrediente)
