@@ -124,7 +124,7 @@
 
         <!-- Seleccionar un Ingrediente, Selector de Cantidad, Agregar Ingrediente y Limpiar Receta -->
         <div id="ingredientes-section" class="section">
-            <h2>Selecciona un ingrediente</h2
+            <h2>Selecciona un ingrediente</h2>
             <ul id="lista-receta"></ul>
             <ul id="lista-ingredientes" class="ingredientes-lista">
         <!-- Los ingredientes del inventario se añadirán aquí dinámicamente -->
@@ -161,7 +161,6 @@
             { nombre: "usuario4", contraseña: "usuario4" },
             { nombre: "usuario5", contraseña: "usuario5" }
         ];
-
         let recetasConocidas = [];
         let recetas = [
             { nombre: "Poción de curación", materiales: { Agua: 1, Hierbas: 1, "Raíz de mandrágora": 1 }, efecto: "Cura 2d4 + 2 puntos de golpe." },
@@ -220,22 +219,19 @@
     },
     // Agrega más recetas aquí si es necesario
 ];
-        
-
         let recetaPersonalizada = {
             nombre: "Receta personalizada",
             materiales: {}
         };
-
         let inventario = {
     Agua: 10,
     Hierbas: 5,
     "Raíz de mandrágora": 3,
     Metal: 0,
     Madera: 0,
-            Oro: 0,
-            Diamante: 0,
-             "Néctar de flores": 0,
+    Oro: 0,
+    Diamante: 0,
+    "Néctar de flores": 0,
     "Escamas de pez":0,
     "Polen de abeja":0,
     "Pulpa de frutas":0,
@@ -354,11 +350,10 @@
     "Gema de almas":0,
     "Escama de dragón cromático":0,
     "Ceniza de fénix":0,
-            "Pasta de Hierbas Curativas": 0
-        
+    "Pasta de Hierbas Curativas": 0
 };
 
-        const ingredientesBasico = [
+const ingredientesBasico = [
     { nombre: "Agua", cantidad: 5, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
     { nombre: "Hierbas", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
     { nombre: "Raíz de mandrágora", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
@@ -404,19 +399,15 @@ const ingredientesAvanzado = [
     { nombre: "Aura de hada", cantidad: 50, categoria: "Magico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" }
 ];
         let itemsCreados = [];
-
         const listaIngredientes = document.getElementById("lista-ingredientes");
 
 
 function obtenerIngredientesInventario() {
     // Obtener el nombre de usuario actual
     const usuarioActual = getUsuarioActual();
-    
     // Verificar si hay datos en el localStorage para el inventario del usuario actual
     const datosInventario = localStorage.getItem(`${usuarioActual}-inventario`);
-    
-    // Si hay datos en el localStorage para el inventario del usuario actual, parsearlos a un objeto JavaScript
-    // De lo contrario, devolver un objeto vacío
+    // Si hay datos en el localStorage para el inventario del usuario actual, parsearlos a un objeto JavaScriptDe lo contrario, devolver un objeto vacío
     return datosInventario ? JSON.parse(datosInventario) : {};
 }
 
@@ -443,8 +434,7 @@ function obtenerURLIcono(nombre) {
     // Devolver null si no se encontró el nombre del ingrediente en ninguna lista
     return null;
 }
-        
-// Función para obtener los ingredientes del inventario desde el localStorage
+
 function renderizarIngredientes() {
     // Limpiar la lista de ingredientes antes de volver a renderizar
     listaIngredientes.innerHTML = "";
@@ -509,12 +499,10 @@ function renderizarIngredientes() {
 document.addEventListener("DOMContentLoaded", function() {
     // Obtener el elemento <ul> donde se pueden soltar los elementos
     const listaReceta = document.getElementById("lista-receta");
-
     // Agregar evento dragover para permitir soltar elementos
     listaReceta.addEventListener("dragover", (event) => {
         event.preventDefault(); // Evitar el comportamiento predeterminado
     });
-
     // Agregar evento drop para manejar el soltar de elementos
     listaReceta.addEventListener("drop", (event) => {
         event.preventDefault(); // Evitar el comportamiento predeterminado
