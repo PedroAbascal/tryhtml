@@ -125,7 +125,8 @@
         <!-- Seleccionar un Ingrediente, Selector de Cantidad, Agregar Ingrediente y Limpiar Receta -->
         <div id="ingredientes-section" class="section">
             <h2>Selecciona un ingrediente</h2
-            <ul id="lista-receta"></ul>
+            <ul id="lista-receta"> dfsdfgsdgsdfg </ul>
+            
             <ul id="lista-ingredientes" class="ingredientes-lista">
         <!-- Los ingredientes del inventario se añadirán aquí dinámicamente -->
     </ul>
@@ -461,14 +462,16 @@ function renderizarIngredientes() {
         // Crear un nuevo elemento li para el ingrediente
         const ingredienteItem = document.createElement("li");
         
+        ingredienteItem.draggable = true;
+        
         // Crear un elemento de imagen para el icono del ingrediente (suponiendo que haya una URL para el icono)
         const icono = document.createElement("img");
         icono.src = obtenerURLIcono(nombre); // Función ficticia para obtener la URL del icono
         icono.alt = nombre; // Establecer el nombre del ingrediente como texto alternativo
         
         // Establecer el tamaño fijo del icono
-        icono.style.width = "26px";
-        icono.style.height = "26px";
+        icono.style.width = "22px";
+        icono.style.height = "22px";
         
         // Crear un elemento span para la cantidad del ingrediente
         const cantidadElement = document.createElement("span");
