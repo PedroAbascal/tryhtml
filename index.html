@@ -519,15 +519,14 @@ document.addEventListener("DOMContentLoaded", function() {
         
         // Obtener la cantidad del ingrediente arrastrado desde el campo de entrada
         const cantidad = parseInt(document.getElementById("cantidad-ingredientes").value);
-
+        console.log(nombreIngrediente)
+        console.log(cantidad)
         // Llamar a la función agregarIngrediente con los datos del ingrediente arrastrado
         agregarIngrediente(nombreIngrediente, cantidad);
+        console.log(nombreIngrediente)
+        console.log(cantidad)
     });
 });
-
-// Ocultar el elemento que mostraba la lista completa de inventario
-// document.getElementById("inventario-section").style.display = "none";
-
 
         function mostrarItemsCreados() {
             const itemsList = document.getElementById("lista-items-creados");
