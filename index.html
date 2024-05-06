@@ -125,8 +125,7 @@
         <!-- Seleccionar un Ingrediente, Selector de Cantidad, Agregar Ingrediente y Limpiar Receta -->
         <div id="ingredientes-section" class="section">
             <h2>Selecciona un ingrediente</h2
-            <ul id="lista-receta" > "arrastra los ingrtedientes aquí" </ul>
-            
+            <ul id="lista-receta"></ul>
             <ul id="lista-ingredientes" class="ingredientes-lista">
         <!-- Los ingredientes del inventario se añadirán aquí dinámicamente -->
     </ul>
@@ -560,7 +559,7 @@ function renderizarIngredientes() {
 
         function mostrarRecetaPersonalizada() {
             const recetaList = document.getElementById("lista-receta");
-             recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
+            // recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
 
             for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
                 const listItem = document.createElement("li");
