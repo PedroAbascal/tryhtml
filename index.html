@@ -502,10 +502,11 @@ function renderizarIngredientes() {
             // Ocultar el tooltip
             tooltip.style.display = "none";
             });
-        });
-    
-    // Obtener el elemento <ul> donde se pueden soltar los elementos
-    document.addEventListener("DOMContentLoaded", function() {
+    });
+}
+
+// Obtener el elemento <ul> donde se pueden soltar los elementos
+document.addEventListener("DOMContentLoaded", function() {
     // Obtener el elemento <ul> donde se pueden soltar los elementos
     const listaReceta = document.getElementById("lista-receta");
 
@@ -528,7 +529,6 @@ function renderizarIngredientes() {
         agregarIngrediente(nombreIngrediente, cantidad);
     });
 });
-}
 
 // Ocultar el elemento que mostraba la lista completa de inventario
 // document.getElementById("inventario-section").style.display = "none";
@@ -559,7 +559,7 @@ function renderizarIngredientes() {
 
         function mostrarRecetaPersonalizada() {
             const recetaList = document.getElementById("lista-receta");
-            // recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
+            recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
 
             for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
                 const listItem = document.createElement("li");
