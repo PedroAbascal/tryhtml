@@ -516,8 +516,6 @@ document.addEventListener("DOMContentLoaded", function() {
         const cantidad = parseInt(document.getElementById("cantidad-ingredientes").value);
         // Llamar a la función agregarIngrediente con los datos del ingrediente arrastrado
         agregarIngrediente(nombreIngrediente, cantidad);
-        console.log(nombreIngrediente)
-        console.log(cantidad)
     });
 });
 
@@ -568,7 +566,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
             renderizarIngredientes(); // Aquí no es necesario pasar el inventario como argumento
-            // mostrarRecetaPersonalizada();
+            mostrarRecetaPersonalizada();
         } else {
             agregarEvento("No tienes suficientes " + ingredienteSeleccionado + " en el inventario.");
         }
