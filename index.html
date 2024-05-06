@@ -67,6 +67,13 @@
             display: block;
         }
 
+        #lista-receta {
+        width: 50%; /* Por ejemplo, puedes ajustar este valor según tus necesidades */
+        height: 50%; /* Por ejemplo, puedes ajustar este valor según tus necesidades */
+        /* Otros estilos que desees aplicar al elemento */
+        }
+        
+
         #inventario-section,
         #items-creados-section,
         #generador-section,
@@ -556,24 +563,24 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
 
-        function agregarIngrediente() {
-    const ingredienteSeleccionado = document.getElementById("ingredientes-select").value;
-    const cantidadSeleccionada = parseInt(document.getElementById("cantidad-ingredientes").value);
+    function agregarIngredientes(nombreIngrediente, cantidad) {
+        const ingredienteSeleccionado = nombreIngrediente;
+        const cantidadSeleccionada = cantidad);
 
-    if (ingredienteSeleccionado && cantidadSeleccionada > 0) {
-        if (inventario[ingredienteSeleccionado] >= cantidadSeleccionada) {
-            if (recetaPersonalizada.materiales.hasOwnProperty(ingredienteSeleccionado)) {
+        if (ingredienteSeleccionado && cantidadSeleccionada > 0) {
+            if (inventario[ingredienteSeleccionado] >= cantidadSeleccionada) {
+                if (recetaPersonalizada.materiales.hasOwnProperty(ingredienteSeleccionado)) {
                 recetaPersonalizada.materiales[ingredienteSeleccionado] += cantidadSeleccionada;
+                } else {
+                    recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
+                }
+                inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
+               renderizarIngredientes(inventario);;
+                // mostrarRecetaPersonalizada();
             } else {
-                recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
-            }
-            inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
-           renderizarIngredientes(inventario);;
-            // mostrarRecetaPersonalizada();
-        } else {
             agregarEvento("No tienes suficientes " + ingredienteSeleccionado + " en el inventario.");
-        }
-    } else {
+            }
+        } else {
         agregarEvento("Por favor, selecciona un ingrediente y una cantidad válida.");
     }
 }
