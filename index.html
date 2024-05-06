@@ -644,10 +644,10 @@ document.addEventListener("DOMContentLoaded", function() {
 ];
 
 function procesarIngrediente() {
-    const ingredienteSeleccionado = document.getElementById("ingredientes-select").value;
-    const cantidadSeleccionada = parseInt(document.getElementById("cantidad-ingredientes").value);
+    //const ingredienteSeleccionado = document.getElementById("ingredientes-select").value;
+    //const cantidadSeleccionada = parseInt(document.getElementById("cantidad-ingredientes").value);
 
-    if (ingredienteSeleccionado && cantidadSeleccionada > 0) {
+    //if (ingredienteSeleccionado && cantidadSeleccionada > 0) {
         const recetaCoincidente = recetasProcesarIngredientes.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
 
         if (recetaCoincidente) {
