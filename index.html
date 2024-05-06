@@ -521,7 +521,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const cantidad = parseInt(document.getElementById("cantidad-ingredientes").value);
 
         // Llamar a la función agregarIngrediente con los datos del ingrediente arrastrado
-        agregarIngredientes(nombreIngrediente, cantidad);
+        agregarIngrediente(nombreIngrediente, cantidad);
     });
 });
 
@@ -563,24 +563,24 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
 
-    function agregarIngredientes(nombreIngrediente, cantidad) {
-        const ingredienteSeleccionado = nombreIngrediente;
-        const cantidadSeleccionada = cantidad;
+    function agregarIngrediente(nombreIngrediente, cantidad) {
+    const ingredienteSeleccionado = nombreIngrediente;
+    const cantidadSeleccionada = cantidad;
 
-        if (ingredienteSeleccionado && cantidadSeleccionada > 0) {
-            if (inventario[ingredienteSeleccionado] >= cantidadSeleccionada) {
-                if (recetaPersonalizada.materiales.hasOwnProperty(ingredienteSeleccionado)) {
+    if (ingredienteSeleccionado && cantidadSeleccionada > 0) {
+        if (inventario[ingredienteSeleccionado] >= cantidadSeleccionada) {
+            if (recetaPersonalizada.materiales.hasOwnProperty(ingredienteSeleccionado)) {
                 recetaPersonalizada.materiales[ingredienteSeleccionado] += cantidadSeleccionada;
-                } else {
-                    recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
-                }
-                inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
-               renderizarIngredientes(inventario);;
-                // mostrarRecetaPersonalizada();
             } else {
-            agregarEvento("No tienes suficientes " + ingredienteSeleccionado + " en el inventario.");
+                recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
             }
+            inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
+            renderizarIngredientes(); // Aquí no es necesario pasar el inventario como argumento
+            // mostrarRecetaPersonalizada();
         } else {
+            agregarEvento("No tienes suficientes " + ingredienteSeleccionado + " en el inventario.");
+        }
+    } else {
         agregarEvento("Por favor, selecciona un ingrediente y una cantidad válida.");
     }
 }
@@ -835,7 +835,7 @@ document.getElementById("registro-btn").addEventListener("click", function() {
         document.getElementById("generar-item").addEventListener("click", generarItem);
 
         // Evento para el botón de agregar ingrediente a la receta personalizada
-        document.getElementById("agregar-ingrediente").addEventListener("click", agregarIngredientes);
+        document.getElementById("agregar-ingrediente").addEventListener("click", agregarIngrediente);
 
         // Evento para el botón de limpiar receta personalizada
         document.getElementById("limpiar-receta").addEventListener("click", limpiarReceta);
