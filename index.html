@@ -449,70 +449,61 @@ function obtenerURLIcono(nombre) {
 function renderizarIngredientes() {
     // Limpiar la lista de ingredientes antes de volver a renderizar
     listaIngredientes.innerHTML = "";
-    
+
     // Obtener el inventario del usuario actual
     const inventario = obtenerIngredientesInventario();
     console.log("Inventario obtenido:", inventario);
-    
-    // Convertir el objeto de inventario en un array de pares clave-valor
-    const arrayInventario = Object.entries(inventario);
-    
-    // Iterar sobre cada ingrediente en el inventario
-    arrayInventario.forEach(([nombre, cantidad]) => {
-        // Filtrar los ingredientes con cantidad menor que 0
-        if (cantidad > 0) {
-            // Crear un nuevo elemento li para el ingrediente
+
+    // Agrupar los ingredientes por categoría
+    const ingredientesPorCategoria = {};
+    for (const [nombre, info] of Object.entries(inventario)) {
+        const { categoria, cantidad } = info;
+        if (!ingredientesPorCategoria[categoria]) {
+            ingredientesPorCategoria[categoria] = [];
+        }
+        ingredientesPorCategoria[categoria].push({ nombre, cantidad });
+    }
+
+    // Ordenar cada grupo de ingredientes por su nombre
+    for (const categoria in ingredientesPorCategoria) {
+        ingredientesPorCategoria[categoria].sort((a, b) => a.nombre.localeCompare(b.nombre));
+    }
+
+    // Renderizar los ingredientes agrupados y ordenados en la lista
+    for (const categoria in ingredientesPorCategoria) {
+        const ingredientesEnCategoria = ingredientesPorCategoria[categoria];
+        const categoriaHeader = document.createElement("li");
+        categoriaHeader.textContent = `Categoría: ${categoria}`;
+        listaIngredientes.appendChild(categoriaHeader);
+        ingredientesEnCategoria.forEach(ingrediente => {
             const ingredienteItem = document.createElement("li");
-            
             ingredienteItem.draggable = true;
-            
-            // Crear un elemento de imagen para el icono del ingrediente (suponiendo que haya una URL para el icono)
             const icono = document.createElement("img");
-            icono.src = obtenerURLIcono(nombre); // Función ficticia para obtener la URL del icono
-            icono.alt = nombre; // Establecer el nombre del ingrediente como texto alternativo
-            
-            // Establecer el tamaño fijo del icono
+            icono.src = obtenerURLIcono(ingrediente.nombre);
+            icono.alt = ingrediente.nombre;
             icono.style.width = "22px";
             icono.style.height = "22px";
-            
-            // Crear un elemento span para la cantidad del ingrediente
             const cantidadElement = document.createElement("span");
-            cantidadElement.textContent = cantidad; // Establecer la cantidad del ingrediente
-            
-            // Añadir el icono y la cantidad como hijos del elemento li
+            cantidadElement.textContent = ingrediente.cantidad;
             ingredienteItem.appendChild(icono);
             ingredienteItem.appendChild(cantidadElement);
-            
-            // Añadir el elemento li a la lista de ingredientes
             listaIngredientes.appendChild(ingredienteItem);
-            
-            // Obtener una referencia al elemento del tooltip
             const tooltip = document.getElementById("tooltip");
-
-            // Agregar evento para mostrar el nombre del ingrediente como tooltip al pasar el mouse sobre el icono
             icono.addEventListener("mouseover", () => {
-                // Mostrar el tooltip en la posición del mouse
                 tooltip.style.display = "block";
-                tooltip.style.left = (event.pageX + 10) + "px"; // Posición X del tooltip
-                tooltip.style.top = (event.pageY + 10) + "px"; // Posición Y del tooltip
-            
-                // Suponiendo que "nombre" es el nombre del ingrediente
+                tooltip.style.left = (event.pageX + 10) + "px";
+                tooltip.style.top = (event.pageY + 10) + "px";
                 tooltip.textContent = icono.alt;
                 console.log(icono.alt);
             });
-            
-            // Agregar evento para ocultar el tooltip cuando se retira el mouse del icono
             icono.addEventListener("mouseout", () => {
-                // Ocultar el tooltip
                 tooltip.style.display = "none";
             });
-            
-            // Agregar evento de arrastrar para establecer el nombre del ingrediente como dato de texto plano
             icono.addEventListener("dragstart", (event) => {
-                event.dataTransfer.setData("text/plain", nombre);
+                event.dataTransfer.setData("text/plain", ingrediente.nombre);
             });
-        }
-    });
+        });
+    }
 }
 
 // Obtener el elemento <ul> donde se pueden soltar los elementos
