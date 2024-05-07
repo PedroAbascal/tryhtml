@@ -410,6 +410,7 @@ const ingredientesAvanzado = [
     { nombre: "Aura de hada", cantidad: 50, categoria: "Magico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" }
 ];
         let itemsCreados = [];
+        let listaIngredientes;
         const listaIngredientes = document.getElementById("lista-ingredientes");
         
 function obtenerIngredientesInventario() {
@@ -823,7 +824,7 @@ function procesarIngrediente() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
     const usuario = usuariosRegistrados.find(user => user.nombre === username && user.contraseña === password);
-        const listaIngredientes = document.getElementById("lista-ingredientes");
+        
     if (usuario) {
         // Simulación de inicio de sesión exitoso
         agregarEvento("Inicio de sesión exitoso para el usuario: " + username);
