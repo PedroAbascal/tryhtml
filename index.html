@@ -577,20 +577,17 @@ document.addEventListener("DOMContentLoaded", function() {
                 // Verificar si el ingrediente ya está en la receta personalizada
                 if (recetaPersonalizada.materiales.hasOwnProperty(nombreIngrediente)) {
                     // Si el ingrediente ya está en la receta personalizada, sumar la cantidad
-                    recetaPersonalizada.materiales[nombreIngrediente].cantidad += cantidad;
+                    recetaPersonalizada.materiales[nombreIngrediente] += cantidad;
                 } else {
                     // Si el ingrediente no está en la receta personalizada, agregarlo
-                    recetaPersonalizada.materiales[nombreIngrediente] = {
-                        cantidad: cantidad,
-                        // categoria: inventario[nombreIngrediente].categoria // Agregar la categoría del ingrediente a la receta personalizada
-                    };
+                    recetaPersonalizada.materiales[nombreIngrediente] = cantidad;
                 }
                 // Restar la cantidad utilizada del inventario
                 inventario[nombreIngrediente].cantidad -= cantidad;
                 // Renderizar la lista de ingredientes actualizada
                 renderizarIngredientes();
                 // Mostrar la receta personalizada actualizada
-                mostrarRecetaPersonalizada();
+                mostrarRecetaPersonalizada(nombreIngrediente, cantidad);
             } else {
                 // Mostrar un mensaje si no hay suficiente cantidad en el inventario
                 agregarEvento("No tienes suficientes " + nombreIngrediente + " en el inventario.");
@@ -604,7 +601,6 @@ document.addEventListener("DOMContentLoaded", function() {
         agregarEvento("Por favor, selecciona un ingrediente y una cantidad válida.");
     }
 }
-
         function limpiarReceta() {
             for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
                 inventario[ingrediente] += cantidad;
