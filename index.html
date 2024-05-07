@@ -411,7 +411,7 @@ const ingredientesAvanzado = [
 ];
         let itemsCreados = [];
         let listaIngredientes;
-        const listaIngredientes = document.getElementById("lista-ingredientes");
+        
         
 function obtenerIngredientesInventario() {
     // Obtener el nombre de usuario actual
@@ -447,6 +447,8 @@ function obtenerURLIcono(nombre) {
 }
 
 function renderizarIngredientes() {
+
+    const listaIngredientes = document.getElementById("lista-ingredientes");
     // Limpiar la lista de ingredientes antes de volver a renderizar
     listaIngredientes.innerHTML = "";
 
