@@ -450,64 +450,66 @@ function renderizarIngredientes() {
     // Limpiar la lista de ingredientes antes de volver a renderizar
     listaIngredientes.innerHTML = "";
 
-    // Iterar sobre cada ingrediente en el inventario
+    // Objeto para almacenar los ingredientes clasificados por categoría
+    const ingredientesPorCategoria = {};
+
+    // Clasificar los ingredientes por categoría
     for (const [nombreIngrediente, infoIngrediente] of Object.entries(inventario)) {
         const cantidad = infoIngrediente.cantidad;
         const categoria = infoIngrediente.categoria;
-        //let ingrediente;
-        
-        // Filtrar los ingredientes con cantidad mayor que 0
+
         if (cantidad > 0) {
-            // Crear un nuevo elemento li para el ingrediente
+            // Agregar el ingrediente al array correspondiente a su categoría
+            if (!ingredientesPorCategoria.hasOwnProperty(categoria)) {
+                ingredientesPorCategoria[categoria] = [];
+            }
+            ingredientesPorCategoria[categoria].push({ nombre: nombreIngrediente, cantidad: cantidad });
+        }
+    }
+
+    // Iterar sobre cada categoría y agregar los ingredientes al DOM
+    for (const categoria in ingredientesPorCategoria) {
+        const ingredientesCategoria = ingredientesPorCategoria[categoria];
+
+        // Crear una nueva lista <ul> para la categoría
+        const listaCategoria = document.createElement("ul");
+        listaCategoria.className = "categoria-lista";
+
+        // Iterar sobre los ingredientes de la categoría y agregarlos como elementos <li>
+        ingredientesCategoria.forEach(ingrediente => {
             const ingredienteItem = document.createElement("li");
 
-            ingredienteItem.draggable = true;
-
-            // Crear un elemento de imagen para el icono del ingrediente (suponiendo que haya una URL para el icono)
             const icono = document.createElement("img");
-            icono.src = obtenerURLIcono(nombreIngrediente); // Función ficticia para obtener la URL del icono
-            icono.alt = nombreIngrediente; // Establecer el nombre del ingrediente como texto alternativo
-
-            // Establecer el tamaño fijo del icono
+            icono.src = obtenerURLIcono(ingrediente.nombre);
+            icono.alt = ingrediente.nombre;
             icono.style.width = "22px";
             icono.style.height = "22px";
 
-            // Crear un elemento span para la cantidad del ingrediente
             const cantidadElement = document.createElement("span");
-            cantidadElement.textContent = cantidad; // Establecer la cantidad del ingrediente
+            cantidadElement.textContent = ingrediente.cantidad;
 
-            // Crear un elemento span para la categoría del ingrediente
-            const categoriaElement = document.createElement("span");
-            categoriaElement.textContent = categoria; // Establecer la categoría del ingrediente
-
-            // Añadir el icono, la cantidad y la categoría como hijos del elemento li
             ingredienteItem.appendChild(icono);
             ingredienteItem.appendChild(cantidadElement);
-            //ingredienteItem.appendChild(categoriaElement);
 
-            // Añadir el elemento li a la lista de ingredientes
-            listaIngredientes.appendChild(ingredienteItem);
-            
-            const tooltip = document.getElementById("tooltip");
+            listaCategoria.appendChild(ingredienteItem);
+
+            // Agregar eventos al icono (mouseover, mouseout, dragstart)
             icono.addEventListener("mouseover", () => {
-                //ingrediente = nombre;
                 tooltip.style.display = "block";
                 tooltip.style.left = (event.pageX + 10) + "px";
                 tooltip.style.top = (event.pageY + 10) + "px";
                 tooltip.textContent = icono.alt;
-                console.log(icono.alt);
             });
             icono.addEventListener("mouseout", () => {
                 tooltip.style.display = "none";
             });
             icono.addEventListener("dragstart", (event) => {
-                // Obtener el nombre del ingrediente del atributo alt del icono
-                   const nombreIngrediente = icono.alt;
-
-                // Establecer el nombre del ingrediente como dato de texto plano para el evento dragstart
-                   event.dataTransfer.setData("text/plain", nombreIngrediente);
+                event.dataTransfer.setData("text/plain", ingrediente.nombre);
             });
-        }
+        });
+
+        // Agregar la lista de categoría al contenedor principal <ul> lista-ingredientes
+        listaIngredientes.appendChild(listaCategoria);
     }
 }
 
