@@ -707,7 +707,7 @@ function procesarIngrediente() {
             console.log(`Agregando nuevo ingrediente: ${nombreIngrediente} Cantidad: ${cantidad}`);
         }
     });
-            guardarEstadoUsuario(username);
+           localStorage.setItem(username + "-inventario", JSON.stringify(inventario)); // Guardar estado del inventario
             console.log("Inventario actualizado:", inventario);
             renderizarIngredientes();
 }
