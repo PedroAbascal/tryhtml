@@ -707,8 +707,9 @@ function procesarIngrediente() {
             console.log(`Agregando nuevo ingrediente: ${nombreIngrediente} Cantidad: ${cantidad}`);
         }
     });
-    console.log("Inventario actualizado:", inventario);
-    renderizarIngredientes();
+            guardarEstadoUsuario(username);
+            console.log("Inventario actualizado:", inventario);
+            renderizarIngredientes();
 }
 
 // Eventos para los botones de agregar ingredientes
