@@ -610,25 +610,33 @@ document.addEventListener("DOMContentLoaded", function() {
             mostrarRecetaPersonalizada();
         }
 
-    function generarItem() {
+   function generarItem() {
     // Verificamos si los ingredientes seleccionados coinciden con alguna receta conocida
     const recetaCoincidente = recetas.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
 
     if (recetaCoincidente) {
         // Restar los ingredientes del inventario
-        for (const [ingrediente, cantidad] of Object.entries(recetaCoincidente.materiales)) {
-            inventario[ingrediente] -= cantidad;
-        }
-
-        // Eliminar los ingredientes del inventario que tienen una cantidad igual a cero
-        for (const ingrediente in inventario) {
-            if (inventario[ingrediente] === 0) {
-                delete inventario[ingrediente];
+        for (const [nombreIngrediente, cantidad] of Object.entries(recetaCoincidente.materiales)) {
+            // Verificar si el ingrediente está en el inventario
+            if (inventario.hasOwnProperty(nombreIngrediente)) {
+                // Verificar si hay suficiente cantidad en el inventario
+                if (inventario[nombreIngrediente].cantidad >= cantidad) {
+                    // Restar la cantidad utilizada del inventario
+                    inventario[nombreIngrediente].cantidad -= cantidad;
+                } else {
+                    // Mostrar un mensaje si no hay suficiente cantidad en el inventario
+                    alert("No tienes suficientes " + nombreIngrediente + " en el inventario.");
+                    return; // Salir de la función si no hay suficiente cantidad
+                }
+            } else {
+                // Mostrar un mensaje si el ingrediente no está en el inventario
+                alert("El ingrediente " + nombreIngrediente + " no existe en el inventario.");
+                return; // Salir de la función si el ingrediente no está en el inventario
             }
         }
 
         // Actualizar la lista de selección de ingredientes
-       renderizarIngredientes(inventario);;
+        renderizarIngredientes();
 
         const itemGenerado = recetaCoincidente.nombre;
         itemsCreados.push(itemGenerado);
@@ -641,7 +649,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         alert("¡Item generado exitosamente: " + itemGenerado + "!");
         // Actualizar el inventario mostrado
-       renderizarIngredientes(inventario);;
+        renderizarIngredientes();
     } else {
         alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
     }
