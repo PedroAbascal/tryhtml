@@ -371,13 +371,13 @@ const ingredientesBasico = [
     { nombre: "Néctar de flores", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_42.png" },
     { nombre: "Escamas de pez", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_94.png" },
     { nombre: "Polen de abeja", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_27_88.png" },
-    { nombre: "Pulpa de frutas", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Food/food1.png" },
-    { nombre: "Tierra fértil", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Musgo fresco", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Agua de manantial", cantidad: 50, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Pluma de cuervo", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Hojas de menta", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Rocío de la mañana", cantidad: 50, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" }
+    { nombre: "Pulpa de frutas", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_28_14.png" },
+    { nombre: "Tierra fértil", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_27_58.png" },
+    { nombre: "Musgo fresco", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_28_100.png" },
+    { nombre: "Agua de manantial", cantidad: 50, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_06.png" },
+    { nombre: "Pluma de cuervo", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_34.png" },
+    { nombre: "Hojas de menta", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_18.png" },
+    { nombre: "Rocío de la mañana", cantidad: 50, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_06.png" }
 ];
 
 const ingredientesIntermedio = [
@@ -478,7 +478,7 @@ function renderizarIngredientes() {
         columnaCategoria.className = "columna-categoria";
 
         // Crear un título para la categoría
-        const tituloCategoria = document.createElement("h2");
+        const tituloCategoria = document.createElement("h1");
         tituloCategoria.textContent = categoria;
         columnaCategoria.appendChild(tituloCategoria);
 
@@ -493,8 +493,8 @@ function renderizarIngredientes() {
             const icono = document.createElement("img");
             icono.src = obtenerURLIcono(ingrediente.nombre);
             icono.alt = ingrediente.nombre;
-            icono.style.width = "22px";
-            icono.style.height = "22px";
+            icono.style.width = "32px";
+            icono.style.height = "32px";
 
             const cantidadElement = document.createElement("span");
             cantidadElement.textContent = ingrediente.cantidad;
