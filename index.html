@@ -568,23 +568,39 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
     function agregarIngrediente(nombreIngrediente, cantidad) {
-    const ingredienteSeleccionado = nombreIngrediente;
-    const cantidadSeleccionada = cantidad;
-
-    if (ingredienteSeleccionado && cantidadSeleccionada > 0) {
-        if (inventario[ingredienteSeleccionado] >= cantidadSeleccionada) {
-            if (recetaPersonalizada.materiales.hasOwnProperty(ingredienteSeleccionado)) {
-                recetaPersonalizada.materiales[ingredienteSeleccionado] += cantidadSeleccionada;
+    // Verificar si se proporcionó un nombre de ingrediente válido y una cantidad válida
+    if (nombreIngrediente && cantidad > 0) {
+        // Verificar si el ingrediente está en el inventario
+        if (inventario.hasOwnProperty(nombreIngrediente)) {
+            // Verificar si hay suficiente cantidad en el inventario
+            if (inventario[nombreIngrediente].cantidad >= cantidad) {
+                // Verificar si el ingrediente ya está en la receta personalizada
+                if (recetaPersonalizada.materiales.hasOwnProperty(nombreIngrediente)) {
+                    // Si el ingrediente ya está en la receta personalizada, sumar la cantidad
+                    recetaPersonalizada.materiales[nombreIngrediente].cantidad += cantidad;
+                } else {
+                    // Si el ingrediente no está en la receta personalizada, agregarlo
+                    recetaPersonalizada.materiales[nombreIngrediente] = {
+                        cantidad: cantidad,
+                        categoria: inventario[nombreIngrediente].categoria // Agregar la categoría del ingrediente a la receta personalizada
+                    };
+                }
+                // Restar la cantidad utilizada del inventario
+                inventario[nombreIngrediente].cantidad -= cantidad;
+                // Renderizar la lista de ingredientes actualizada
+                renderizarIngredientes();
+                // Mostrar la receta personalizada actualizada
+                mostrarRecetaPersonalizada();
             } else {
-                recetaPersonalizada.materiales[ingredienteSeleccionado] = cantidadSeleccionada;
+                // Mostrar un mensaje si no hay suficiente cantidad en el inventario
+                agregarEvento("No tienes suficientes " + nombreIngrediente + " en el inventario.");
             }
-            inventario[ingredienteSeleccionado] -= cantidadSeleccionada;
-            renderizarIngredientes(); // Aquí no es necesario pasar el inventario como argumento
-            mostrarRecetaPersonalizada();
         } else {
-            agregarEvento("No tienes suficientes " + ingredienteSeleccionado + " en el inventario.");
+            // Mostrar un mensaje si el ingrediente no está en el inventario
+            agregarEvento("El ingrediente " + nombreIngrediente + " no existe en el inventario.");
         }
     } else {
+        // Mostrar un mensaje si no se proporcionó un nombre de ingrediente válido o una cantidad válida
         agregarEvento("Por favor, selecciona un ingrediente y una cantidad válida.");
     }
 }
