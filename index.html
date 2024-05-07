@@ -584,10 +584,12 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
                 // Restar la cantidad utilizada del inventario
                 inventario[nombreIngrediente].cantidad -= cantidad;
+                
+                limpiarReceta()
                 // Renderizar la lista de ingredientes actualizada
                 renderizarIngredientes();
                 // Mostrar la receta personalizada actualizada
-                mostrarRecetaPersonalizada(nombreIngrediente, cantidad);
+                // mostrarRecetaPersonalizada(nombreIngrediente, cantidad);
             } else {
                 // Mostrar un mensaje si no hay suficiente cantidad en el inventario
                 agregarEvento("No tienes suficientes " + nombreIngrediente + " en el inventario.");
@@ -601,15 +603,28 @@ document.addEventListener("DOMContentLoaded", function() {
         agregarEvento("Por favor, selecciona un ingrediente y una cantidad válida.");
     }
 }
-        function limpiarReceta() {
-            for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
-                inventario[ingrediente] += cantidad;
-            }
-            recetaPersonalizada.materiales = {};
-            renderizarIngredientes(inventario);;
-            mostrarRecetaPersonalizada();
+       function limpiarReceta() {
+    for (const [nombreIngrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
+        // Verificar si el ingrediente está en el inventario
+        if (inventario.hasOwnProperty(nombreIngrediente)) {
+            // Sumar la cantidad utilizada al inventario
+            inventario[nombreIngrediente].cantidad += cantidad;
+        } else {
+            // Mostrar un mensaje si el ingrediente no está en el inventario
+            alert("El ingrediente " + nombreIngrediente + " no existe en el inventario.");
+            return; // Salir de la función si el ingrediente no está en el inventario
         }
+    }
 
+    // Limpiar la lista de ingredientes utilizados en la receta personalizada
+    recetaPersonalizada.materiales = {};
+
+    // Actualizar la lista de ingredientes
+    renderizarIngredientes();
+
+    // Mostrar la receta personalizada actualizada
+    mostrarRecetaPersonalizada();
+}
    function generarItem() {
     // Verificamos si los ingredientes seleccionados coinciden con alguna receta conocida
     const recetaCoincidente = recetas.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
