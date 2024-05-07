@@ -365,8 +365,8 @@
 };
 
 const ingredientesBasico = [
-    { nombre: "Agua", cantidad: 5, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
-    { nombre: "Hierbas", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
+    { nombre: "Agua", cantidad: 5, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_30_50.png" },
+    { nombre: "Hierbas", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_76.png" },
     { nombre: "Raíz de mandrágora", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Food/food4.png" },
     { nombre: "Néctar de flores", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
     { nombre: "Escamas de pez", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
@@ -448,9 +448,10 @@ function obtenerURLIcono(nombre) {
 
 function renderizarIngredientes() {
 
-    const listaIngredientes = document.getElementById("lista-ingredientes");
-    // Limpiar la lista de ingredientes antes de volver a renderizar
-    listaIngredientes.innerHTML = "";
+    const listaExistente = document.getElementById("lista-ingredientes");
+    
+    // Limpiar la lista de ingredientes existente antes de volver a renderizar
+    listaExistente.innerHTML = "";
 
     // Objeto para almacenar los ingredientes clasificados por categoría
     const ingredientesPorCategoria = {};
