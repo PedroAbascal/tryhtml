@@ -695,21 +695,22 @@ function procesarIngrediente() {
         return localStorage.getItem("usuarioActual");
         }
 
-        function agregarIngredientes(listaIngredientes) {
-    
-    listaIngredientes.forEach(ingrediente => {
+    function agregarIngredientes(listaIngredientes) {
+        listaIngredientes.forEach(ingrediente => {
         const nombreIngrediente = ingrediente.nombre;
         const cantidad = ingrediente.cantidad;
         const categoria = ingrediente.categoria;
 
         // Comprobamos si el ingrediente ya existe en el inventario
         if (inventario.hasOwnProperty(nombreIngrediente)) {
-            inventario[nombreIngrediente] += cantidad + ", " + categoria;
+            // Si el ingrediente ya existe, actualizamos su cantidad y categoría
+            inventario[nombreIngrediente].cantidad += cantidad;
+            inventario[nombreIngrediente].categoria = categoria;
             console.log(`Agregando ingrediente: ${nombreIngrediente} Cantidad: ${cantidad} Categoria: ${categoria}`);
         } else {
-            // Si el ingrediente no existe, lo agregamos al inventario con la cantidad
-            inventario[nombreIngrediente] = cantidad;
-            console.log(`Agregando nuevo ingrediente: ${nombreIngrediente} Cantidad: ${cantidad}`);
+            // Si el ingrediente no existe, lo agregamos al inventario con la cantidad y categoría
+            inventario[nombreIngrediente] = { cantidad: cantidad, categoria: categoria };
+            console.log(`Agregando nuevo ingrediente: ${nombreIngrediente} Cantidad: ${cantidad} Categoria: ${categoria}`);
         }
     });
 
