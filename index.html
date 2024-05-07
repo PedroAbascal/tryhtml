@@ -467,13 +467,26 @@ function renderizarIngredientes() {
         }
     }
 
+    // Crear una nueva lista <ul> para los ingredientes
+    const listaIngredientes = document.createElement("ul");
+    listaIngredientes.className = "lista-ingredientes";
+
     // Iterar sobre cada categoría y agregar los ingredientes al DOM
     for (const categoria in ingredientesPorCategoria) {
         const ingredientesCategoria = ingredientesPorCategoria[categoria];
 
+        // Crear una nueva columna <li> para la categoría
+        const columnaCategoria = document.createElement("li");
+        columnaCategoria.className = "columna-categoria";
+
+        // Crear un título para la categoría
+        const tituloCategoria = document.createElement("h2");
+        tituloCategoria.textContent = categoria;
+        columnaCategoria.appendChild(tituloCategoria);
+
         // Crear una nueva lista <ul> para la categoría
         const listaCategoria = document.createElement("ul");
-        listaCategoria.className = "categoria-lista";
+        listaCategoria.className = "lista-categoria";
 
         // Iterar sobre los ingredientes de la categoría y agregarlos como elementos <li>
         ingredientesCategoria.forEach(ingrediente => {
@@ -508,9 +521,15 @@ function renderizarIngredientes() {
             });
         });
 
-        // Agregar la lista de categoría al contenedor principal <ul> lista-ingredientes
-        listaIngredientes.appendChild(listaCategoria);
+        // Agregar la lista de categoría a la columna de la categoría
+        columnaCategoria.appendChild(listaCategoria);
+
+        // Agregar la columna de la categoría al contenedor principal <ul> lista-ingredientes
+        listaIngredientes.appendChild(columnaCategoria);
     }
+
+    // Agregar la lista de ingredientes al contenedor en el DOM
+    contenedorIngredientes.appendChild(listaIngredientes);
 }
 
 // Obtener el elemento <ul> donde se pueden soltar los elementos
