@@ -625,7 +625,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Mostrar la receta personalizada actualizada
     mostrarRecetaPersonalizada();
 }
-   function generarItem() {
+ function generarItem() {
     // Verificamos si los ingredientes seleccionados coinciden con alguna receta conocida
     const recetaCoincidente = recetas.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
 
@@ -669,7 +669,29 @@ document.addEventListener("DOMContentLoaded", function() {
         alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
     }
 }
+        
+function limpiarReceta() {
+    for (const [nombreIngrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
+        // Verificar si el ingrediente está en el inventario
+        if (inventario.hasOwnProperty(nombreIngrediente)) {
+            // Sumar la cantidad utilizada al inventario
+            inventario[nombreIngrediente].cantidad += cantidad;
+        } else {
+            // Mostrar un mensaje si el ingrediente no está en el inventario
+            alert("El ingrediente " + nombreIngrediente + " no existe en el inventario.");
+            return; // Salir de la función si el ingrediente no está en el inventario
+        }
+    }
 
+    // Limpiar la lista de ingredientes utilizados en la receta personalizada
+    recetaPersonalizada.materiales = {};
+
+    // Actualizar la lista de ingredientes
+    renderizarIngredientes();
+
+    // Mostrar la receta personalizada actualizada
+    mostrarRecetaPersonalizada();
+}
         function sonMismosIngredientes(receta1, receta2) {
             const ingredientes1 = receta1.materiales;
             const ingredientes2 = receta2.materiales;
