@@ -411,8 +411,7 @@ const ingredientesAvanzado = [
 ];
         let itemsCreados = [];
         const listaIngredientes = document.getElementById("lista-ingredientes");
-
-
+        
 function obtenerIngredientesInventario() {
     // Obtener el nombre de usuario actual
     const usuarioActual = getUsuarioActual();
@@ -824,6 +823,7 @@ function procesarIngrediente() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
     const usuario = usuariosRegistrados.find(user => user.nombre === username && user.contraseña === password);
+        const listaIngredientes = document.getElementById("lista-ingredientes");
     if (usuario) {
         // Simulación de inicio de sesión exitoso
         agregarEvento("Inicio de sesión exitoso para el usuario: " + username);
