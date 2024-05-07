@@ -454,7 +454,8 @@ function renderizarIngredientes() {
     for (const [nombreIngrediente, infoIngrediente] of Object.entries(inventario)) {
         const cantidad = infoIngrediente.cantidad;
         const categoria = infoIngrediente.categoria;
-
+        let ingrediente;
+        
         // Filtrar los ingredientes con cantidad mayor que 0
         if (cantidad > 0) {
             // Crear un nuevo elemento li para el ingrediente
@@ -489,6 +490,7 @@ function renderizarIngredientes() {
             
             const tooltip = document.getElementById("tooltip");
             icono.addEventListener("mouseover", () => {
+                ingrediente = nombre;
                 tooltip.style.display = "block";
                 tooltip.style.left = (event.pageX + 10) + "px";
                 tooltip.style.top = (event.pageY + 10) + "px";
@@ -499,7 +501,7 @@ function renderizarIngredientes() {
                 tooltip.style.display = "none";
             });
             icono.addEventListener("dragstart", (event) => {
-                event.dataTransfer.setData("text/plain", ingrediente.nombre);
+                event.dataTransfer.setData("text/plain", ingrediente);
             });
         }
     }
