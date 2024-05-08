@@ -542,10 +542,11 @@ function renderizarIngredientes() {
             const nombreIngrediente = event.dataTransfer.getData("text/plain");
     
             // Obtener la cantidad del ingrediente arrastrado desde el campo de entrada
-            const cantidad = parseInt(document.getElementById("cantidad-ingredientes").value);
+            const cantidad = 1;//parseInt(document.getElementById("cantidad-ingredientes").value);
     
             // Llamar a la función devolverIngrediente con los datos del ingrediente arrastrado
             devolverIngrediente(nombreIngrediente, cantidad);
+            mostrarRecetaPersonalizada();
 });
         // Agregar la lista de categoría a la columna de la categoría
         columnaCategoria.appendChild(listaCategoria);
