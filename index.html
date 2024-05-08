@@ -559,8 +559,50 @@ document.addEventListener("DOMContentLoaded", function() {
         // Llamar a la función agregarIngrediente con los datos del ingrediente arrastrado
         agregarIngrediente(nombreIngrediente, cantidad);
     });
+    // Agregar evento dragstart a los elementos de la lista-receta
+listaReceta.addEventListener("dragstart", (event) => {
+    // Establecer los datos a transferir
+    event.dataTransfer.setData("text/plain", event.target.alt);
 });
 
+// Agregar evento dragend para finalizar el proceso de arrastre
+listaReceta.addEventListener("dragend", (event) => {
+    // Implementar acciones finales si es necesario
+});
+
+// Agregar evento dragover al ul lista-ingredientes para permitir soltar elementos
+listaExistente.addEventListener("dragover", (event) => {
+    event.preventDefault(); // Evitar el comportamiento predeterminado
+});
+
+// Agregar evento drop al ul lista-ingredientes para manejar la acción de soltar elementos
+listaExistente.addEventListener("drop", (event) => {
+    event.preventDefault(); // Evitar el comportamiento predeterminado
+
+    // Obtener el nombre del ingrediente arrastrado desde los datos transferidos
+    const nombreIngrediente = event.dataTransfer.getData("text/plain");
+    
+    // Eliminar el ingrediente de la receta personalizada y agregarlo de vuelta al inventario
+    devolverIngrediente(nombreIngrediente);
+});
+});
+
+function devolverIngrediente(nombreIngrediente) {
+    // Eliminar el ingrediente de la receta personalizada
+    delete recetaPersonalizada.materiales[nombreIngrediente];
+    
+    // Incrementar la cantidad del ingrediente en el inventario (suponiendo que recetaPersonalizada y inventario son accesibles aquí)
+    if (inventario.hasOwnProperty(nombreIngrediente)) {
+        inventario[nombreIngrediente].cantidad++;
+    } else {
+        console.error("El ingrediente no está en el inventario:", nombreIngrediente);
+    }
+
+    // Volver a renderizar los ingredientes en lista-ingredientes
+    renderizarIngredientes();
+}
+
+        
         function mostrarItemsCreados() {
             const itemsList = document.getElementById("lista-items-creados");
             itemsList.innerHTML = ""; // Limpiamos la lista de items creados
