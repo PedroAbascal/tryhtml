@@ -588,51 +588,53 @@ function mostrarRecetaPersonalizada() {
     const recetaList = document.getElementById("lista-receta");
     recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
 
-    // Inicializamos la cantidad total de ingredientes en la receta personalizada
+    // Inicializamos la cantidad total
     let cantidadTotal = 0;
 
     // Iteramos sobre cada ingrediente en la receta personalizada
     for (const [ingrediente, infoIngrediente] of Object.entries(recetaPersonalizada.materiales)) {
         // Verificamos si el ingrediente está presente en la receta personalizada
         if (recetaPersonalizada.materiales.hasOwnProperty(ingrediente)) {
-            // Sumamos la cantidad del ingrediente a la cantidad total
-            cantidadTotal += infoIngrediente.cantidad;
+            cantidadTotal += infoIngrediente.cantidad; // Sumamos la cantidad del ingrediente
         }
+
+        // Creamos un nuevo elemento <li> para el ingrediente
+        const listItem = document.createElement("li");
+
+        // Creamos un elemento <img> para el icono del ingrediente
+        const icono = document.createElement("img");
+        icono.src = obtenerURLIcono(ingrediente);
+        icono.alt = ingrediente;
+        icono.style.width = "22px";
+        icono.style.height = "22px";
+
+        // Creamos un elemento <span> para la cantidad del ingrediente
+        const cantidadElement = document.createElement("span");
+        cantidadElement.textContent = infoIngrediente.cantidad;
+
+        // Agregamos el icono y la cantidad como hijos del elemento <li>
+        listItem.appendChild(icono);
+        listItem.appendChild(cantidadElement);
+
+        // Agregamos evento al icono para mostrar el nombre del ingrediente como tooltip al pasar el mouse
+        icono.addEventListener("mouseover", () => {
+            tooltip.style.display = "block";
+            tooltip.style.left = (event.pageX + 10) + "px";
+            tooltip.style.top = (event.pageY + 10) + "px";
+            tooltip.textContent = icono.alt;
+        });
+
+        // Ocultar el tooltip cuando se retira el mouse del icono
+        icono.addEventListener("mouseout", () => {
+            tooltip.style.display = "none";
+        });
+
+        // Agregamos el elemento <li> a la lista de receta personalizada
+        recetaList.appendChild(listItem);
     }
 
-    // Creamos un nuevo elemento <li> para mostrar la cantidad total de ingredientes
-    const listItem = document.createElement("li");
-    listItem.textContent = `Total de ingredientes: ${cantidadTotal}`;
-    
-    // Creamos un elemento <img> para el icono del ingrediente
-    const icono = document.createElement("img");
-    icono.src = obtenerURLIcono(ingrediente);
-    icono.alt = ingrediente;
-    icono.style.width = "22px";
-    icono.style.height = "22px";
-
-    // Creamos un elemento <span> para la cantidad del ingrediente
-    const cantidadElement = document.createElement("span");
-    cantidadElement.textContent = cantidad;
-
-    // Agregamos el icono y la cantidad como hijos del elemento <li>
-    listItem.appendChild(icono);
-    listItem.appendChild(cantidadElement);
-
-    // Agregamos evento al icono para mostrar el nombre del ingrediente como tooltip al pasar el mouse
-    icono.addEventListener("mouseover", () => {
-        tooltip.style.display = "block";
-        tooltip.style.left = (event.pageX + 10) + "px";
-        tooltip.style.top = (event.pageY + 10) + "px";
-        tooltip.textContent = icono.alt;
-    });
-    // Ocultar el tooltip cuando se retira el mouse del icono
-    icono.addEventListener("mouseout", () => {
-        tooltip.style.display = "none";
-    });
-
-    // Agregamos el elemento <li> a la lista de receta personalizada
-    recetaList.appendChild(listItem);
+    // Mostramos la cantidad total de ingredientes en la receta personalizada
+    console.log("Cantidad total de ingredientes:", cantidadTotal);
 }
 
 function agregarIngrediente(nombreIngrediente, cantidad) {
@@ -693,7 +695,8 @@ function agregarIngrediente(nombreIngrediente, cantidad) {
 
     // Mostrar la receta personalizada actualizada
     mostrarRecetaPersonalizada();
-}
+    }
+        
  function generarItem() {
     // Verificamos si los ingredientes seleccionados coinciden con alguna receta conocida
     const recetaCoincidente = recetas.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
@@ -739,19 +742,6 @@ function agregarIngrediente(nombreIngrediente, cantidad) {
         alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
     }
 }
-        
-function limpiarReceta() {
-    for (const [nombreIngrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
-        // Verificar si el ingrediente está en el inventario
-        if (inventario.hasOwnProperty(nombreIngrediente)) {
-            // Sumar la cantidad utilizada al inventario
-            inventario[nombreIngrediente].cantidad += cantidad;
-        } else {
-            // Mostrar un mensaje si el ingrediente no está en el inventario
-            alert("El ingrediente " + nombreIngrediente + " no existe en el inventario.");
-            return; // Salir de la función si el ingrediente no está en el inventario
-        }
-    }
 
     // Limpiar la lista de ingredientes utilizados en la receta personalizada
     recetaPersonalizada.materiales = {};
