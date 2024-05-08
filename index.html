@@ -595,7 +595,10 @@ function mostrarRecetaPersonalizada() {
     for (const [ingrediente, infoIngrediente] of Object.entries(recetaPersonalizada.materiales)) {
         // Verificamos si el ingrediente está presente en la receta personalizada
         if (recetaPersonalizada.materiales.hasOwnProperty(ingrediente)) {
-            cantidadTotal += infoIngrediente.cantidad; // Sumamos la cantidad del ingrediente
+            // Verificamos si la cantidad del ingrediente es un número
+            if (!isNaN(infoIngrediente.cantidad)) {
+                cantidadTotal += parseFloat(infoIngrediente.cantidad); // Sumamos la cantidad del ingrediente
+            }
         }
 
         // Creamos un nuevo elemento <li> para el ingrediente
@@ -610,7 +613,13 @@ function mostrarRecetaPersonalizada() {
 
         // Creamos un elemento <span> para la cantidad del ingrediente
         const cantidadElement = document.createElement("span");
-        cantidadElement.textContent = infoIngrediente.cantidad;
+
+        // Verificamos si la cantidad del ingrediente es un número
+        if (!isNaN(infoIngrediente.cantidad)) {
+            cantidadElement.textContent = infoIngrediente.cantidad;
+        } else {
+            cantidadElement.textContent = "Cantidad inválida";
+        }
 
         // Agregamos el icono y la cantidad como hijos del elemento <li>
         listItem.appendChild(icono);
