@@ -587,17 +587,6 @@ document.addEventListener("DOMContentLoaded", function() {
 function mostrarRecetaPersonalizada() {
     const recetaList = document.getElementById("lista-receta");
     recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
-     let cantidad = 0;
-
-   for (const [ingrediente, infoIngrediente] of Object.entries(recetaPersonalizada.materiales)) {
-    // Verificamos si el ingrediente está presente en la receta personalizada
-    if (recetaPersonalizada.materiales.hasOwnProperty(ingrediente)) {
-        cantidad += infoIngrediente.cantidad; // Sumamos la cantidad del ingrediente
-    }
-
-entonces si quisieramos integrar todas las funcionalidades quedaría así la función: function mostrarRecetaPersonalizada() {
-    const recetaList = document.getElementById("lista-receta");
-    recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
 
     // Inicializamos la cantidad total de ingredientes en la receta personalizada
     let cantidadTotal = 0;
