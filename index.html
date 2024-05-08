@@ -530,7 +530,12 @@ function renderizarIngredientes() {
                 event.dataTransfer.setData("text/plain", ingrediente.nombre);
             });
         });
-    
+
+        
+        // Agregar evento dragover al ul lista-ingredientes para permitir soltar elementos
+        listaExistente.addEventListener("dragover", (event) => {
+            event.preventDefault(); // Evitar el comportamiento predeterminado
+            });
         listaExistente.addEventListener("drop", (event) => {
             event.preventDefault(); // Evitar el comportamiento predeterminado
             // Obtener el nombre del ingrediente arrastrado desde los datos transferidos
@@ -575,23 +580,7 @@ listaReceta.addEventListener("dragstart", (event) => {
     // Establecer los datos a transferir
     event.dataTransfer.setData("text/plain", event.target.alt);
 });
-
-// Agregar evento dragover al ul lista-ingredientes para permitir soltar elementos
-listaExistente.addEventListener("dragover", (event) => {
-    event.preventDefault(); // Evitar el comportamiento predeterminado
-});
-
-// Agregar evento drop al ul lista-ingredientes para manejar la acción de soltar elementos
-listaExistente.addEventListener("drop", (event) => {
-    event.preventDefault(); // Evitar el comportamiento predeterminado
-
-    // Obtener el nombre del ingrediente arrastrado desde los datos transferidos
-    const nombreIngrediente = event.dataTransfer.getData("text/plain");
-    
-    // Eliminar el ingrediente de la receta personalizada y agregarlo de vuelta al inventario
-    devolverIngrediente(nombreIngrediente);
-});
-});
+}
 
 function devolverIngrediente(nombreIngrediente) {
     // Eliminar el ingrediente de la receta personalizada
