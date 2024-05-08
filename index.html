@@ -593,6 +593,11 @@ function devolverIngrediente(nombreIngrediente) {
             // Decrementar la cantidad de ese ingrediente en la lista-receta
             recetaPersonalizada.materiales[nombreIngrediente]--;
 
+            // Si la cantidad del ingrediente llega a 0, eliminarlo de la receta
+            if (recetaPersonalizada.materiales[nombreIngrediente] === 0) {
+                delete recetaPersonalizada.materiales[nombreIngrediente];
+            }
+
             // Incrementar la cantidad del ingrediente en el inventario
             if (inventario.hasOwnProperty(nombreIngrediente)) {
                 inventario[nombreIngrediente].cantidad++;
@@ -601,8 +606,9 @@ function devolverIngrediente(nombreIngrediente) {
             }
 
             // Volver a renderizar los ingredientes en lista-ingredientes
-            renderizarIngredientes();
-            mostrarRecetaPersonalizada();
+        renderizarIngredientes();
+        mostrarRecetaPersonalizada();
+
         } else {
             console.error("No hay suficiente cantidad del ingrediente en la lista-receta:", nombreIngrediente);
         }
@@ -610,7 +616,7 @@ function devolverIngrediente(nombreIngrediente) {
         console.error("El ingrediente no está en la lista-receta:", nombreIngrediente);
     }
 }
-
+        
 function mostrarRecetaPersonalizada() {
     const recetaList = document.getElementById("lista-receta");
     recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
