@@ -530,7 +530,18 @@ function renderizarIngredientes() {
                 event.dataTransfer.setData("text/plain", ingrediente.nombre);
             });
         });
-
+    
+        listaExistente.addEventListener("drop", (event) => {
+            event.preventDefault(); // Evitar el comportamiento predeterminado
+            // Obtener el nombre del ingrediente arrastrado desde los datos transferidos
+            const nombreIngrediente = event.dataTransfer.getData("text/plain");
+    
+            // Obtener la cantidad del ingrediente arrastrado desde el campo de entrada
+            const cantidad = parseInt(document.getElementById("cantidad-ingredientes").value);
+    
+            // Llamar a la función devolverIngrediente con los datos del ingrediente arrastrado
+            devolverIngrediente(nombreIngrediente, cantidad);
+});
         // Agregar la lista de categoría a la columna de la categoría
         columnaCategoria.appendChild(listaCategoria);
 
