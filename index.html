@@ -565,11 +565,6 @@ listaReceta.addEventListener("dragstart", (event) => {
     event.dataTransfer.setData("text/plain", event.target.alt);
 });
 
-// Agregar evento dragend para finalizar el proceso de arrastre
-listaReceta.addEventListener("dragend", (event) => {
-    // Implementar acciones finales si es necesario
-});
-
 // Agregar evento dragover al ul lista-ingredientes para permitir soltar elementos
 listaExistente.addEventListener("dragover", (event) => {
     event.preventDefault(); // Evitar el comportamiento predeterminado
