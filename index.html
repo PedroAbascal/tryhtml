@@ -584,43 +584,30 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 function devolverIngrediente(nombreIngrediente) {
-    // Eliminar el ingrediente de la receta personalizada
-    delete recetaPersonalizada.materiales[nombreIngrediente];
-    
-    // Incrementar la cantidad del ingrediente en el inventario (suponiendo que recetaPersonalizada y inventario son accesibles aquí)
-    if (inventario.hasOwnProperty(nombreIngrediente)) {
-        inventario[nombreIngrediente].cantidad++;
+    // Verificar si el ingrediente está en la lista-receta
+    if (recetaPersonalizada.materiales.hasOwnProperty(nombreIngrediente)) {
+        // Verificar si hay al menos un ingrediente de ese tipo en la lista-receta
+        if (recetaPersonalizada.materiales[nombreIngrediente] > 0) {
+            // Decrementar la cantidad de ese ingrediente en la lista-receta
+            recetaPersonalizada.materiales[nombreIngrediente]--;
+
+            // Incrementar la cantidad del ingrediente en el inventario
+            if (inventario.hasOwnProperty(nombreIngrediente)) {
+                inventario[nombreIngrediente].cantidad++;
+            } else {
+                console.error("El ingrediente no está en el inventario:", nombreIngrediente);
+            }
+
+            // Volver a renderizar los ingredientes en lista-ingredientes
+            renderizarIngredientes();
+            mostrarRecetaPersonalizada();
+        } else {
+            console.error("No hay suficiente cantidad del ingrediente en la lista-receta:", nombreIngrediente);
+        }
     } else {
-        console.error("El ingrediente no está en el inventario:", nombreIngrediente);
+        console.error("El ingrediente no está en la lista-receta:", nombreIngrediente);
     }
-
-    // Volver a renderizar los ingredientes en lista-ingredientes
-    renderizarIngredientes();
 }
-
-        
-        function mostrarItemsCreados() {
-            const itemsList = document.getElementById("lista-items-creados");
-            itemsList.innerHTML = ""; // Limpiamos la lista de items creados
-
-            itemsCreados.forEach(item => {
-                const listItem = document.createElement("li");
-                listItem.textContent = item;
-                itemsList.appendChild(listItem);
-            });
-        }
-
-        function mostrarRecetas() {
-            const recetasSelect = document.getElementById("recetas");
-            recetasSelect.innerHTML = ""; // Limpiamos el dropdown de recetas
-
-            recetasConocidas.forEach(receta => {
-                const option = document.createElement("option");
-                option.value = receta;
-                option.textContent = receta;
-                recetasSelect.appendChild(option);
-            });
-        }
 
 function mostrarRecetaPersonalizada() {
     const recetaList = document.getElementById("lista-receta");
@@ -683,6 +670,29 @@ function mostrarRecetaPersonalizada() {
     console.log("Cantidad total de ingredientes:", cantidadTotal);
 }
 
+function mostrarItemsCreados() {
+            const itemsList = document.getElementById("lista-items-creados");
+            itemsList.innerHTML = ""; // Limpiamos la lista de items creados
+
+            itemsCreados.forEach(item => {
+                const listItem = document.createElement("li");
+                listItem.textContent = item;
+                itemsList.appendChild(listItem);
+            });
+        }
+
+function mostrarRecetas() {
+            const recetasSelect = document.getElementById("recetas");
+            recetasSelect.innerHTML = ""; // Limpiamos el dropdown de recetas
+
+            recetasConocidas.forEach(receta => {
+                const option = document.createElement("option");
+                option.value = receta;
+                option.textContent = receta;
+                recetasSelect.appendChild(option);
+            });
+        }
+ 
 function agregarIngrediente(nombreIngrediente, cantidad) {
     // Verificar si se proporcionó un nombre de ingrediente válido y una cantidad válida
     if (nombreIngrediente && cantidad > 0) {
