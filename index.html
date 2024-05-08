@@ -743,15 +743,7 @@ function agregarIngrediente(nombreIngrediente, cantidad) {
     }
 }
 
-    // Limpiar la lista de ingredientes utilizados en la receta personalizada
-    recetaPersonalizada.materiales = {};
-
-    // Actualizar la lista de ingredientes
-    renderizarIngredientes();
-
-    // Mostrar la receta personalizada actualizada
-    mostrarRecetaPersonalizada();
-}
+   
         function sonMismosIngredientes(receta1, receta2) {
             const ingredientes1 = receta1.materiales;
             const ingredientes2 = receta2.materiales;
