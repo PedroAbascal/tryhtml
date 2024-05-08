@@ -634,6 +634,45 @@ function mostrarRecetaPersonalizada() {
     // Agregamos el elemento <li> a la lista de receta personalizada
     recetaList.appendChild(listItem);
 }
+
+function agregarIngrediente(nombreIngrediente, cantidad) {
+    // Verificar si se proporcionó un nombre de ingrediente válido y una cantidad válida
+    if (nombreIngrediente && cantidad > 0) {
+        // Verificar si el ingrediente está en el inventario
+        if (inventario.hasOwnProperty(nombreIngrediente)) {
+            // Verificar si hay suficiente cantidad en el inventario
+            if (inventario[nombreIngrediente].cantidad >= cantidad) {
+                // Verificar si el ingrediente ya está en la receta personalizada
+                if (recetaPersonalizada.materiales.hasOwnProperty(nombreIngrediente)) {
+                    // Si el ingrediente ya está en la receta personalizada, sumar la cantidad
+                    recetaPersonalizada.materiales[nombreIngrediente] += cantidad;
+                } else {
+                    // Si el ingrediente no está en la receta personalizada, agregarlo
+                    recetaPersonalizada.materiales[nombreIngrediente] = cantidad;
+                }
+                // Restar la cantidad utilizada del inventario
+                inventario[nombreIngrediente].cantidad -= cantidad;
+                
+               
+                // Renderizar la lista de ingredientes actualizada
+                renderizarIngredientes();
+                // Mostrar la receta personalizada actualizada
+                mostrarRecetaPersonalizada(nombreIngrediente, cantidad);
+            } else {
+                // Mostrar un mensaje si no hay suficiente cantidad en el inventario
+                agregarEvento("No tienes suficientes " + nombreIngrediente + " en el inventario.");
+            }
+        } else {
+            // Mostrar un mensaje si el ingrediente no está en el inventario
+            agregarEvento("El ingrediente " + nombreIngrediente + " no existe en el inventario.");
+        }
+    } else {
+        // Mostrar un mensaje si no se proporcionó un nombre de ingrediente válido o una cantidad válida
+        agregarEvento("Por favor, selecciona un ingrediente y una cantidad válida.");
+    }
+
+
+        
        function limpiarReceta() {
     for (const [nombreIngrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
         // Verificar si el ingrediente está en el inventario
