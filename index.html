@@ -590,7 +590,6 @@ function mostrarRecetaPersonalizada() {
      let cantidad = 0;
 
    for (const [ingrediente, infoIngrediente] of Object.entries(recetaPersonalizada.materiales)) {
-       let cantidad = 0;
     // Verificamos si el ingrediente está presente en la receta personalizada
     if (recetaPersonalizada.materiales.hasOwnProperty(ingrediente)) {
         cantidad += infoIngrediente.cantidad; // Sumamos la cantidad del ingrediente
@@ -647,12 +646,13 @@ entonces si quisieramos integrar todas las funcionalidades quedaría así la fun
     recetaList.appendChild(listItem);
 }
 }
-function mostrarRecetaPersonalizada() {
+Se está asignando un valor NaN  a cantidad || function mostrarRecetaPersonalizada() {
     const recetaList = document.getElementById("lista-receta");
     recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
      let cantidad = 0;
 
    for (const [ingrediente, infoIngrediente] of Object.entries(recetaPersonalizada.materiales)) {
+       let cantidad = 0;
     // Verificamos si el ingrediente está presente en la receta personalizada
     if (recetaPersonalizada.materiales.hasOwnProperty(ingrediente)) {
         cantidad += infoIngrediente.cantidad; // Sumamos la cantidad del ingrediente
@@ -693,9 +693,6 @@ function mostrarRecetaPersonalizada() {
     recetaList.appendChild(listItem);
 }
 }
-
-
-
     function agregarIngrediente(nombreIngrediente, cantidad) {
     // Verificar si se proporcionó un nombre de ingrediente válido y una cantidad válida
     if (nombreIngrediente && cantidad > 0) {
