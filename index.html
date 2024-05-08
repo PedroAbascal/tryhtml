@@ -592,13 +592,10 @@ function mostrarRecetaPersonalizada() {
     let cantidadTotal = 0;
 
     // Iteramos sobre cada ingrediente en la receta personalizada
-    for (const [ingrediente, infoIngrediente] of Object.entries(recetaPersonalizada.materiales)) {
-        // Verificamos si el ingrediente está presente en la receta personalizada
-        if (recetaPersonalizada.materiales.hasOwnProperty(ingrediente)) {
-            // Verificamos si la cantidad del ingrediente es un número
-            if (!isNaN(infoIngrediente.cantidad)) {
-                cantidadTotal += parseFloat(infoIngrediente.cantidad); // Sumamos la cantidad del ingrediente
-            }
+    for (const [ingrediente, cantidad] of Object.entries(recetaPersonalizada.materiales)) {
+        // Verificamos si la cantidad del ingrediente es un número
+        if (!isNaN(cantidad)) {
+            cantidadTotal += parseFloat(cantidad); // Sumamos la cantidad del ingrediente
         }
 
         // Creamos un nuevo elemento <li> para el ingrediente
@@ -615,8 +612,8 @@ function mostrarRecetaPersonalizada() {
         const cantidadElement = document.createElement("span");
 
         // Verificamos si la cantidad del ingrediente es un número
-        if (!isNaN(infoIngrediente.cantidad)) {
-            cantidadElement.textContent = infoIngrediente.cantidad;
+        if (!isNaN(cantidad)) {
+            cantidadElement.textContent = cantidad;
         } else {
             cantidadElement.textContent = "Cantidad inválida";
         }
