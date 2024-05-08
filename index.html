@@ -584,13 +584,13 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         }
 
-       function mostrarRecetaPersonalizada() {
+function mostrarRecetaPersonalizada() {
     const recetaList = document.getElementById("lista-receta");
     recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
 
     for (const [ingrediente, infoIngrediente] of Object.entries(recetaPersonalizada.materiales)) {
         const cantidad = infoIngrediente.cantidad;
-        const categoria = obtenerCategoriaDelIngrediente(ingrediente);
+        //const categoria = obtenerCategoriaDelIngrediente(ingrediente);
 
         // Creamos un nuevo elemento <li> para el ingrediente
         const listItem = document.createElement("li");
