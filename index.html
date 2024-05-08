@@ -587,8 +587,10 @@ document.addEventListener("DOMContentLoaded", function() {
 function mostrarRecetaPersonalizada() {
     const recetaList = document.getElementById("lista-receta");
     recetaList.innerHTML = ""; // Limpiamos la lista de receta personalizada
+     let cantidad = 0;
 
    for (const [ingrediente, infoIngrediente] of Object.entries(recetaPersonalizada.materiales)) {
+       let cantidad = 0;
     // Verificamos si el ingrediente está presente en la receta personalizada
     if (recetaPersonalizada.materiales.hasOwnProperty(ingrediente)) {
         cantidad += infoIngrediente.cantidad; // Sumamos la cantidad del ingrediente
