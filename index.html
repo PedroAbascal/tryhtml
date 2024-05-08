@@ -555,7 +555,6 @@ function renderizarIngredientes() {
     }
 }
 
-// Obtener el elemento <ul> donde se pueden soltar los elementos
 document.addEventListener("DOMContentLoaded", function() {
     // Obtener el elemento <ul> donde se pueden soltar los elementos
     const listaReceta = document.getElementById("lista-receta");
@@ -575,12 +574,13 @@ document.addEventListener("DOMContentLoaded", function() {
         // Llamar a la función agregarIngrediente con los datos del ingrediente arrastrado
         agregarIngrediente(nombreIngrediente, cantidad);
     });
+
     // Agregar evento dragstart a los elementos de la lista-receta
-listaReceta.addEventListener("dragstart", (event) => {
-    // Establecer los datos a transferir
-    event.dataTransfer.setData("text/plain", event.target.alt);
+    listaReceta.addEventListener("dragstart", (event) => {
+        // Establecer los datos a transferir
+        event.dataTransfer.setData("text/plain", event.target.alt);
+    });
 });
-}
 
 function devolverIngrediente(nombreIngrediente) {
     // Eliminar el ingrediente de la receta personalizada
