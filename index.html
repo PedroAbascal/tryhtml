@@ -810,6 +810,7 @@ function agregarIngrediente(nombreIngrediente, cantidad) {
             alert("¡Item generado exitosamente: " + itemGenerado + "!");
             limpiarReceta();
             mostrarRecetaPersonalizada();
+            localStorage.setItem(getUsuarioActual() + "-inventario", JSON.stringify(inventario));
         }
     } else {
         alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
@@ -855,6 +856,7 @@ function procesarIngrediente() {
                 renderizarIngredientes();
                 mostrarRecetaPersonalizada();
                 limpiarReceta(); // Limpiar la receta personalizada después de procesar el ingrediente
+                localStorage.setItem(getUsuarioActual() + "-inventario", JSON.stringify(inventario));
             } else {
                 alert("Error: La receta coincide pero no se especificó un nuevo ingrediente.");
             }
