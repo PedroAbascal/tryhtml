@@ -186,6 +186,7 @@
             { nombre: "usuario5", contraseña: "usuario5" }
         ];
         let recetasConocidas = [];
+        let recetasMortero = [];
         let recetas = [
             { nombre: "Poción de curación menor", materiales: { Agua: 1, "Hojas de salvia": 1, "Raíz de mandrágora": 1 }, efecto: "Cura 1d4 + 1 puntos de golpe." },
             { nombre: "Poción de curación", materiales: { "Agua de manantial": 1, "Pasta de Hierbas Curativas": 1, "Raíz de mandrágora": 1 }, efecto: "Cura 2d4 + 2 puntos de golpe." },
@@ -388,20 +389,20 @@ let recetasProcesarIngredientes = [
 };
 
 const ingredientesBasico = [
-    { nombre: "Agua", cantidad: 5, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_30_50.png" , neutro: 20, veneno: 0, curacion: 0, magia: 0, atributo: "Constitución", efecto_magico: "Ninguno", ph: 5, nutricion: 0, dominio: "Terrenal", rareza: 1},
-    { nombre: "Hojas de salvia", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_76.png" , neutro: 5, veneno: 6, curacion: 7, magia: 1, atributo: "Constitución", efecto_magico: "Calma", ph: 12, nutricion: 1, dominio: "Terrenal", rareza: 1 },
-    { nombre: "Raíz de mandrágora", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_71.png", neutro: 1, veneno: 5, curacion: 10, magia: 7, atributo: "HP", efecto_magico: "Parálisis", ph: 7, nutricion: -15, dominio: "Terrenal", rareza: 7},
-    { nombre: "Néctar de flores", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_42.png", neutro: 10, veneno: 0, curacion: 2, magia: 0, atributo: "Destreza", efecto_magico: "Risas", ph: 9, nutricion: 5, dominio: "Terrenal", rareza: 3},
-    { nombre: "Escamas de pez", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_94.png", neutro: 7, veneno: 2, curacion: 0, magia: 1, atributo: "Inteligencia", efecto_magico: "Respiración Acuatica", ph: 7, nutricion: -5, dominio: "Terrenal", rareza: 1 },
-    { nombre: "Polen de abeja", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_88.png", neutro: 5, veneno: 0, curacion: 1, magia: 1, atributo: "Sabiduría", efecto_magico: "Parálisis", ph: 3, nutricion: 10, dominio: "Terrenal", rareza: 3 },
-    { nombre: "Pulpa de frutas", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_28_14.png" , neutro: 7, veneno: 0, curacion: 2, magia: 0, atributo: "Constitución", efecto_magico: "Curación", ph: 7, nutricion: 25, dominio: "Terrenal", rareza: 1},
-    { nombre: "Tierra fértil", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons_27_58.png" , neutro: 10, veneno: 0, curacion: 0, magia: 0, atributo: "Sabiduría", efecto_magico: "Antilevitación", ph: 4, nutricion: 0, dominio: "Terrenal", rareza: 1},
-    { nombre: "Musgo fresco", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_28_100.png" , neutro: 5, veneno: 7, curacion: 2, magia: 2, atributo: "Agilidad", efecto_magico: "Fuerza", ph: 12, nutricion: 0, dominio: "Terrenal", rareza: 1},
-    { nombre: "Agua de manantial", cantidad: 50, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_06.png", neutro: 15, veneno: 0, curacion: 0, magia: 2, atributo: "Constitución", efecto_magico: "Ninguno", ph: 7, nutricion: 0, dominio: "Terrenal", rareza: 2},
-    { nombre: "Pluma de cuervo", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_34.png" , neutro: 7, veneno: 3, curacion: 0, magia: 4, atributo: "Agilidad", efecto_magico: "Levitación", ph: 7, nutricion: 0, dominio: "Terrenal", rareza: 3},
-    { nombre: "Hojas de menta", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_18.png" , neutro: 12, veneno: 1, curacion: 2, magia: 1, atributo: "Fuerza", efecto_magico: "Catalizador", ph: 9, nutricion: 2, dominio: "Terrenal", rareza: 1},
-    { nombre: "Metal", cantidad: 30, categoria: "Metálico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_44.png" , neutro: 5, veneno: 6, curacion: 0, magia: 1, atributo: "Fuerza", efecto_magico: "Catalizador", ph: 5, nutricion: 0, dominio: "Terrenal", rareza: 1},
-    { nombre: "Madera", cantidad: 30, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_31.png"  , neutro: 5, veneno: 3, curacion: 1, magia: 2, atributo: "Carisma", efecto_magico: "Catalizador", ph: 5, nutricion: 0, dominio: "Terrenal", rareza: 1}
+    { nombre: "Agua", cantidad: 5, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_30_50.png" , humedad: 10, neutro: 20, veneno: 0, curacion: 0, magia: 0, atributo: "Constitución", efecto_magico: "Ninguno", ph: 5, nutricion: 0, dominio: "Terrenal", rareza: 1},
+    { nombre: "Hojas de salvia", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_76.png" , humedad: 3, neutro: 5, veneno: 6, curacion: 7, magia: 1, atributo: "Constitución", efecto_magico: "Calma", ph: 12, nutricion: 1, dominio: "Terrenal", rareza: 1 },
+    { nombre: "Raíz de mandrágora", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_71.png", humedad: 6, neutro: 1, veneno: 5, curacion: 10, magia: 7, atributo: "HP", efecto_magico: "Parálisis", ph: 7, nutricion: -15, dominio: "Terrenal", rareza: 7},
+    { nombre: "Néctar de flores", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_42.png" , humedad: 7, neutro: 10, veneno: 0, curacion: 2, magia: 0, atributo: "Destreza", efecto_magico: "Risas", ph: 9, nutricion: 5, dominio: "Terrenal", rareza: 3},
+    { nombre: "Escamas de pez", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_94.png", humedad: 1, neutro: 7, veneno: 2, curacion: 0, magia: 1, atributo: "Inteligencia", efecto_magico: "Respiración Acuatica", ph: 7, nutricion: -5, dominio: "Terrenal", rareza: 1 },
+    { nombre: "Polen de abeja", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_88.png", humedad: 1, neutro: 5, veneno: 0, curacion: 1, magia: 1, atributo: "Sabiduría", efecto_magico: "Parálisis", ph: 3, nutricion: 10, dominio: "Terrenal", rareza: 3 },
+    { nombre: "Pulpa de frutas", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_28_14.png" , humedad: 6, neutro: 7, veneno: 0, curacion: 2, magia: 0, atributo: "Constitución", efecto_magico: "Curación", ph: 7, nutricion: 25, dominio: "Terrenal", rareza: 1},
+    { nombre: "Tierra fértil", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons_27_58.png" , humedad: 10, neutro: 10, veneno: 0, curacion: 0, magia: 0, atributo: "Sabiduría", efecto_magico: "Antilevitación", ph: 4, nutricion: 0, dominio: "Terrenal", rareza: 1},
+    { nombre: "Musgo fresco", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_28_100.png" , humedad: 2, neutro: 5, veneno: 7, curacion: 2, magia: 2, atributo: "Agilidad", efecto_magico: "Fuerza", ph: 12, nutricion: 0, dominio: "Terrenal", rareza: 1},
+    { nombre: "Agua de manantial", cantidad: 50, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_06.png", humedad: 10, neutro: 15, veneno: 0, curacion: 0, magia: 2, atributo: "Constitución", efecto_magico: "Ninguno", ph: 7, nutricion: 0, dominio: "Terrenal", rareza: 2},
+    { nombre: "Pluma de cuervo", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_34.png" , humedad: 1, neutro: 7, veneno: 3, curacion: 0, magia: 4, atributo: "Agilidad", efecto_magico: "Levitación", ph: 7, nutricion: 0, dominio: "Terrenal", rareza: 3},
+    { nombre: "Hojas de menta", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_18.png" , humedad: 6, neutro: 12, veneno: 1, curacion: 2, magia: 1, atributo: "Fuerza", efecto_magico: "Catalizador", ph: 9, nutricion: 2, dominio: "Terrenal", rareza: 1},
+    { nombre: "Metal", cantidad: 30, categoria: "Metálico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_44.png" , humedad: 1, neutro: 5, veneno: 6, curacion: 0, magia: 1, atributo: "Fuerza", efecto_magico: "Catalizador", ph: 5, nutricion: 0, dominio: "Terrenal", rareza: 1},
+    { nombre: "Madera", cantidad: 30, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_31.png"  , humedad: 5, neutro: 5, veneno: 3, curacion: 1, magia: 2, atributo: "Carisma", efecto_magico: "Catalizador", ph: 5, nutricion: 0, dominio: "Terrenal", rareza: 1}
 ];
 
 const ingredientesIntermedio = [
@@ -866,7 +867,80 @@ function procesarIngrediente() {
         alert("Error: No hay una receta de procesamiento de ingredientes que coincida con los ingredientes seleccionados.");
     }
 }
-   
+
+function usarMortero(ingredienteOriginal, cantidadIngredienteOriginal) {
+    // Obtenemos los parámetros predefinidos del ingrediente original
+    const { neutro, veneno, curacion, magia, humedad, nombre } = ingredienteOriginal;
+
+    // Encontramos el valor más alto entre neutro, veneno, curacion y magia
+    const maximo = Math.max(neutro, veneno, curacion, magia);
+
+    // Sumamos 2 al valor máximo
+    const nuevoValor = maximo + 2;
+
+    // Asignamos el nuevo valor al más alto entre neutro, veneno, curación y magia
+    if (maximo === neutro) {
+        ingredienteOriginal.neutro = nuevoValor;
+    } else if (maximo === veneno) {
+        ingredienteOriginal.veneno = nuevoValor;
+    } else if (maximo === curacion) {
+        ingredienteOriginal.curacion = nuevoValor;
+    } else {
+        ingredienteOriginal.magia = nuevoValor;
+    }
+
+    // Determinamos el tipo de resultado basado en el factor de humedad
+    let tipoResultado, icono;
+    if (humedad > 6) {
+        tipoResultado = "Pasta";
+        icono = "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_28_100.png";
+    } else if (humedad < 4) {
+        tipoResultado = "Polvo";
+        icono = "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_30_11.png";
+    } else {
+        tipoResultado = "Masa";
+        icono = "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_68.png";
+    }
+
+    // Creamos el nuevo ingrediente con el nombre, icono y las propiedades respectivas
+    const cantidadNuevoIngrediente = cantidadIngredienteOriginal;
+    const nuevoIngrediente = {
+        nombre: tipoResultado + " de " + nombre,
+        icono: icono,
+        neutro: ingredienteOriginal.neutro,
+        veneno: ingredienteOriginal.veneno,
+        curacion: ingredienteOriginal.curacion,
+        magia: ingredienteOriginal.magia,
+        humedad: ingredienteOriginal.humedad,
+        atributo: ingredienteOriginal.atributo,
+        efecto_magico: ingredienteOriginal.efecto_magico,
+        ph: ingredienteOriginal.ph,
+        nutricion: ingredienteOriginal.nutricion,
+        dominio: ingredienteOriginal.dominio,
+        rareza: ingredienteOriginal.rareza,
+        categoria: tipoResultado
+    };
+
+    // Agregamos el nuevo ingrediente al inventario
+    agregarNuevoIngrediente(nuevoIngrediente, cantidadNuevoIngrediente);
+
+    // Aquí implementaríamos la lógica para procesar el ingrediente y generar la receta
+}
+
+// Función para agregar el nuevo ingrediente al inventario
+function agregarNuevoIngrediente(nuevoIngrediente, cantidadNuevoIngrediente) {
+    // Incrementar la cantidad del nuevo ingrediente en el inventario
+    if (inventario.hasOwnProperty(nuevoIngrediente.nombre)) {
+        inventario[nuevoIngrediente.nombre].cantidad += cantidadNuevoIngrediente;
+    } else {
+        inventario[nuevoIngrediente.nombre] = { cantidad: cantidadNuevoIngrediente, categoria: nuevoIngrediente.categoria };
+    }
+
+    // Mostrar mensaje de éxito y actualizar la interfaz
+    alert(`¡${cantidadNuevoIngrediente} nuevo(s) ingrediente(s) "${nuevoIngrediente.nombre}" agregado(s) al inventario!`);
+    mostrarInventario();
+}
+        
         function sonMismosIngredientes(receta1, receta2) {
             const ingredientes1 = receta1.materiales;
             const ingredientes2 = receta2.materiales;
@@ -1047,7 +1121,7 @@ document.getElementById("agregar-ingredientes-receta").addEventListener("click",
         document.getElementById("generar-item").addEventListener("click", generarItem);
 
         // Evento para el botón de agregar ingrediente a la receta personalizada
-        document.getElementById("agregar-ingrediente").addEventListener("click", agregarIngrediente);
+        document.getElementById("agregar-ingrediente").addEventListener("click", usarMortero);
 
         // Evento para el botón de limpiar receta personalizada
         document.getElementById("limpiar-receta").addEventListener("click", limpiarReceta);
