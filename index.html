@@ -1004,12 +1004,14 @@ document.getElementById("registro-btn").addEventListener("click", function() {
 
 
         // Evento para el botón de agregar ingredientes de receta
-        document.getElementById("agregar-ingredientes-receta").addEventListener("click", function() {
+   document.getElementById("agregar-ingredientes-receta").addEventListener("click", function() {
     const recetaSeleccionada = document.getElementById("recetas").value;
     const recetaEncontrada = recetas.find(receta => receta.nombre === recetaSeleccionada);
 
     if (recetaEncontrada) {
         let ingredientesSuficientes = true;
+        
+        // Verificar si hay suficientes ingredientes en el inventario para la receta seleccionada
         for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.materiales)) {
             if (inventario[ingrediente] < cantidad) {
                 ingredientesSuficientes = false;
@@ -1019,12 +1021,18 @@ document.getElementById("registro-btn").addEventListener("click", function() {
         }
         
         if (ingredientesSuficientes) {
+            // Agregar los ingredientes de la receta personalizada solo si hay suficientes en el inventario
             for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.materiales)) {
-                recetaPersonalizada.materiales[ingrediente] = (recetaPersonalizada.materiales[ingrediente] || 0) + cantidad;
-                inventario[ingrediente] -= cantidad;
+                // Verificar que haya suficientes ingredientes en el inventario antes de agregarlos
+                if (inventario[ingrediente] >= cantidad) {
+                    recetaPersonalizada.materiales[ingrediente] = (recetaPersonalizada.materiales[ingrediente] || 0) + cantidad;
+                    inventario[ingrediente] -= cantidad;
+                }
             }
-           renderizarIngredientes(inventario);;
-           mostrarRecetaPersonalizada();
+            
+            // Renderizar los ingredientes actualizados en lista-ingredientes
+            renderizarIngredientes();
+            mostrarRecetaPersonalizada();
             agregarEvento("Ingredientes de receta agregados con éxito.");
         }
     } else {
