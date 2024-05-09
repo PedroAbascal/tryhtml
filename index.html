@@ -832,8 +832,9 @@ function procesarIngrediente() {
                 recetaPersonalizada.materiales[nuevoIngrediente] -= cantidadNuevoIngrediente;
 
                 alert(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
+                renderizarIngredientes();
+                limpiarReceta();
                 mostrarRecetaPersonalizada();
-                limpiarReceta(); // Limpiar la receta personalizada después de procesar el ingrediente
             } else {
                 alert(`No tienes suficientes "${nuevoIngrediente}" en la receta personalizada.`);
             }
