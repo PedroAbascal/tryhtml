@@ -187,7 +187,7 @@
         ];
         let recetasConocidas = [];
         let recetas = [
-            { nombre: "Poción de curación menor", materiales: { Agua: 1, Hierbas: 1, "Raíz de mandrágora": 1 }, efecto: "Cura 1d4 + 1 puntos de golpe." },
+            { nombre: "Poción de curación menor", materiales: { Agua: 1, "Hojas de salvia": 1, "Raíz de mandrágora": 1 }, efecto: "Cura 1d4 + 1 puntos de golpe." },
             { nombre: "Poción de curación", materiales: { "Agua de manantial": 1, "Pasta de Hierbas Curativas": 1, "Raíz de mandrágora": 1 }, efecto: "Cura 2d4 + 2 puntos de golpe." },
             { nombre: "Poción de curación mayor", materiales: { "Rocío de la mañana": 1, "Pasta de Hierbas Curativas": 1, "Raíz de mandrágora": 1 }, efecto: "Cura 4d4 + 4 puntos de golpe." },
             { nombre: "Espada larga", materiales: { Metal: 2, Madera: 1 }, efecto: "Arma cuerpo a cuerpo que causa 1d8 de daño cortante." },
@@ -247,7 +247,7 @@
 ];
 
 let recetasProcesarIngredientes = [
-    {nombre: "Pasta de Hierbas Curativas", materiales: { Agua: 1, Hierbas: 1, "Raíz de mandrágora": 1 }, nuevoIngrediente: "Pasta de Hierbas Curativas", cantidadNuevoIngrediente: 1, categoriaNuevoIngrediente: "Medicinal"},
+    {nombre: "Pasta de Hierbas Curativas", materiales: { Agua: 1, "Hojas de salvia": 1, "Raíz de mandrágora": 1 }, nuevoIngrediente: "Pasta de Hierbas Curativas", cantidadNuevoIngrediente: 1, categoriaNuevoIngrediente: "Medicinal"},
     {nombre: "Polvo de raíz de mandragora", materiales: { "Raíz de mandrágora": 3 }, nuevoIngrediente: "Polvo de raíz de mandragora", cantidadNuevoIngrediente: 1, categoriaNuevoIngrediente: "Medicinal"},
     // Puedes añadir más recetas para procesar ingredientes aquí
 ];
@@ -258,11 +258,11 @@ let recetasProcesarIngredientes = [
         };
         let inventario = {
    "Agua": { cantidad: 10, categoria: "Liquido" },
-    "Hierbas": { cantidad: 5, categoria: "Vegetal" },
+    "Hojas de salvia": { cantidad: 5, categoria: "Vegetal" },
     "Raíz de mandrágora": { cantidad: 3, categoria: "Vegetal" },
-    "Metal": { cantidad: 0, categoria: "Metalico" },
+    "Metal": { cantidad: 0, categoria: "Metálico" },
     "Madera": { cantidad: 0, categoria: "Vegetal" },
-    "Oro": { cantidad: 0, categoria: "Metalico" },
+    "Oro": { cantidad: 0, categoria: "Metálico" },
     "Diamante": { cantidad: 0, categoria: "Cristalino" },
     "Néctar de flores": { cantidad: 0, categoria: "Vegetal" },
     "Escamas de pez": { cantidad: 0, categoria: "Animal" },
@@ -388,24 +388,25 @@ let recetasProcesarIngredientes = [
 };
 
 const ingredientesBasico = [
-    { nombre: "Agua", cantidad: 5, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_30_50.png" },
-    { nombre: "Hierbas", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_76.png" },
-    { nombre: "Raíz de mandrágora", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_71.png" },
-    { nombre: "Néctar de flores", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_42.png" },
-    { nombre: "Escamas de pez", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_94.png" },
-    { nombre: "Polen de abeja", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_88.png" },
-    { nombre: "Pulpa de frutas", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_28_14.png" },
-    { nombre: "Tierra fértil", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons_27_58.png" },
-    { nombre: "Musgo fresco", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_28_100.png" },
-    { nombre: "Agua de manantial", cantidad: 50, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_06.png" },
-    { nombre: "Pluma de cuervo", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_34.png" },
-    { nombre: "Hojas de menta", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_18.png" },
-    { nombre: "Rocío de la mañana", cantidad: 50, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_06.png" }
+    { nombre: "Agua", cantidad: 5, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_30_50.png" , neutro: 20, veneno: 0, curacion: 0, magia: 0, atributo: "Constitución", efecto_magico: "Ninguno", ph: 5, nutricion: 0, dominio: "Terrenal", rareza: 1},
+    { nombre: "Hojas de salvia", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_76.png" , neutro: 5, veneno: 6, curacion: 7, magia: 1, atributo: "Constitución", efecto_magico: "Calma", ph: 12, nutricion: 1, dominio: "Terrenal", rareza: 1 },
+    { nombre: "Raíz de mandrágora", cantidad: 5, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_71.png", neutro: 1, veneno: 5, curacion: 10, magia: 7, atributo: "HP", efecto_magico: "Parálisis", ph: 7, nutricion: -15, dominio: "Terrenal", rareza: 7},
+    { nombre: "Néctar de flores", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_42.png", neutro: 10, veneno: 0, curacion: 2, magia: 0, atributo: "Destreza", efecto_magico: "Risas", ph: 9, nutricion: 5, dominio: "Terrenal", rareza: 3},
+    { nombre: "Escamas de pez", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_94.png", neutro: 7, veneno: 2, curacion: 0, magia: 1, atributo: "Inteligencia", efecto_magico: "Respiración Acuatica", ph: 7, nutricion: -5, dominio: "Terrenal", rareza: 1 },
+    { nombre: "Polen de abeja", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_88.png", neutro: 5, veneno: 0, curacion: 1, magia: 1, atributo: "Sabiduría", efecto_magico: "Parálisis", ph: 3, nutricion: 10, dominio: "Terrenal", rareza: 3 },
+    { nombre: "Pulpa de frutas", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_28_14.png" , neutro: 7, veneno: 0, curacion: 2, magia: 0, atributo: "Constitución", efecto_magico: "Curación", ph: 7, nutricion: 25, dominio: "Terrenal", rareza: 1},
+    { nombre: "Tierra fértil", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons_27_58.png" , neutro: 10, veneno: 0, curacion: 0, magia: 0, atributo: "Sabiduría", efecto_magico: "Antilevitación", ph: 4, nutricion: 0, dominio: "Terrenal", rareza: 1},
+    { nombre: "Musgo fresco", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_28_100.png" , neutro: 5, veneno: 7, curacion: 2, magia: 2, atributo: "Agilidad", efecto_magico: "Fuerza", ph: 12, nutricion: 0, dominio: "Terrenal", rareza: 1},
+    { nombre: "Agua de manantial", cantidad: 50, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_06.png", neutro: 15, veneno: 0, curacion: 0, magia: 2, atributo: "Constitución", efecto_magico: "Ninguno", ph: 7, nutricion: 0, dominio: "Terrenal", rareza: 2},
+    { nombre: "Pluma de cuervo", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_34.png" , neutro: 7, veneno: 3, curacion: 0, magia: 4, atributo: "Agilidad", efecto_magico: "Levitación", ph: 7, nutricion: 0, dominio: "Terrenal", rareza: 3},
+    { nombre: "Hojas de menta", cantidad: 50, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_18.png" , neutro: 12, veneno: 1, curacion: 2, magia: 1, atributo: "Fuerza", efecto_magico: "Catalizador", ph: 9, nutricion: 2, dominio: "Terrenal", rareza: 1},
+    { nombre: "Metal", cantidad: 30, categoria: "Metálico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_44.png" , neutro: 5, veneno: 6, curacion: 0, magia: 1, atributo: "Fuerza", efecto_magico: "Catalizador", ph: 5, nutricion: 0, dominio: "Terrenal", rareza: 1},
+    { nombre: "Madera", cantidad: 30, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_31.png"  , neutro: 5, veneno: 3, curacion: 1, magia: 2, atributo: "Carisma", efecto_magico: "Catalizador", ph: 5, nutricion: 0, dominio: "Terrenal", rareza: 1}
 ];
 
 const ingredientesIntermedio = [
-    { nombre: "Metal", cantidad: 30, categoria: "Metalico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_44.png" },
-    { nombre: "Madera", cantidad: 30, categoria: "Vegetal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_31.png" },
+    { nombre: "Rocío de la mañana", cantidad: 50, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_06.png" }
+    
     { nombre: "Orejas de elfo", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_29_63.png" },
     { nombre: "Escamas de dragón bebé", cantidad: 50, categoria: "Animal", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_82.png" },
     { nombre: "Polvo de hada", cantidad: 50, categoria: "Magico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/icons_27_98.png" },
@@ -423,7 +424,7 @@ const ingredientesIntermedio = [
 ];
 
 const ingredientesAvanzado = [
-    { nombre: "Oro", cantidad: 15, categoria: "Metalico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_54.png" },
+    { nombre: "Oro", cantidad: 15, categoria: "Metálico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Icons_27_54.png" },
     { nombre: "Diamante", cantidad: 15, categoria: "Cristalino", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/26.png" },
     { nombre: "Lágrimas de fénix", cantidad: 50, categoria: "Liquido", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/30.png" },
     { nombre: "Esencia de estrella", cantidad: 50, categoria: "Magico", icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons/Armors/Armor1/armor0.png" },
