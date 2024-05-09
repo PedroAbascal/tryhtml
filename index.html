@@ -836,10 +836,15 @@ function procesarIngrediente() {
         if (ingredientesSuficientes) {
             const nuevoIngrediente = recetaCoincidente.nuevoIngrediente;
             const cantidadNuevoIngrediente = recetaCoincidente.cantidadNuevoIngrediente;
+            const categoriaNuevoIngrediente = recetaCoincidente.categoriaNuevoIngrediente;
 
-            if (nuevoIngrediente && cantidadNuevoIngrediente) {
+            if (nuevoIngrediente && cantidadNuevoIngrediente && categoriaNuevoIngrediente) {
                 // Incrementar la cantidad del nuevo ingrediente en el inventario
-                inventario[nuevoIngrediente] = (inventario[nuevoIngrediente] || 0) + cantidadNuevoIngrediente;
+                if (inventario.hasOwnProperty(nuevoIngrediente)) {
+                    inventario[nuevoIngrediente].cantidad += cantidadNuevoIngrediente;
+                } else {
+                    inventario[nuevoIngrediente] = { cantidad: cantidadNuevoIngrediente, categoria: categoriaNuevoIngrediente };
+                }
 
                 // Restar la cantidad de los ingredientes de la receta personalizada
                 for (const [ingrediente, cantidad] of Object.entries(ingredientesReceta)) {
