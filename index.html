@@ -83,6 +83,7 @@
             font-family: "Jacquard 24", system-ui;
             color: 	#000000;
             font-size: 28px;
+            list-style-type: none;
             
         }
         
@@ -515,8 +516,6 @@ function renderizarIngredientes() {
         // Iterar sobre los ingredientes de la categoría y agregarlos como elementos <li>
         ingredientesCategoria.forEach(ingrediente => {
             const ingredienteItem = document.createElement("li");
-                listItem.style.listStyleType = "none";
-
             const icono = document.createElement("img");
             icono.src = obtenerURLIcono(ingrediente.nombre);
             icono.alt = ingrediente.nombre;
