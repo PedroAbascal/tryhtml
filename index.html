@@ -847,6 +847,7 @@ function procesarIngrediente() {
                 }
 
                 alert(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
+                renderizarInventario();
                 mostrarRecetaPersonalizada();
                 limpiarReceta(); // Limpiar la receta personalizada después de procesar el ingrediente
             } else {
