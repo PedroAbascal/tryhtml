@@ -841,6 +841,10 @@ function procesarIngrediente() {
                 };
             }
 
+            
+            // Guardar el estado actualizado del inventario en localStorage
+            localStorage.setItem(getUsuarioActual() + "-inventario", JSON.stringify(inventario));
+            
             // Renderizar los ingredientes actualizados en lista-ingredientes
             renderizarIngredientes();
 
