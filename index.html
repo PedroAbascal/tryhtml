@@ -820,26 +820,38 @@ function procesarIngrediente() {
     const recetaCoincidente = recetasProcesarIngredientes.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
 
     if (recetaCoincidente) {
-        const nuevoIngrediente = recetaCoincidente.nuevoIngrediente;
-        const cantidadNuevoIngrediente = recetaCoincidente.cantidadNuevoIngrediente;
-            
-        if (nuevoIngrediente && cantidadNuevoIngrediente) {
-            if (recetaPersonalizada.materiales[nuevoIngrediente] >= cantidadNuevoIngrediente) {
+        const ingredientesReceta = recetaCoincidente.materiales;
+
+        let ingredientesSuficientes = true;
+        
+        // Verificar si hay suficientes ingredientes en la receta personalizada
+        for (const [ingrediente, cantidad] of Object.entries(ingredientesReceta)) {
+            if (recetaPersonalizada.materiales[ingrediente] < cantidad) {
+                ingredientesSuficientes = false;
+                alert(`No tienes suficientes "${ingrediente}" en la receta personalizada.`);
+                break; // Salir del bucle si no hay suficientes ingredientes
+            }
+        }
+        
+        if (ingredientesSuficientes) {
+            const nuevoIngrediente = recetaCoincidente.nuevoIngrediente;
+            const cantidadNuevoIngrediente = recetaCoincidente.cantidadNuevoIngrediente;
+
+            if (nuevoIngrediente && cantidadNuevoIngrediente) {
                 // Incrementar la cantidad del nuevo ingrediente en el inventario
                 inventario[nuevoIngrediente] = (inventario[nuevoIngrediente] || 0) + cantidadNuevoIngrediente;
 
-                // Restar la cantidad del nuevo ingrediente de la receta personalizada
-                recetaPersonalizada.materiales[nuevoIngrediente] -= cantidadNuevoIngrediente;
+                // Restar la cantidad de los ingredientes de la receta personalizada
+                for (const [ingrediente, cantidad] of Object.entries(ingredientesReceta)) {
+                    recetaPersonalizada.materiales[ingrediente] -= cantidad;
+                }
 
                 alert(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
-                renderizarIngredientes();
-                limpiarReceta();
                 mostrarRecetaPersonalizada();
+                limpiarReceta(); // Limpiar la receta personalizada después de procesar el ingrediente
             } else {
-                alert(`No tienes suficientes "${nuevoIngrediente}" en la receta personalizada.`);
+                alert("Error: La receta coincide pero no se especificó un nuevo ingrediente.");
             }
-        } else {
-            alert("Error: La receta coincide pero no se especificó un nuevo ingrediente.");
         }
     } else {
         alert("Error: No hay una receta de procesamiento de ingredientes que coincida con los ingredientes seleccionados.");
