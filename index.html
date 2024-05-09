@@ -815,33 +815,28 @@ function agregarIngrediente(nombreIngrediente, cantidad) {
         alert("¡No hay una receta conocida que coincida con los ingredientes seleccionados!");
     }
 }
+
 function procesarIngrediente() {
     const recetaCoincidente = recetasProcesarIngredientes.find(receta => sonMismosIngredientes(receta, recetaPersonalizada));
 
     if (recetaCoincidente) {
         const nuevoIngrediente = recetaCoincidente.nuevoIngrediente;
         const cantidadNuevoIngrediente = recetaCoincidente.cantidadNuevoIngrediente;
-
+            
         if (nuevoIngrediente && cantidadNuevoIngrediente) {
-            // Verificar si el ingrediente ya existe en el inventario
-            if (inventario.hasOwnProperty(nuevoIngrediente)) {
-                // Sumar la cantidad nueva al inventario existente
-                inventario[nuevoIngrediente] += cantidadNuevoIngrediente;
+            if (recetaPersonalizada.materiales[nuevoIngrediente] >= cantidadNuevoIngrediente) {
+                // Incrementar la cantidad del nuevo ingrediente en el inventario
+                inventario[nuevoIngrediente] = (inventario[nuevoIngrediente] || 0) + cantidadNuevoIngrediente;
+
+                // Restar la cantidad del nuevo ingrediente de la receta personalizada
+                recetaPersonalizada.materiales[nuevoIngrediente] -= cantidadNuevoIngrediente;
+
+                alert(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
+                mostrarRecetaPersonalizada();
+                limpiarReceta(); // Limpiar la receta personalizada después de procesar el ingrediente
             } else {
-                // Agregar el nuevo ingrediente al inventario
-                inventario[nuevoIngrediente] = cantidadNuevoIngrediente;
+                alert(`No tienes suficientes "${nuevoIngrediente}" en la receta personalizada.`);
             }
-
-            // Renderizar los ingredientes actualizados en lista-ingredientes
-            renderizarIngredientes();
-
-            // Limpiar la receta personalizada
-            //recetaPersonalizada.materiales = {};
-            limpiarReceta();
-            mostrarRecetaPersonalizada();
-
-            // Mostrar un mensaje de éxito
-            alert(`¡Nuevo ingrediente "${nuevoIngrediente}" agregado al inventario!`);
         } else {
             alert("Error: La receta coincide pero no se especificó un nuevo ingrediente.");
         }
