@@ -1024,7 +1024,7 @@ document.getElementById("registro-btn").addEventListener("click", function() {
             // Agregar los ingredientes de la receta personalizada solo si hay suficientes en el inventario
             for (const [ingrediente, cantidad] of Object.entries(recetaEncontrada.materiales)) {
                 // Verificar que haya suficientes ingredientes en el inventario antes de agregarlos
-                if (inventario[ingrediente] >= cantidad) {
+                   // if (inventario[ingrediente] >= cantidad) {
                     recetaPersonalizada.materiales[ingrediente] = (recetaPersonalizada.materiales[ingrediente] || 0) + cantidad;
                     inventario[ingrediente] -= cantidad;
                 }
