@@ -269,7 +269,7 @@ let recetasProcesarIngredientes = [
     "Escamas de pez": { cantidad: 0, categoria: "Animal" },
     "Polen de abeja": { cantidad: 0, categoria: "Vegetal" },
     "Pulpa de frutas": { cantidad: 0, categoria: "Vegetal" },
-    "Tierra fértil": { cantidad: 0, categoria: "Vegetal" },
+    "Tierra fértil": { cantidad: 0, categoria: "Vegetal" }, // icono: "https://raw.githubusercontent.com/PedroAbascal/tryhtml/main/recursos/Icons_27_58.png" , humedad: 10, neutro: 10, veneno: 0, curacion: 0, magia: 0, atributo: "Sabiduría", efecto_magico: "Antilevitación", ph: 4, nutricion: 0, dominio: "Terrenal", rareza: 1},
     "Musgo fresco": { cantidad: 0, categoria: "Vegetal" },
     "Agua de manantial": { cantidad: 0, categoria: "Liquido" },
     "Pluma de cuervo": { cantidad: 0, categoria: "Animal" },
@@ -869,8 +869,8 @@ function procesarIngrediente() {
 
 function usarMortero() {
     // Obtener el nombre del ingrediente y la cantidad desde la receta personalizada
-    const nombreIngrediente = recetaPersonalizada.materiales;
-    const cantidadIngrediente = recetaPersonalizada.materiales[cantidad];
+    const nombreIngrediente = recetaPersonalizada.materiales.hasOwnProperty(nombreIngrediente);
+    const cantidadIngrediente = recetaPersonalizada.materiales.hasOwnProperty(cantidad);
 
     // Buscar el ingrediente correspondiente en las listas ingredientesBasico, ingredientesIntermedio e ingredientesAvanzado
     const ingredienteBasico = ingredientesBasico.find(ingrediente => ingrediente.nombre === nombreIngrediente);
