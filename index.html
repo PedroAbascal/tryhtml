@@ -867,10 +867,29 @@ function procesarIngrediente() {
     }
 }
 
-function usarMortero(ingredienteOriginal, cantidadIngredienteOriginal) {
-    // Obtenemos los parámetros predefinidos del ingrediente original
-    const { neutro, veneno, curacion, magia, humedad, nombre } = ingredienteOriginal;
-    console.log("morterizando!!!");
+function usarMortero() {
+    // Obtener el nombre del ingrediente y la cantidad desde la receta personalizada
+    const nombreIngrediente = recetaPersonalizada.nombre;
+    const cantidadIngrediente = recetaPersonalizada.materiales[nombreIngrediente];
+
+    // Buscar el ingrediente correspondiente en las listas ingredientesBasico, ingredientesIntermedio e ingredientesAvanzado
+    const ingredienteBasico = ingredientesBasico.find(ingrediente => ingrediente.nombre === nombreIngrediente);
+    const ingredienteIntermedio = ingredientesIntermedio.find(ingrediente => ingrediente.nombre === nombreIngrediente);
+    const ingredienteAvanzado = ingredientesAvanzado.find(ingrediente => ingrediente.nombre === nombreIngrediente);
+
+    // Si se encuentra el ingrediente en alguna de las listas, asignar sus valores correspondientes
+    let neutro, veneno, curacion, magia, humedad;
+    let nombre;
+    if (ingredienteBasico) {
+        ({ neutro, veneno, curacion, magia, humedad, nombre } = ingredienteBasico);
+    } else if (ingredienteIntermedio) {
+        ({ neutro, veneno, curacion, magia, humedad, nombre } = ingredienteIntermedio);
+    } else if (ingredienteAvanzado) {
+        ({ neutro, veneno, curacion, magia, humedad, nombre } = ingredienteAvanzado);
+    } else {
+        console.error("El ingrediente no se encontró en ninguna lista.");
+        return;
+    }
 
     // Encontramos el valor más alto entre neutro, veneno, curacion y magia
     const maximo = Math.max(neutro, veneno, curacion, magia);
