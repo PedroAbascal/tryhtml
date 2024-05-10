@@ -869,8 +869,8 @@ function procesarIngrediente() {
 
 function usarMortero() {
     // Obtener el nombre del ingrediente y la cantidad desde la receta personalizada
-    const nombreIngrediente = recetaPersonalizada.nombre;
-    const cantidadIngrediente = recetaPersonalizada.materiales[nombreIngrediente];
+    const nombreIngrediente = recetaPersonalizada.materiales[nombreIngrediente];
+    const cantidadIngrediente = recetaPersonalizada.materiales[cantidadIngrediente];
 
     // Buscar el ingrediente correspondiente en las listas ingredientesBasico, ingredientesIntermedio e ingredientesAvanzado
     const ingredienteBasico = ingredientesBasico.find(ingrediente => ingrediente.nombre === nombreIngrediente);
