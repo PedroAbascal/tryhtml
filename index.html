@@ -1,149 +1,69 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<title>Post-its Digitales (corrigido)</title>
+<meta charset="UTF-8">
+<title>Post-its Digitales Avanzados</title>
 <style>
-  :root{
-    --bg:#f0f0f0;
+  html, body {
+    margin:0; padding:0; width:100%; height:100%;
+    overflow:hidden; font-family: Arial, sans-serif;
   }
-  body{
-    font-family: Arial, Helvetica, sans-serif;
-    background: var(--bg);
-    margin:0;
-    padding:12px;
-     margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
+  #note-container {
+    position: relative; width:100%; height:100%;
+    background:#f0f0f0; overflow:hidden;
   }
-  
-  
-
-  button#newNoteBtn{
-    padding:8px 12px;
-    background:#3182ce;color:#fff;border:none;border-radius:6px;cursor:pointer;
-    margin-bottom:8px;
+  #newNoteBtn {
+    position:absolute; top:10px; left:10px;
+    z-index:1000; padding:8px 12px;
+    background:#3182ce; color:#fff;
+    border:none; border-radius:6px; cursor:pointer;
   }
 
-  /* tablero ocupa el resto */
-  #board{
-    position:relative;
-    width:100%;
-    height:calc(100vh - 64px);
-    overflow:hidden;
-    background: linear-gradient(180deg,#f9fafb,#eef2f6);
-    border-radius:8px;
-    padding:10px;
-  }
-  
-   #note-container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      background: #f0f0f0;
-      overflow: hidden; /* Evita scrollbars */
-    }
-
-
-  /* nota base */
-  .note{
-    position:absolute;
-    width:220px;
-    min-height:150px;
-    border-radius:8px;
-    box-shadow:0 4px 12px rgba(0,0,0,0.12);
-    resize:both;
-    overflow:hidden;
-    display:flex;
-    flex-direction:column;
-    user-select:none;
+  .note {
+    position:absolute; width:220px; min-height:180px;
+    border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12);
+    resize:both; overflow:auto; display:flex; flex-direction:column;
+    user-select:none; padding:4px; box-sizing:border-box;
   }
 
-  .note .note-header{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    padding:6px 8px;
-    background:rgba(0,0,0,0.06);
-    cursor:grab;
-  }
-  .drag-handle{
-    width:20px;
-    height:20px;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    font-weight:bold;
-    cursor:grab;
-  }
-  .note .title{
-    flex:1;
-    font-weight:700;
-    font-size:14px;
-    outline:none;
-  }
-  .note .btns{
-    display:flex;
-    gap:6px;
-  }
-  .small-btn{
-    width:26px;height:26px;border-radius:4px;border:none;cursor:pointer;
-  }
-  .small-btn.del{background:#e53e3e;color:#fff}
-  .small-btn.menu{background:#718096;color:#fff}
+  .drag-handle{ width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; font-weight:bold; cursor:grab; }
 
-  .note .note-body{
-    padding:8px;
-    background:transparent;
-    flex:1;
-    overflow:auto;
-    outline:none;
-  }
-
-  /* tipos / colores */
+  /* colores por tipo */
   .tipo-nota{ background:#fff9a6; }
   .tipo-recordatorio{ background:#c6f6d5; }
   .tipo-mensaje{ background:#bee3f8; }
   .tipo-importante{ background:#feb2b2; }
-  .tipo-lista{ background:#ffffff; border:1px solid #e2e8f0; }
+  .tipo-lista{ background:#ffffff; border:1px solid #ccc; }
 
-  .tipo-nota .title{ color:#8a6d3b; }
-  .tipo-recordatorio .title{ color:#276749; }
-  .tipo-mensaje .title{ color:#2b6cb0; }
-  .tipo-importante .title{ color:#c53030; }
-  .tipo-lista .title{ color:#2d3748; }
-
-  /* menú contextual simple */
-  #contextMenu{
-    position: absolute;
-    display:none;
-    background:#fff;
-    border:1px solid #cbd5e0;
-    box-shadow:0 6px 18px rgba(0,0,0,0.12);
-    border-radius:6px;
-    z-index:99999;
+  .note-header{
+    display:flex; justify-content:space-between; align-items:center;
+    cursor:grab; padding:2px 4px;
   }
-  #contextMenu ul{ list-style:none;margin:0;padding:6px 0; }
-  #contextMenu li{ padding:8px 14px; cursor:pointer; white-space:nowrap; }
-  #contextMenu li:hover{ background:#f1f5f9; }
+  .note-header .title{ font-weight:bold; flex:1; outline:none; }
+  .note-header button{ margin-left:2px; cursor:pointer; }
 
-  /* hint para dispositivos táctiles (opcional) */
-  @media (max-width:600px){
-    #board{ height:calc(100vh - 120px); }
+  .note-toolbar{ display:flex; gap:4px; padding:2px 4px; border-top:1px solid rgba(0,0,0,0.1); }
+  .note-toolbar button{ cursor:pointer; }
+
+  .note-body{ flex:1; padding:4px; overflow:auto; outline:none; }
+  .note-body[style-type="title"]{ font-size:16px; font-weight:bold; }
+  .note-body[style-type="subtitle"]{ font-size:14px; font-weight:bold; }
+  .note-body[style-type="body"]{ font-size:12px; font-weight:normal; }
+
+  .context-menu{
+    position:absolute; display:none; background:white; border:1px solid #ccc;
+    box-shadow:2px 2px 6px rgba(0,0,0,0.2); z-index:9999;
   }
-
+  .context-menu ul{ list-style:none; margin:0; padding:5px 0; }
+  .context-menu ul li{ padding:5px 10px; cursor:pointer; white-space:nowrap; }
+  .context-menu ul li:hover{ background:#eee; }
 </style>
 </head>
 <body>
-
 <button id="newNoteBtn">➕ Nueva nota</button>
-<div id="board" tabindex="0"></div>
+<div id="note-container"></div>
 
-<!-- menú contextual -->
-<div id="contextMenu">
+<div class="context-menu" id="contextMenu">
   <ul>
     <li data-type="nota">📝 Nota</li>
     <li data-type="recordatorio">⏰ Recordatorio</li>
@@ -154,263 +74,161 @@
 </div>
 
 <script>
-/* -------------------------
-   UTIL: etiquetas por tipo
-   ------------------------- */
-const TYPE_LABEL = {
-  'nota':       { class: 'tipo-nota', label: 'Nota' },
-  'recordatorio': { class: 'tipo-recordatorio', label: 'Recordatorio' },
-  'mensaje':    { class: 'tipo-mensaje', label: 'Mensaje' },
-  'importante': { class: 'tipo-importante', label: 'Importante' },
-  'lista':      { class: 'tipo-lista', label: 'Lista' }
-};
-
-/* -------------------------
-   Estado global y handlers
-   ------------------------- */
-const board = document.getElementById('board');
+const container = document.getElementById('note-container');
 const newBtn = document.getElementById('newNoteBtn');
-const ctxMenu = document.getElementById('contextMenu');
-
+const contextMenu = document.getElementById('contextMenu');
 let zIndexCounter = 100;
 let dragged = null;
 let dragOffset = {x:0,y:0};
 let currentContextNote = null;
 
-/* Refs para ResizeObserver (para guardar tamaño) */
-const ro = ('ResizeObserver' in window) ? new ResizeObserver(entries => {
-  for(const ent of entries){
-    const n = ent.target;
-    // guardar cambios (debounced?)
-    saveNotes();
-  }
-}) : null;
-
-/* Eventos globales para drag */
-document.addEventListener('mousemove', function(e){
-  if (!dragged) return;
-  e.preventDefault();
-  const nx = e.clientX - dragOffset.x;
-  const ny = e.clientY - dragOffset.y;
-  dragged.style.left = nx + 'px';
-  dragged.style.top  = ny + 'px';
+/* --- DRAG GLOBAL --- */
+document.addEventListener('mousemove', e=>{
+  if(!dragged) return;
+  dragged.style.left = (e.clientX - dragOffset.x)+'px';
+  dragged.style.top  = (e.clientY - dragOffset.y)+'px';
 });
+document.addEventListener('mouseup', ()=>{ dragged=null; saveNotes(); });
 
-document.addEventListener('mouseup', function(e){
-  if (dragged){
-    dragged = null;
-    // guardar posición final
-    saveNotes();
+/* --- CONTEXT MENU --- */
+document.addEventListener('click', e=>{
+  if(contextMenu.style.display==='block' && !contextMenu.contains(e.target)){
+    contextMenu.style.display='none';
+    currentContextNote=null;
   }
 });
-
-/* Cerrar menú contextual en clic fuera */
-document.addEventListener('click', (e)=>{
-  if (ctxMenu.style.display === 'block' && !ctxMenu.contains(e.target)) {
-    ctxMenu.style.display = 'none';
-    currentContextNote = null;
-  }
-});
-
-/* Manejo menú contextual (click en opción) */
-ctxMenu.addEventListener('click', function(e){
+contextMenu.addEventListener('click', e=>{
   const li = e.target.closest('li[data-type]');
-  if(!li || !currentContextNote) return;
-  const type = li.getAttribute('data-type');
-  applyTypeToNote(currentContextNote, type);
-  ctxMenu.style.display = 'none';
-  currentContextNote = null;
-  saveNotes();
+  if(li && currentContextNote){
+    applyType(currentContextNote, li.dataset.type);
+    contextMenu.style.display='none';
+    currentContextNote=null;
+    saveNotes();
+  }
 });
 
-/* -------------------------
-   Crear / renderizar nota
-   ------------------------- */
-function createNoteElement(data = {}) {
+/* --- UTILIDADES --- */
+function applyType(note,type){
+  note.classList.remove('tipo-nota','tipo-recordatorio','tipo-mensaje','tipo-importante','tipo-lista');
+  note.classList.add('tipo-'+type);
+  const t=note.querySelector('.title');
+  const generic=['Título','Nota','Recordatorio','Mensaje','Importante','Lista',''];
+  if(generic.includes(t.innerText)) t.innerText=type.charAt(0).toUpperCase()+type.slice(1);
+}
+
+/* --- CREAR NOTA --- */
+function createNote(data={}){
   const note = document.createElement('div');
-  const tipo = data.type || 'tipo-nota';
-  note.className = `note ${tipo}`;
-  note.style.left = data.left || (20 + Math.random()*80) + 'px';
-  note.style.top  = data.top  || (20 + Math.random()*80) + 'px';
-  note.style.width = data.width || '220px';
-  note.style.height = data.height || '180px';
-  note.style.zIndex = ++zIndexCounter;
+  const type = data.type || 'nota';
+  note.className='note tipo-'+type;
+  note.style.left=data.left||'50px';
+  note.style.top=data.top||'50px';
+  note.style.width=data.width||'220px';
+  note.style.height=data.height||'180px';
+  note.style.zIndex=++zIndexCounter;
 
-  // header (drag handle + title + buttons)
-  const header = document.createElement('div'); header.className = 'note-header';
-  const handle = document.createElement('div'); handle.className = 'drag-handle'; handle.textContent = '≡';
-  const title = document.createElement('div'); title.className = 'title'; title.contentEditable = 'true';
-  title.innerText = data.title || TYPE_LABEL[tipoToKey(tipo)].label || 'Título';
-  const btns = document.createElement('div'); btns.className = 'btns';
-  const del = document.createElement('button'); del.className = 'small-btn del'; del.title = 'Eliminar'; del.innerText = '✖';
-  const menu = document.createElement('button'); menu.className = 'small-btn menu'; menu.title = 'Tipo'; menu.innerText = '⋯';
-
-  btns.appendChild(menu); btns.appendChild(del);
-  header.appendChild(handle); header.appendChild(title); header.appendChild(btns);
-
-  // body
-  const body = document.createElement('div'); body.className = 'note-body'; body.contentEditable = 'true';
-  body.innerText = data.content || '';
-
-  note.appendChild(header);
-  note.appendChild(body);
-
-  // eventos
-  // drag start only from handle
-  handle.addEventListener('mousedown', function(e){
-    e.preventDefault();
-    dragged = note;
-    dragOffset.x = e.clientX - note.offsetLeft;
-    dragOffset.y = e.clientY - note.offsetTop;
-    note.style.zIndex = ++zIndexCounter;
-  });
-
-  // delete
-  del.addEventListener('click', function(e){
+  // HEADER
+  const handle = document.createElement('div'); handle.className='drag-handle'; handle.textContent='≡';
+  const header=document.createElement('div'); header.className='note-header';
+  const title=document.createElement('div'); title.className='title'; title.contentEditable=true;
+  title.innerText=data.title||'Título';
+  const btnDel=document.createElement('button'); btnDel.innerText='✖';
+  btnDel.addEventListener('click', e=>{ e.stopPropagation(); note.remove(); saveNotes(); });
+  const btnMenu=document.createElement('button'); btnMenu.innerText='⋯';
+  btnMenu.addEventListener('click', e=>{
     e.stopPropagation();
-    note.remove();
-    saveNotes();
+    currentContextNote=note;
+    showContextMenu(e.pageX,e.pageY);
+  });
+  header.append(handle, title, btnMenu, btnDel);
+  header.addEventListener('mousedown', e=>{
+    if([title, btnMenu, btnDel].includes(e.target)) return;
+    dragged=note;
+    dragOffset.x=e.clientX-note.offsetLeft;
+    dragOffset.y=e.clientY-note.offsetTop;
+    note.style.zIndex=++zIndexCounter;
   });
 
-  // open context menu for type selection when clicking the menu btn
-  menu.addEventListener('click', function(e){
-    e.stopPropagation();
-    currentContextNote = note;
-    showContextMenuAt(e.pageX, e.pageY);
+  // TOOLBAR FORMATO
+  const toolbar=document.createElement('div'); toolbar.className='note-toolbar';
+  let fontSize = 14; // siempre inicia en 14px
+  const btnMinus=document.createElement('button'); btnMinus.innerText='-';
+  const sizeDisplay=document.createElement('span'); sizeDisplay.innerText=fontSize+'px';
+  const btnPlus=document.createElement('button'); btnPlus.innerText='+';
+
+  btnMinus.addEventListener('click', ()=>{
+    fontSize = Math.max(8, fontSize-2);
+    document.execCommand("fontSize", false, "7");
+    updateFontSize(fontSize);
+  });
+  btnPlus.addEventListener('click', ()=>{
+    fontSize = Math.min(48, fontSize+2);
+    document.execCommand("fontSize", false, "7");
+    updateFontSize(fontSize);
   });
 
-  // right-click anywhere on body/title to open type menu
-  note.addEventListener('contextmenu', function(e){
-    e.preventDefault();
-    currentContextNote = note;
-    showContextMenuAt(e.pageX, e.pageY);
-  });
+  function updateFontSize(px){
+    const fontElements = document.getElementsByTagName("font");
+    for(let i=0;i<fontElements.length;i++){
+      if(fontElements[i].size=="7"){
+        fontElements[i].removeAttribute("size");
+        fontElements[i].style.fontSize=px+"px";
+      }
+    }
+    sizeDisplay.innerText=px+"px";
+  }
 
-  // focus title/body -> bring to front
-  title.addEventListener('focus', ()=>{ note.style.zIndex = ++zIndexCounter; });
-  body.addEventListener('focus', ()=>{ note.style.zIndex = ++zIndexCounter; });
+  const btnB=document.createElement('button'); btnB.innerText='B';
+  btnB.onclick=()=>document.execCommand('bold');
+  const btnI=document.createElement('button'); btnI.innerText='I';
+  btnI.onclick=()=>document.execCommand('italic');
 
-  // save on input
-  title.addEventListener('input', debounce(saveNotes, 300));
-  body.addEventListener('input', debounce(saveNotes, 300));
+  toolbar.append(btnMinus, sizeDisplay, btnPlus, btnB, btnI);
 
-  // save on mouseup after possible resize
-  note.addEventListener('mouseup', function(){ saveNotes(); });
+  // BODY
+  const body=document.createElement('div'); body.className='note-body'; body.contentEditable=true;
+  body.setAttribute('style-type', 'body');
+  body.innerText=data.content||'Escribe aquí...';
+  body.addEventListener('input', ()=>saveNotes());
 
-  // observe size changes
-  if (ro) ro.observe(note);
-
+  note.append(header, toolbar, body);
+  container.appendChild(note);
   return note;
 }
 
-/* -------------------------
-   Aux helpers
-   ------------------------- */
+/* --- NUEVA NOTA --- */
+newBtn.addEventListener('click', ()=>{ createNote(); saveNotes(); });
 
-function tipoToKey(tipoClass){
-  // tipoClass is like 'tipo-nota' ; returns 'nota'
-  if(!tipoClass) return 'nota';
-  const m = tipoClass.match(/^tipo-(.+)$/);
-  return m ? m[1] : 'nota';
+/* --- MENU CONTEXTUAL --- */
+function showContextMenu(x,y){
+  contextMenu.style.left=x+'px';
+  contextMenu.style.top=y+'px';
+  contextMenu.style.display='block';
 }
 
-function applyTypeToNote(note, typeKey){
-  const mapping = TYPE_LABEL[typeKey];
-  if(!mapping) return;
-  // quitar classes tipo-*
-  note.classList.forEach(c => {
-    if (c.startsWith('tipo-')) note.classList.remove(c);
-  });
-  note.classList.add(mapping.class);
-
-  // cambiar título si el usuario no lo personalizó:
-  const titleEl = note.querySelector('.title');
-  const current = (titleEl && titleEl.innerText && titleEl.innerText.trim()) ? titleEl.innerText.trim() : '';
-  const genericSet = new Set([
-    'Título','Nota','Recordatorio','Mensaje','Importante','Lista',''
-  ]);
-  if (genericSet.has(current)) {
-    titleEl.innerText = mapping.label;
-  }
-}
-
-function showContextMenuAt(x,y){
-  ctxMenu.style.left = x + 'px';
-  ctxMenu.style.top  = y + 'px';
-  ctxMenu.style.display = 'block';
-}
-
-/* Debounce util */
-function debounce(fn, wait){
-  let t;
-  return function(...a){
-    clearTimeout(t);
-    t = setTimeout(()=>fn.apply(this,a), wait);
-  };
-}
-
-/* -------------------------
-   Persistencia: guardar / cargar
-   ------------------------- */
-
+/* --- GUARDADO Y CARGADO --- */
 function saveNotes(){
-  const arr = [];
-  document.querySelectorAll('.note').forEach(note=>{
-    const type = Array.from(note.classList).find(c => c.startsWith('tipo-')) || 'tipo-nota';
+  const arr=[];
+  container.querySelectorAll('.note').forEach(n=>{
     arr.push({
-      type: type,
-      left: note.style.left || '0px',
-      top: note.style.top || '0px',
-      width: note.style.width || getComputedStyle(note).width,
-      height: note.style.height || getComputedStyle(note).height,
-      title: (note.querySelector('.title')?.innerText || '').trim(),
-      content: (note.querySelector('.note-body')?.innerText || '').trim()
+      type:Array.from(n.classList).find(c=>c.startsWith('tipo-'))?.replace('tipo-','')||'nota',
+      left:n.style.left,
+      top:n.style.top,
+      width:n.style.width,
+      height:n.style.height,
+      title:n.querySelector('.title')?.innerText||'',
+      content:n.querySelector('.note-body')?.innerText||''
     });
   });
-  try{
-    localStorage.setItem('notes', JSON.stringify(arr));
-  }catch(e){
-    console.error('Error guardando notes en localStorage', e);
-  }
+  localStorage.setItem('notes', JSON.stringify(arr));
 }
 
 function loadNotes(){
-  const raw = localStorage.getItem('notes') || '[]';
-  let arr = [];
-  try { arr = JSON.parse(raw); } catch(e){ arr = []; }
-  if (!Array.isArray(arr)) arr = [];
-  arr.forEach(d => {
-    const el = createNoteElement(d);
-    // restore zIndex maybe not needed
-    board.appendChild(el);
-  });
+  const data=JSON.parse(localStorage.getItem('notes')||'[]');
+  data.forEach(d=>createNote(d));
 }
 
-/* -------------------------
-   Crear nota nueva
-   ------------------------- */
-newBtn.addEventListener('click', ()=>{
-  const el = createNoteElement({ type: 'tipo-nota', title:'Nota', content:'Escribe aquí...' });
-  board.appendChild(el);
-  saveNotes();
-});
-
-/* -------------------------
-   Inicialización
-   ------------------------- */
-window.addEventListener('load', ()=>{
-  loadNotes();
-});
-
-/* -------------------------
-   Manejo teclado: ESC oculta menú
-   ------------------------- */
-document.addEventListener('keydown', (e)=>{
-  if (e.key === 'Escape') {
-    ctxMenu.style.display = 'none';
-    currentContextNote = null;
-  }
-});
+window.addEventListener('load', loadNotes);
 </script>
 </body>
 </html>
