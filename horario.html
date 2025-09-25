@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Horario Escolar con Recordatorios por Día</title>
+<style>
+body { margin:0; font-family: Arial, sans-serif; background:#f4f4f4; }
+.schedule { display: flex; flex-direction: column; }
+.row { display: grid; grid-template-columns: 80px repeat(5,1fr); }
+.day-header, .time-col { background:#2196F3; color:white; text-align:center; padding:5px; font-weight:bold; border:1px solid #ccc; }
+.time-col { background:#fafafa; color:#000; border-right:1px solid #ccc; text-align:right; font-size:12px; }
+.block { border:1px solid #ccc; border-top:none; padding:5px; min-height:45px; box-sizing:border-box; overflow:hidden; white-space:pre-wrap; word-wrap:break-word; cursor:text; position:relative; }
+.block:empty:before { content:""; color:#aaa; }
+.block:focus { outline:2px solid #2196F3; }
+.internal-reminder { background:#ffeb3b; padding:2px 4px; border-radius:4px; margin:2px; display:inline-block; }
+.context-menu { position:absolute; display:none; background:#fff; border:1px solid #ccc; box-shadow:2px 2px 6px rgba(0,0,0,0.2); z-index:1000; }
+.context-menu button { display:block; width:100%; padding:5px; border:none; background:none; text-align:left; cursor:pointer; }
+.context-menu button:hover { background:#f0f0f0; }
+.emoji-bar { display:flex; gap:5px; padding:5px; }
+.emoji-bar span { cursor:pointer; font-size:18px; }
+</style>
+</head>
+<body>
+
+<!-- Encabezados de días -->
+<div class="row">
+  <div></div>
+  <div class="day-header">Lunes</div>
+  <div class="day-header">Martes</div>
+  <div class="day-header">Miércoles</div>
+  <div class="day-header">Jueves</div>
+  <div class="day-header">Viernes</div>
+</div>
+
+<div id="schedule" class="schedule"></div>
+
+<!-- Menú contextual -->
+<div class="context-menu" id="contextMenu">
+<button id="clearBlock">Borrar todo el bloque</button>
+<button id="clearDay">Borrar todo el día</button>
+  <button id="convertSelection">Convertir selección en recordatorio</button>
+  <button id="deleteReminder">Borrar recordatorio</button>
+  <div class="emoji-bar">
+    <span>📘</span><span>✏️</span><span>⭐</span><span>✅</span><span>❗</span>
+  </div>
+  <div>
+    <strong>Notas predefinidas:</strong>
+    <button data-text="👨🏻‍🏫 Reemplazo">👨🏻‍🏫 Reemplazo</button>
+    <button data-text="📌 Recordatorio">📌 Recordatorio</button>
+    <button data-text="📝 Tarea pendiente">📝 Tarea pendiente</button>
+  </div>
+</div>
+
+<script>
+// Intervalos horarios
+const intervals = [
+  {time:"08:15 - 09:45", duration:90},
+  {time:"09:45 - 10:00", duration:15},
+  {time:"10:00 - 11:30", duration:90},
+  {time:"11:30 - 11:45", duration:15},
+  {time:"11:45 - 13:15", duration:90},
+  {time:"13:15 - 14:00", duration:45},
+  {time:"14:00 - 14:45", duration:45},
+  {time:"14:45 - 16:15", duration:90},
+  {time:"16:15 - 18:30", duration:135}
+];
+
+const scheduleDiv = document.getElementById("schedule");
+let reminders = [];
+let currentBlock = null;
+let currentDay = null;
+
+// Cargar datos guardados
+let savedBlocks = JSON.parse(localStorage.getItem("fixedSchedule")||"[]");
+
+// Crear filas y bloques
+intervals.forEach((interval,rowIndex)=>{
+  const row = document.createElement("div");
+  row.className="row";
+  
+  // Columna de hora
+  const timeCol = document.createElement("div");
+  timeCol.className="time-col";
+  timeCol.innerText = interval.time;
+  row.appendChild(timeCol);
+
+  for(let day=0; day<5; day++){
+    const block = document.createElement("div");
+    block.className="block";
+    block.style.minHeight = interval.duration+"px";
+    block.contentEditable = true;
+
+    // Guardar inicio y fin como datos
+    const [start,end] = interval.time.split(' - ');
+    block.dataset.start = start;
+    block.dataset.end = end;
+    block.dataset.day = day;
+
+    // Restaurar contenido
+    if(savedBlocks[rowIndex] && savedBlocks[rowIndex][day]){
+      block.innerHTML = savedBlocks[rowIndex][day];
+    }
+
+    // Eventos
+    block.addEventListener("input", saveSchedule);
+    block.addEventListener("contextmenu",(e)=>{
+      e.preventDefault();
+      currentBlock = e.target.closest('.block');
+      currentDay = parseInt(currentBlock.dataset.day);
+      contextMenu.style.top = e.pageY+"px";
+      contextMenu.style.left = e.pageX+"px";
+      contextMenu.style.display="block";
+    });
+
+    row.appendChild(block);
+  }
+
+  scheduleDiv.appendChild(row);
+});
+
+// Guardar en localStorage
+function saveSchedule(){
+  let data=[];
+  intervals.forEach((_,rowIndex)=>{
+    data[rowIndex]=[];
+    const rowBlocks = scheduleDiv.children[rowIndex].querySelectorAll('.block');
+    for(let day=0; day<5; day++){
+      data[rowIndex][day] = rowBlocks[day].innerHTML;
+    }
+  });
+  localStorage.setItem("fixedSchedule", JSON.stringify(data));
+}
+
+// Convertir selección en recordatorio
+function transformSelectionToReminder(block, dayIndex){
+  const selection = window.getSelection();
+  if(!selection.rangeCount) return;
+  const range = selection.getRangeAt(0);
+  if(!block.contains(range.commonAncestorContainer)) return;
+  const text = selection.toString();
+  if(!text) return;
+
+  const span = document.createElement("span");
+span.className="internal-reminder";
+span.style.background="#a8e6a3"; // verde por defecto
+span.innerText = text;
+
+  range.deleteContents();
+  range.insertNode(span);
+  selection.removeAllRanges();
+
+  // Hora y día exacta
+  const timeParts = block.dataset.start.split(":").map(Number);
+  const reminderTime = new Date();
+  reminderTime.setHours(timeParts[0], timeParts[1], 0, 0);
+  // Ajustar día de la semana (lunes = 0)
+  const today = new Date();
+  const currentWeekday = today.getDay(); // domingo=0
+  let targetDay = dayIndex + 1; // lunes=1
+  let diff = targetDay - currentWeekday;
+  reminderTime.setDate(today.getDate() + diff);
+
+  reminders.push({element: span, block: block, time: reminderTime, day: dayIndex});
+  saveSchedule();
+}
+
+// Menú contextual
+const contextMenu = document.getElementById("contextMenu");
+
+document.getElementById("convertSelection").addEventListener("click", ()=>{
+  if(currentBlock !== null && currentDay !== null){
+    transformSelectionToReminder(currentBlock, currentDay);
+  }
+  contextMenu.style.display="none";
+});
+
+document.getElementById("deleteReminder").addEventListener("click", ()=>{
+  const sel = window.getSelection();
+  if(sel.rangeCount){
+    const node = sel.focusNode.parentNode;
+    if(node.classList.contains("internal-reminder")){
+      node.remove();
+      saveSchedule();
+    }
+  }
+  contextMenu.style.display="none";
+});
+// Borrar todo el bloque actual
+document.getElementById("clearBlock").addEventListener("click", ()=>{
+  if(currentBlock){
+    currentBlock.innerHTML = "";
+    saveSchedule();
+  }
+  contextMenu.style.display="none";
+});
+
+// Borrar todo el día actual
+document.getElementById("clearDay").addEventListener("click", ()=>{
+  if(currentDay !== null){
+    scheduleDiv.querySelectorAll(".row").forEach(row=>{
+      const blocks = row.querySelectorAll(".block");
+      if(blocks[currentDay]){
+        blocks[currentDay].innerHTML = "";
+      }
+    });
+    saveSchedule();
+  }
+  contextMenu.style.display="none";
+});
+// Agregar emojis
+document.querySelectorAll(".emoji-bar span").forEach(span=>{
+  span.addEventListener("click", ()=>{
+    if(currentBlock){
+      currentBlock.innerText += span.textContent;
+      saveSchedule();
+    }
+    contextMenu.style.display="none";
+  });
+});
+
+// Notas predefinidas
+document.querySelectorAll("#contextMenu button[data-text]").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    if(currentBlock){
+      currentBlock.innerText += " "+btn.dataset.text;
+      saveSchedule();
+    }
+    contextMenu.style.display="none";
+  });
+});
+
+// Actualizar colores y eliminar recordatorios pasados, por día
+setInterval(()=>{
+  const now = new Date();
+  reminders = reminders.filter(r=>{
+    // solo aplicar si es el mismo día
+    const currentWeekday = now.getDay(); // domingo=0
+    let targetDay = r.day + 1; // lunes=1
+    if(currentWeekday !== targetDay) return true;
+
+    const diff = (r.time - now)/60000; // diferencia en minutos
+
+    if(diff <= 0){
+      r.element.remove(); // eliminar si ya pasó
+      return false;
+    } else if(diff <= 15){
+      r.element.style.background = "#ff4d4d"; // rojo cercano
+    } else if(diff <= 30){
+      r.element.style.background = "#ffeb3b"; // amarillo intermedio
+    } else {
+      r.element.style.background = "#a8e6a3"; // verde lejano
+    }
+    return true;
+  });
+},1000);
+
+// Cerrar menú al hacer click fuera
+document.addEventListener("click",()=>{ contextMenu.style.display="none"; });
+</script>
+</body>
+</html>
