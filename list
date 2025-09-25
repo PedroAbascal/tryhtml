@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Checklist Visual</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin:0;
+    padding:10px;
+    background:#f8f8f8;
+  }
+  #checklist-container {
+    width:100%;
+    max-width:600px;
+    margin:auto;
+    background:white;
+    padding:15px;
+    border-radius:12px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    box-sizing:border-box;
+  }
+  h2{ text-align:center; margin-bottom:15px; }
+  #new-task-container{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:15px;
+  }
+  #new-task-container input[type="text"],
+  #new-task-container input[type="date"]{
+    padding:8px;
+    border-radius:6px;
+    border:1px solid #ccc;
+  }
+  #new-task-container input[type="text"]{ flex:1; }
+  #new-task-container button{
+    padding:8px 16px;
+    background:#3182ce;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:bold;
+  }
+  ul{ list-style:none; padding:0; margin:0; }
+  li{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:8px;
+    padding:10px;
+    border-radius:8px;
+    transition: background 0.3s;
+  }
+  li.completed{ text-decoration: line-through; opacity:0.7; }
+  .task-left{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .task-left span.text{ font-weight:bold; font-size:15px; }
+  .task-date{ font-size:12px; }
+  button.delete-btn{
+    background:#e53e3e; color:white; border:none; padding:4px 8px;
+    border-radius:6px; cursor:pointer; font-weight:bold;
+  }
+  .due-today { background:#ffcccc; }
+  .due-tomorrow { background:#fff2b3; }
+  .due-future { background:#ccffcc; }
+  .no-date { background:#f1f1f1; }
+</style>
+</head>
+<body>
+
+<div id="checklist-container">
+  <h2>✅ Checklist Visual</h2>
+  <div id="new-task-container">
+    <input type="text" id="task-input" placeholder="Nueva tarea...">
+    <input type="date" id="task-date">
+    <button id="add-task-btn">➕ Agregar</button>
+  </div>
+  <ul id="task-list"></ul>
+</div>
+
+<script>
+const taskInput = document.getElementById('task-input');
+const taskDate = document.getElementById('task-date');
+const addBtn = document.getElementById('add-task-btn');
+const taskList = document.getElementById('task-list');
+
+function getDateClass(dateStr){
+  if(!dateStr) return 'no-date';
+  const today = new Date();
+  const due = new Date(dateStr+"T00:00:00");
+  const diff = Math.floor((due - today)/(1000*60*60*24));
+  if(diff < 0) return 'due-today';
+  if(diff === 0) return 'due-today';
+  if(diff === 1) return 'due-tomorrow';
+  return 'due-future';
+}
+
+function saveTasks(){
+  const tasks = [];
+  taskList.querySelectorAll('li').forEach(li=>{
+    tasks.push({
+      text: li.querySelector('.task-left .text').innerText,
+      date: li.querySelector('.task-date').dataset.date||'',
+      completed: li.querySelector('input[type="checkbox"]').checked
+    });
+  });
+  localStorage.setItem('tasks-visual', JSON.stringify(tasks));
+}
+
+function addTaskToDOM(text, date, completed=false){
+  const li = document.createElement('li');
+  li.classList.add(getDateClass(date));
+  if(completed) li.classList.add('completed');
+
+  const leftDiv = document.createElement('div'); leftDiv.className='task-left';
+  const checkbox = document.createElement('input'); checkbox.type='checkbox';
+  checkbox.checked = completed;
+  checkbox.addEventListener('change', ()=>{
+    li.classList.toggle('completed', checkbox.checked);
+    saveTasks();
+  });
+
+  const spanText = document.createElement('span'); spanText.className='text'; spanText.innerText=text;
+  const spanDate = document.createElement('span'); spanDate.className='task-date'; spanDate.dataset.date=date;
+  spanDate.innerText = date? `📅 ${date}`:'';
+  leftDiv.append(checkbox, spanText, spanDate);
+
+  const deleteBtn = document.createElement('button'); deleteBtn.className='delete-btn'; deleteBtn.innerText='✖';
+  deleteBtn.addEventListener('click', ()=>{
+    li.remove();
+    saveTasks();
+  });
+
+  li.append(leftDiv, deleteBtn);
+  taskList.appendChild(li);
+  saveTasks();
+}
+
+function loadTasks(){
+  const tasks = JSON.parse(localStorage.getItem('tasks-visual')||'[]');
+  tasks.forEach(t=>addTaskToDOM(t.text, t.date, t.completed));
+}
+
+addBtn.addEventListener('click', ()=>{
+  const text = taskInput.value.trim();
+  const date = taskDate.value;
+  if(!text) return alert('Ingrese un texto de tarea');
+  addTaskToDOM(text, date);
+  taskInput.value=''; taskDate.value='';
+});
+
+taskInput.addEventListener('keydown', e=>{
+  if(e.key==='Enter') addBtn.click();
+});
+
+window.addEventListener('load', loadTasks);
+</script>
+
+</body>
+</html>
