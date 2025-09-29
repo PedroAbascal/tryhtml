@@ -9,7 +9,7 @@ body { margin:0; font-family: Arial, sans-serif; background:#f4f4f4; heigth:auto
 .row { display: grid; grid-template-columns: 80px repeat(5,1fr); }
 .day-header, .time-col { background:#2196F3; color:white; text-align:center; padding:5px; font-weight:bold; border:1px solid #ccc; }
 .time-col { background:#fafafa; color:#000; border-right:1px solid #ccc; text-align:right; font-size:12px; }
-.block { border:1px solid #ccc; border-top:none; padding:5px; min-height:45px; box-sizing:border-box; overflow:hidden; white-space:pre-wrap; word-wrap:break-word; cursor:text; position:relative; }
+.block { border:1px solid #ccc; border-top:none; padding:5px; min-height:15px; box-sizing:border-box; overflow:hidden; white-space:pre-wrap; word-wrap:break-word; cursor:text; position:relative; }
 .block:empty:before { content:""; color:#aaa; }
 .block:focus { outline:2px solid #2196F3; }
 .internal-reminder { background:#ffeb3b; padding:2px 4px; border-radius:4px; margin:2px; display:inline-block; }
@@ -87,7 +87,7 @@ intervals.forEach((interval,rowIndex)=>{
   for(let day=0; day<5; day++){
     const block = document.createElement("div");
     block.className="block";
-    block.style.minHeight = interval.duration+"px";
+    block.style.minHeight = (interval.duration/2)+"px";
     block.contentEditable = true;
 
     // Guardar inicio y fin como datos
@@ -259,5 +259,6 @@ document.addEventListener("click",()=>{ contextMenu.style.display="none"; });
 </script>
 </body>
 </html>
+
 
 
