@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>AR E. coli - CCG</title>
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.5/aframe/build/aframe-ar.js"></script>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #instrucciones {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      color: white;
+      font-family: sans-serif;
+      padding: 10px 20px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="instrucciones">📸 Apunta la cámara al marcador Hiro para ver la bacteria E. coli</div>
+
+  <a-scene
+  embedded
+  vr-mode-ui="enabled: false"
+  arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
+    <!-- Marcador Hiro (para pruebas) -->
+   <a-marker preset="hiro">
+  <!-- Luz total -->
+  <a-entity light="type: ambient; intensity: 2"></a-entity>
+
+  <!-- Plano con textura -->
+  <a-plane 
+    src="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/ecoli.png"
+    height="2"
+    width="2"
+    position="0 0.5 0"
+    rotation="-90 0 0"
+    material="shader: flat; transparent: true; side: double; alphaTest: 0.01;">
+  </a-plane>
+
+</a-marker>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+</body>
+</html>
