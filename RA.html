@@ -19,30 +19,35 @@
       padding: 10px 20px;
       border-radius: 10px;
     }
-    #menu {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      padding: 12px 16px;
-      border-radius: 10px;
-      font-family: sans-serif;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    #panel {
-      position: fixed;
-      top: 60px;
-      right: 10px;
-      background: rgba(0,0,0,0.85);
-      color: white;
-      padding: 10px 16px;
-      border-radius: 10px;
-      font-family: sans-serif;
-      display: none;
-      width: 220px;
-    }
+	#menu {
+	  position: fixed;
+	  top: 10px;
+	  right: 10px;
+	  background: rgba(0,0,0,0.7);
+	  color: white;
+	  padding: 12px 16px;
+	  border-radius: 10px;
+	  font-family: sans-serif;
+	  font-size: 14px;
+	  cursor: pointer;
+	  z-index: 1000;
+	  pointer-events: auto;
+	}
+
+	#panel {
+	  position: fixed;
+	  top: 60px;
+	  right: 10px;
+	  background: rgba(0,0,0,0.85);
+	  color: white;
+	  padding: 10px 16px;
+	  border-radius: 10px;
+	  font-family: sans-serif;
+	  display: none;
+	  width: 220px;
+	  z-index: 1000;
+	  pointer-events: auto;
+	}
     #panel button {
       background: #00b894;
       border: none;
@@ -67,7 +72,7 @@
   </style>
 </head>
 <body>
-  <div id="instrucciones">📸 Apunta al QR correspondiente para descubrir la bacteria E. coli</div>
+  <div id="instrucciones">📸 Apunta al QR y descubre que encontraste!</div>
   <div id="menu">📊 Progreso</div>
   <div id="panel">
     <h4>Tu progreso</h4>
@@ -134,15 +139,26 @@
       }
     });
 
-    // --- Menú contextual ---
-    document.getElementById("menu").onclick = () => {
-      panel.style.display = panel.style.display === "none" ? "block" : "none";
-      actualizarPanel();
-    };
-    document.getElementById("reset").onclick = () => {
-      localStorage.removeItem("progresoAR");
-      location.reload();
-    };
+    // --- Menú contextual --- // Abre/cierra el panel con clic o tap
+	const botonMenu = document.getElementById("menu");
+	
+	["click", "touchstart"].forEach(evento => {
+	  botonMenu.addEventListener(evento, e => {
+		e.stopPropagation();
+		e.preventDefault();
+		panel.style.display = panel.style.display === "none" ? "block" : "none";
+		actualizarPanel();
+	  });
+	});
+    const botonReset = document.getElementById("reset");
+	["click", "touchstart"].forEach(evento => {
+	  botonReset.addEventListener(evento, e => {
+		e.stopPropagation();
+		e.preventDefault();
+		localStorage.removeItem("progresoAR");
+		location.reload();
+	  });
+	});
 
     actualizarPanel();
   </script>
