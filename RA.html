@@ -90,28 +90,61 @@
     style="z-index:0;">
     
     <!-- Marcador personalizado -->
-    <a-marker type="pattern" url="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/ecoli-qr.patt" id="ecoli-marker">
-      <a-entity light="type: ambient; intensity: 2"></a-entity>
+	<a-marker type="pattern" url="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/ecoli-qr.patt" id="ecoli-marker">
+	  <a-entity light="type: ambient; intensity: 2"></a-entity>
 
-      <!-- Imagen interactiva -->
-      <a-plane id="img-ecoli" class="interactivo"
-        src="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/ecoli.png"
-        height="2" width="2"
-        position="0 0.5 0"
-        rotation="-90 0 0"
-        material="shader: flat;transparent: true;  side: double;">
-      </a-plane>
-
-      <!-- Texto informativo -->
-      <a-text id="info-ecoli"
-        value="Escherichia coli:\nBacteria intestinal presente en el intestino humano.\nAlgunas cepas son patógenas."
-        position="0 1.5 0"
+	  <!-- Imagen interactiva -->
+	  <a-plane id="img-ecoli" class="interactivo"
+		src="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/ecoli.png"
+		height="2" width="2"
+		position="0 0.25 0"
 		rotation="-90 0 0"
-        color="#00ffaa"
-        align="center"
-        visible="true">
-      </a-text>
-    </a-marker>
+		material="shader: flat; transparent: true; side: double;">
+	  </a-plane>
+
+	  <!-- Título -->
+	  <a-text id="info-titulo"
+		value="🧫 Escherichia coli"
+		rotation="-90 0 0"
+		position="0 1 -1"
+		color="#00ffaa"
+		align="center"
+		visible="false">
+	  </a-text>
+
+	  <!-- Nivel de peligrosidad -->
+	  <a-text id="info-peligro"
+		value="🌡 Nivel de peligrosidad: 6/10"
+		position="-1 1 0"
+		rotation="-90 30 0"
+		color="#ffaa00"
+		align="center"
+		width="3"
+		visible="false">
+	  </a-text>
+
+	  <!-- Enfermedades asociadas -->
+	  <a-text id="info-enfermedades"
+		value="🩺 Enfermedades asociadas:\n- Gastroenteritis\n- Infeccion urinaria"
+		position="0 1 1"
+		rotation="-90 0 0"
+		color="#ff5555"
+		align="center"
+		width="3"
+		visible="false">
+	  </a-text>
+
+	  <!-- Prevención -->
+	  <a-text id="info-prevencion"
+		value="🧼 Prevencion:\n- Lavado de manos\n- Coccion adecuada de alimentos"
+		position="1 1 0"
+		rotation="-90 -30 0"
+		color="#00ddff"
+		align="center"
+		width="3"
+		visible="false">
+	  </a-text>
+	</a-marker>
 
     <!-- Cámara con cursor interactivo -->
     <a-entity camera look-controls>
@@ -182,15 +215,21 @@
       });
     });
 
-    // --- Interacción sobre la imagen ---
-    const imgEcoli = document.getElementById("img-ecoli");
-    const infoEcoli = document.getElementById("info-ecoli");
-    imgEcoli.addEventListener("click", () => {
-      const visible = infoEcoli.getAttribute("visible");
-      infoEcoli.setAttribute("visible", !visible);
-      if (!visible && navigator.vibrate) navigator.vibrate(30);
-    });
+   // --- Interacción sobre la imagen ---
+	const imgEcoli = document.getElementById("img-ecoli");
+	const textos = [
+	  document.getElementById("info-titulo"),
+	  document.getElementById("info-peligro"),
+	  document.getElementById("info-enfermedades"),
+	  document.getElementById("info-prevencion")
+	];
 
+	imgEcoli.addEventListener("click", () => {
+	  const visible = textos[0].getAttribute("visible");
+	  const nuevoEstado = !visible;
+	  textos.forEach(t => t.setAttribute("visible", nuevoEstado));
+	  if (nuevoEstado && navigator.vibrate) navigator.vibrate(30);
+	});
     actualizarPanel();
   </script>
 </body>
