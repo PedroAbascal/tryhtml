@@ -73,7 +73,7 @@
   </style>
 </head>
 <body>
-  <div id="instrucciones">📸 Apunta la cámara al QR de E. coli</div>
+  <div id="instrucciones">📸 Apunta la cámara al QR y descubre que encontraste!</div>
   <div id="menu">📊 Progreso</div>
   <div id="panel">
     <h4>Tu progreso</h4>
@@ -81,7 +81,7 @@
     <p id="tiempo">Tiempo: 0 s</p>
     <button id="reset">Reiniciar</button>
   </div>
-  <div id="mensaje">¡Descubriste E. coli! 🧫</div>
+  <div id="mensaje">🧫</div>
 
   <a-scene
     embedded
@@ -118,8 +118,8 @@
       <a-cursor
         fuse="false"
         raycaster="objects: .interactivo"
-        material="color: #00ffaa; shader: flat;"
-        geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015">
+        material="color: #0000; shader: flat; opacity : 0.25 ;"
+        geometry="primitive: ring; radiusInner: 0.0; radiusOuter: 0.0085">
       </a-cursor>
     </a-entity>
   </a-scene>
