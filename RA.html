@@ -2,9 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>AR E. coli - CCG</title>
+  <title>Ruta AR Biología - CCG</title>
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.5/aframe/build/aframe-ar.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/troika-three-text@0.47.2/dist/troika-three-text.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-troika-text/dist/aframe-troika-text.min.js"></script>
   <style>
     body { margin: 0; overflow: hidden; }
     #instrucciones {
@@ -73,7 +75,7 @@
   </style>
 </head>
 <body>
-  <div id="instrucciones">📸 Apunta la cámara al QR y descubre que encontraste!</div>
+  <div id="instrucciones">📸 Apunta la cámara al QR y toca la imagen para explorar</div>
   <div id="menu">📊 Progreso</div>
   <div id="panel">
     <h4>Tu progreso</h4>
@@ -81,78 +83,62 @@
     <p id="tiempo">Tiempo: 0 s</p>
     <button id="reset">Reiniciar</button>
   </div>
-  <div id="mensaje">🧫</div>
+  <div id="mensaje">🧬</div>
 
-  <a-scene
-    embedded
-    vr-mode-ui="enabled: false"
-    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
-    style="z-index:0;">
-    
-    <!-- Marcador personalizado -->
-	<a-marker type="pattern" url="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/ecoli-qr.patt" id="ecoli-marker">
-	  <a-entity light="type: ambient; intensity: 2"></a-entity>
+  <a-scene embedded vr-mode-ui="enabled: false"
+           arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
+           style="z-index:0;">
 
-	  <!-- Imagen interactiva -->
-	  <a-plane id="img-ecoli" class="interactivo"
-		src="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/ecoli.png"
-		height="2" width="2"
-		position="0 0.25 0"
-		rotation="-90 0 0"
-		material="shader: flat; transparent: true; side: double;">
-	  </a-plane>
+    <!-- === ESTACIÓN 1: E. COLI === -->
+    <a-marker type="pattern"
+      url="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/ecoli-qr.patt"
+      id="ecoli-marker">
 
-	  <!-- Título -->
-	  <a-text id="info-titulo"
-		value="🧫 Escherichia coli"
-		rotation="-90 0 0"
-		position="0 1 -1"
-		color="#00ffaa"
-		align="center"
-		visible="false">
-	  </a-text>
+      <a-entity light="type: ambient; intensity: 2"></a-entity>
 
-	  <!-- Nivel de peligrosidad -->
-	  <a-text id="info-peligro"
-		value="🌡 Nivel de peligrosidad: 6/10"
-		position="-1 1 0"
-		rotation="-90 30 0"
-		color="#ffaa00"
-		align="center"
-		width="3"
-		visible="false">
-	  </a-text>
+      <a-plane id="img-ecoli" class="interactivo"
+        src="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/ecoli.png"
+        height="2" width="2"
+        position="0 0.5 0"
+        rotation="-90 0 0"
+        material="shader: flat; transparent: true; side: double;">
+      </a-plane>
 
-	  <!-- Enfermedades asociadas -->
-	  <a-text id="info-enfermedades"
-		value="🩺 Enfermedades asociadas:\n- Gastroenteritis\n- Infeccion urinaria"
-		position="0 1 1"
-		rotation="-90 0 0"
-		color="#ff5555"
-		align="center"
-		width="3"
-		visible="false">
-	  </a-text>
+      <a-entity id="orbitas-ecoli" rotation="-90 0 0" visible="false">
+        <a-entity troika-text="value: 🧫 Escherichia coli; color: #00ffaa; align: center; fontSize: 0.25;" position="0 1.5 0"></a-entity>
+        <a-entity troika-text="value: 🌡 Nivel de peligrosidad: 6/10; color: #ffaa00; align: center; fontSize: 0.25;" position="-1.8 0.8 0"></a-entity>
+        <a-entity troika-text="value: 🩺 Enfermedades:\n- Gastroenteritis\n- Infección urinaria; color: #ff5555; align: center; fontSize: 0.23;" position="0 -0.5 1.8"></a-entity>
+        <a-entity troika-text="value: 🧼 Prevención:\n- Lavado de manos\n- Cocción adecuada; color: #00ddff; align: center; fontSize: 0.23;" position="1.8 0.8 0"></a-entity>
+      </a-entity>
+    </a-marker>
 
-	  <!-- Prevención -->
-	  <a-text id="info-prevencion"
-		value="🧼 Prevencion:\n- Lavado de manos\n- Coccion adecuada de alimentos"
-		position="1 1 0"
-		rotation="-90 -30 0"
-		color="#00ddff"
-		align="center"
-		width="3"
-		visible="false">
-	  </a-text>
-	</a-marker>
+    <!-- === ESTACIÓN 2: DIFTERIA === -->
+    <a-marker type="pattern"
+      url="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/pattern-qrdifteria.patt"
+      id="difteria-marker">
 
-    <!-- Cámara con cursor interactivo -->
+      <a-entity light="type: ambient; intensity: 2"></a-entity>
+
+      <a-plane id="img-difteria" class="interactivo"
+        src="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/difteria.png"
+        height="2" width="2"
+        position="0 0.5 0"
+        rotation="-90 0 0"
+        material="shader: flat; transparent: true; side: double;">
+      </a-plane>
+
+      <a-entity id="orbitas-difteria" rotation="-90 0 0" visible="false">
+        <a-entity troika-text="value: 🧫 Corynebacterium diphtheriae; color: #00ffaa; align: center; fontSize: 0.25;" position="0 1.5 0"></a-entity>
+        <a-entity troika-text="value: 🌡 Nivel de peligrosidad: 8/10; color: #ffaa00; align: center; fontSize: 0.25;" position="-1.8 0.8 0"></a-entity>
+        <a-entity troika-text="value: 🩺 Enfermedades:\n- Difteria respiratoria\n- Difteria cutánea; color: #ff5555; align: center; fontSize: 0.23;" position="0 -0.5 1.8"></a-entity>
+        <a-entity troika-text="value: 🧼 Prevención:\n- Vacunación DTP\n- Higiene personal; color: #00ddff; align: center; fontSize: 0.23;" position="1.8 0.8 0"></a-entity>
+      </a-entity>
+    </a-marker>
+
     <a-entity camera look-controls>
-      <a-cursor
-        fuse="false"
-        raycaster="objects: .interactivo"
-        material="color: #0000; shader: flat; opacity : 0.25 ;"
-        geometry="primitive: ring; radiusInner: 0.0; radiusOuter: 0.0085">
+      <a-cursor fuse="false" raycaster="objects: .interactivo"
+                material="color: #00ffaa; shader: flat; opacity:0.25;"
+                geometry="primitive: ring; radiusInner: 0.0; radiusOuter: 0.0085">
       </a-cursor>
     </a-entity>
   </a-scene>
@@ -185,15 +171,50 @@
       setTimeout(() => mensaje.style.display = "none", 2000);
     }
 
-    // Evento: cuando se detecta el marcador E. coli
-    const ecoliMarker = document.getElementById("ecoli-marker");
-    ecoliMarker.addEventListener("markerFound", () => {
-      if (!progreso.encontrados.includes("E-COLI")) {
-        progreso.encontrados.push("E-COLI");
-        guardarProgreso();
-        mostrarMensaje("¡Descubriste E. coli! 🧫");
+    // --- Componente orbitar actualizado ---
+    AFRAME.registerComponent("orbitar", {
+      schema: { velocidad: {type: "number", default: 0.5 }, radio: {type: "number", default: 2.2 } },
+      init: function () {
+        this.angulo = 0;
+        this.textos = Array.from(this.el.children);
+      },
+      tick: function (t, dt) {
+        this.angulo += (this.data.velocidad * dt) / 5000;
+        const r = this.data.radio;
+        this.textos.forEach((txt, i) => {
+          const offset = (i / this.textos.length) * Math.PI * 2;
+          const x = Math.cos(this.angulo + offset) * r;
+          const y = Math.sin(this.angulo + offset) * 1.0;
+          const escala = 0.8 + 0.4 * (0.5 + Math.sin(this.angulo + offset));
+          txt.setAttribute("position", { x: x, y: y + 0.5, z: 0 });
+          txt.setAttribute("scale", { x: escala, y: escala, z: escala });
+        });
       }
     });
+
+    // --- Interacción de cada estación ---
+    function activarInteraccion(idImg, idOrbitas, nombre) {
+      const img = document.getElementById(idImg);
+      const orbitas = document.getElementById(idOrbitas);
+      img.addEventListener("click", () => {
+        const visible = orbitas.getAttribute("visible");
+        orbitas.setAttribute("visible", !visible);
+        if (!visible && navigator.vibrate) navigator.vibrate(30);
+        if (!visible) orbitas.setAttribute("orbitar", "velocidad:0.8; radio:2.3");
+      });
+      const marker = document.getElementById(idImg.replace("img-", "") + "marker");
+      marker.addEventListener("markerFound", () => {
+        const etiqueta = nombre.toUpperCase();
+        if (!progreso.encontrados.includes(etiqueta)) {
+          progreso.encontrados.push(etiqueta);
+          guardarProgreso();
+          mostrarMensaje(`¡Descubriste ${nombre}!`);
+        }
+      });
+    }
+
+    activarInteraccion("img-ecoli", "orbitas-ecoli", "E. coli");
+    activarInteraccion("img-difteria", "orbitas-difteria", "Difteria");
 
     // --- Menú contextual ---
     const botonMenu = document.getElementById("menu");
@@ -215,21 +236,6 @@
       });
     });
 
-   // --- Interacción sobre la imagen ---
-	const imgEcoli = document.getElementById("img-ecoli");
-	const textos = [
-	  document.getElementById("info-titulo"),
-	  document.getElementById("info-peligro"),
-	  document.getElementById("info-enfermedades"),
-	  document.getElementById("info-prevencion")
-	];
-
-	imgEcoli.addEventListener("click", () => {
-	  const visible = textos[0].getAttribute("visible");
-	  const nuevoEstado = !visible;
-	  textos.forEach(t => t.setAttribute("visible", nuevoEstado));
-	  if (nuevoEstado && navigator.vibrate) navigator.vibrate(30);
-	});
     actualizarPanel();
   </script>
 </body>
