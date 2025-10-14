@@ -82,20 +82,33 @@
   </div>
   <div id="mensaje">¡Descubriste E. coli! 🧫</div>
 
+
   <a-scene embedded vr-mode-ui="enabled: false"
            arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
     
     <a-marker type="pattern" url="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/ecoli-qr.patt" id="ecoli-marker">
-      <a-entity light="type: ambient; intensity: 1"></a-entity>
-      <a-plane 
-        src="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/ecoli.png"
-        height="2"
-        width="2"
-        position="0 0.5 0"
-        rotation="-90 0 0"
-        material="shader: flat; transparent: true; side: double; alphaTest: 0.01;">
-      </a-plane>
-    </a-marker>
+  <a-entity light="type: ambient; intensity: 2"></a-entity>
+
+  <!-- Plano de la imagen -->
+  <a-plane id="img-ecoli"
+    src="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/ecoli.png"
+    height="2"
+    width="2"
+    position="0 0.5 0"
+    rotation="-90 0 0"
+    material="shader: flat; transparent: true; side: double; alphaTest: 0.01;">
+  </a-plane>
+
+  <!-- Texto oculto -->
+  <a-text id="info-ecoli"
+    value="Escherichia coli:\nBacteria intestinal presente en el intestino humano.\nAlgunas cepas son patógenas."
+    position="0 1.5 0"
+    color="#00ffaa"
+    align="center"
+    visible="false">
+  </a-text>
+</a-marker>
+
 
     <a-entity camera></a-entity>
   </a-scene>
@@ -157,6 +170,20 @@
 		e.preventDefault();
 		localStorage.removeItem("progresoAR");
 		location.reload();
+	  });
+	});
+	// --- Interaccion con la imagen ---
+	const imgEcoli = document.getElementById("img-ecoli");
+	const infoEcoli = document.getElementById("info-ecoli");
+
+	// Detecta clics o taps sobre el plano
+	["click", "touchstart"].forEach(evento => {
+	  imgEcoli.addEventListener(evento, e => {
+		e.stopPropagation();
+		e.preventDefault();
+		const visible = infoEcoli.getAttribute("visible");
+		infoEcoli.setAttribute("visible", !visible);
+		if (!visible && navigator.vibrate) navigator.vibrate(30); // vibracion opcional
 	  });
 	});
 
