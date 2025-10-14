@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Ruta AR Biología - CCG</title>
+  <title>AR E. coli - CCG</title>
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.5/aframe/build/aframe-ar.js"></script>
   <style>
@@ -18,36 +17,37 @@
       font-family: sans-serif;
       padding: 10px 20px;
       border-radius: 10px;
+      z-index: 1000;
+      pointer-events: none;
     }
-	#menu {
-	  position: fixed;
-	  top: 10px;
-	  right: 10px;
-	  background: rgba(0,0,0,0.7);
-	  color: white;
-	  padding: 12px 16px;
-	  border-radius: 10px;
-	  font-family: sans-serif;
-	  font-size: 14px;
-	  cursor: pointer;
-	  z-index: 1000;
-	  pointer-events: auto;
-	}
-
-	#panel {
-	  position: fixed;
-	  top: 60px;
-	  right: 10px;
-	  background: rgba(0,0,0,0.85);
-	  color: white;
-	  padding: 10px 16px;
-	  border-radius: 10px;
-	  font-family: sans-serif;
-	  display: none;
-	  width: 220px;
-	  z-index: 1000;
-	  pointer-events: auto;
-	}
+    #menu {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-family: sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      z-index: 1000;
+      pointer-events: auto;
+    }
+    #panel {
+      position: fixed;
+      top: 60px;
+      right: 10px;
+      background: rgba(0,0,0,0.85);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-family: sans-serif;
+      display: none;
+      width: 220px;
+      z-index: 1000;
+      pointer-events: auto;
+    }
     #panel button {
       background: #00b894;
       border: none;
@@ -68,11 +68,12 @@
       border-radius: 12px;
       font-family: sans-serif;
       display: none;
+      z-index: 1000;
     }
   </style>
 </head>
 <body>
-  <div id="instrucciones">📸 Apunta al QR y descubre que encontraste!</div>
+  <div id="instrucciones">📸 Apunta la cámara al QR de E. coli</div>
   <div id="menu">📊 Progreso</div>
   <div id="panel">
     <h4>Tu progreso</h4>
@@ -82,47 +83,56 @@
   </div>
   <div id="mensaje">¡Descubriste E. coli! 🧫</div>
 
-
-  <a-scene embedded vr-mode-ui="enabled: false"
-           arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
+  <a-scene
+    embedded
+    vr-mode-ui="enabled: false"
+    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
+    style="z-index:0;">
     
+    <!-- Marcador personalizado -->
     <a-marker type="pattern" url="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/ecoli-qr.patt" id="ecoli-marker">
-  <a-entity light="type: ambient; intensity: 2"></a-entity>
+      <a-entity light="type: ambient; intensity: 2"></a-entity>
 
-  <!-- Plano de la imagen -->
-  <a-plane id="img-ecoli"
-    src="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/ecoli.png"
-    height="2"
-    width="2"
-    position="0 0.5 0"
-    rotation="-90 0 0"
-    material="shader: flat; transparent: true; side: double; alphaTest: 0.01;">
-  </a-plane>
+      <!-- Imagen interactiva -->
+      <a-plane id="img-ecoli" class="interactivo"
+        src="https://raw.githubusercontent.com/PedroAbascal/tryhtml/refs/heads/main/recursos/ecoli.png"
+        height="2" width="2"
+        position="0 0.5 0"
+        rotation="-90 0 0"
+        material="shader: flat;transparent: true;  side: double;">
+      </a-plane>
 
-  <!-- Texto oculto -->
-  <a-text id="info-ecoli"
-    value="Escherichia coli:\nBacteria intestinal presente en el intestino humano.\nAlgunas cepas son patógenas."
-    position="0 1.5 0"
-    color="#00ffaa"
-    align="center"
-    visible="false">
-  </a-text>
-</a-marker>
+      <!-- Texto informativo -->
+      <a-text id="info-ecoli"
+        value="Escherichia coli:\nBacteria intestinal presente en el intestino humano.\nAlgunas cepas son patógenas."
+        position="0 1.5 0"
+		rotation="-90 0 0"
+        color="#00ffaa"
+        align="center"
+        visible="true">
+      </a-text>
+    </a-marker>
 
-
-    <a-entity camera></a-entity>
+    <!-- Cámara con cursor interactivo -->
+    <a-entity camera look-controls>
+      <a-cursor
+        fuse="false"
+        raycaster="objects: .interactivo"
+        material="color: #00ffaa; shader: flat;"
+        geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015">
+      </a-cursor>
+    </a-entity>
   </a-scene>
 
   <script>
     // --- Sistema de progreso local ---
-    const totalMarcas = 4; // cambia según cantidad de estaciones
+    const totalMarcas = 4;
     const progreso = JSON.parse(localStorage.getItem("progresoAR")) || { inicio: null, encontrados: [] };
     const panel = document.getElementById("panel");
     const progresoText = document.getElementById("progreso");
     const tiempoText = document.getElementById("tiempo");
     const mensaje = document.getElementById("mensaje");
 
-    // Registrar inicio si no existe
     if (!progreso.inicio) progreso.inicio = Date.now();
 
     function actualizarPanel() {
@@ -152,40 +162,34 @@
       }
     });
 
-    // --- Menú contextual --- // Abre/cierra el panel con clic o tap
-	const botonMenu = document.getElementById("menu");
-	
-	["click", "touchstart"].forEach(evento => {
-	  botonMenu.addEventListener(evento, e => {
-		e.stopPropagation();
-		e.preventDefault();
-		panel.style.display = panel.style.display === "none" ? "block" : "none";
-		actualizarPanel();
-	  });
-	});
-    const botonReset = document.getElementById("reset");
-	["click", "touchstart"].forEach(evento => {
-	  botonReset.addEventListener(evento, e => {
-		e.stopPropagation();
-		e.preventDefault();
-		localStorage.removeItem("progresoAR");
-		location.reload();
-	  });
-	});
-	// --- Interaccion con la imagen ---
-	const imgEcoli = document.getElementById("img-ecoli");
-	const infoEcoli = document.getElementById("info-ecoli");
+    // --- Menú contextual ---
+    const botonMenu = document.getElementById("menu");
+    ["click","touchstart"].forEach(ev => {
+      botonMenu.addEventListener(ev, e => {
+        e.stopPropagation(); e.preventDefault();
+        panel.style.display = panel.style.display === "none" ? "block" : "none";
+        actualizarPanel();
+        if (navigator.vibrate) navigator.vibrate(40);
+      });
+    });
 
-	// Detecta clics o taps sobre el plano
-	["click", "touchstart"].forEach(evento => {
-	  imgEcoli.addEventListener(evento, e => {
-		e.stopPropagation();
-		e.preventDefault();
-		const visible = infoEcoli.getAttribute("visible");
-		infoEcoli.setAttribute("visible", !visible);
-		if (!visible && navigator.vibrate) navigator.vibrate(30); // vibracion opcional
-	  });
-	});
+    const botonReset = document.getElementById("reset");
+    ["click","touchstart"].forEach(ev => {
+      botonReset.addEventListener(ev, e => {
+        e.stopPropagation(); e.preventDefault();
+        localStorage.removeItem("progresoAR");
+        location.reload();
+      });
+    });
+
+    // --- Interacción sobre la imagen ---
+    const imgEcoli = document.getElementById("img-ecoli");
+    const infoEcoli = document.getElementById("info-ecoli");
+    imgEcoli.addEventListener("click", () => {
+      const visible = infoEcoli.getAttribute("visible");
+      infoEcoli.setAttribute("visible", !visible);
+      if (!visible && navigator.vibrate) navigator.vibrate(30);
+    });
 
     actualizarPanel();
   </script>
