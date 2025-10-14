@@ -193,28 +193,30 @@
     });
 
     // --- Interacción de cada estación ---
-    function activarInteraccion(idImg, idOrbitas, nombre) {
-      const img = document.getElementById(idImg);
-      const orbitas = document.getElementById(idOrbitas);
-      img.addEventListener("click", () => {
-        const visible = orbitas.getAttribute("visible");
-        orbitas.setAttribute("visible", !visible);
-        if (!visible && navigator.vibrate) navigator.vibrate(30);
-        if (!visible) orbitas.setAttribute("orbitar", "velocidad:0.8; radio:2.3");
-      });
-      const marker = document.getElementById(idImg.replace("img-", "") + "marker");
-      marker.addEventListener("markerFound", () => {
-        const etiqueta = nombre.toUpperCase();
-        if (!progreso.encontrados.includes(etiqueta)) {
-          progreso.encontrados.push(etiqueta);
-          guardarProgreso();
-          mostrarMensaje(`¡Descubriste ${nombre}!`);
-        }
-      });
-    }
+    function activarInteraccion(idImg, idOrbitas, idMarker, nombre) {
+	  const img = document.getElementById(idImg);
+	  const orbitas = document.getElementById(idOrbitas);
+	  const marker = document.getElementById(idMarker);
 
-    activarInteraccion("img-ecoli", "orbitas-ecoli", "E. coli");
-    activarInteraccion("img-difteria", "orbitas-difteria", "Difteria");
+	  img.addEventListener("click", () => {
+		const visible = orbitas.getAttribute("visible");
+		orbitas.setAttribute("visible", !visible);
+		if (!visible && navigator.vibrate) navigator.vibrate(30);
+		if (!visible) orbitas.setAttribute("orbitar", "velocidad:0.8; radio:2.3");
+	  });
+
+	  marker.addEventListener("markerFound", () => {
+		const etiqueta = nombre.toUpperCase();
+		if (!progreso.encontrados.includes(etiqueta)) {
+		  progreso.encontrados.push(etiqueta);
+		  guardarProgreso();
+		  mostrarMensaje(`¡Descubriste ${nombre}!`);
+		}
+	  });
+	}
+
+    activarInteraccion("img-ecoli", "orbitas-ecoli", "ecoli-marker", "E. coli");
+	activarInteraccion("img-difteria", "orbitas-difteria", "difteria-marker", "Difteria");
 
     // --- Menú contextual ---
     const botonMenu = document.getElementById("menu");
