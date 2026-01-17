@@ -3,359 +3,364 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: AR HUD v2 (Stable)</title>
+    <title>SQUAD COMMAND: VERSUS</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
             --hud-cyan: #00f2ff;
             --hud-red: #ff0055;
             --hud-gold: #ffcc00;
-            --hud-purple: #bc13fe;
-            --hud-bg: rgba(0, 10, 20, 0.85);
+            --hud-green: #00ff99;
+            --hud-bg: rgba(0, 10, 20, 0.9);
         }
 
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; color: var(--hud-cyan); user-select: none; -webkit-user-select: none; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; color: var(--hud-cyan); user-select: none; }
 
-        /* --- AR LAYER (CÁMARA PASSTHROUGH) --- */
-        #ar-feed {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; z-index: -1; filter: contrast(1.1) brightness(0.8);
-        }
-        .scan-line {
-            position: fixed; top: 0; left: 0; width: 100%; height: 2px;
-            background: rgba(0, 242, 255, 0.3);
-            box-shadow: 0 0 10px var(--hud-cyan);
-            animation: scan 3s linear infinite;
-            z-index: 0; pointer-events: none;
-        }
+        /* VIDEO & SCANLINE */
+        #ar-feed { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; filter: contrast(1.1) brightness(0.8); }
+        .scan-line { position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: rgba(0, 242, 255, 0.3); animation: scan 3s linear infinite; z-index: 0; pointer-events: none; }
         @keyframes scan { 0% { top: 0%; opacity:0; } 100% { top: 100%; opacity:0; } }
 
-        /* --- UI LAYERS --- */
-        .screen { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0; box-sizing: border-box; }
-        .hidden { display: none !important; }
-
-        /* SETUP SCREEN */
-        #setup-screen { background: #0d1117; z-index: 100; align-items: center; justify-content: center; padding: 20px; text-align: center; }
-        textarea { width: 100%; height: 100px; background: #000; color: var(--hud-cyan); border: 1px solid var(--hud-cyan); margin-bottom: 20px; font-family: monospace; padding: 10px; }
-        button { background: var(--hud-cyan); color: #000; border: none; padding: 15px 30px; font-size: 1.2rem; font-weight: bold; text-transform: uppercase; cursor: pointer; clip-path: polygon(10% 0, 100% 0, 100% 80%, 90% 100%, 0 100%, 0 20%); }
+        /* SCREENS */
+        .screen { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0; box-sizing: border-box; background: #0d1117; z-index: 10; transition: 0.3s; }
+        .screen.hidden { display: none !important; }
+        .screen.transparent { background: transparent; pointer-events: none; }
         
-        /* HUD SCREEN */
-        #hud-screen { justify-content: space-between; padding: 10px; pointer-events: none; }
-        .hud-top { display: flex; justify-content: space-between; padding: 10px; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); pointer-events: auto; }
-        .turn-marker { border: 1px solid var(--hud-gold); padding: 5px 10px; color: var(--hud-gold); font-weight: bold; background: rgba(0,0,0,0.5); }
+        /* LOBBY */
+        #lobby-screen { align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        .lobby-box { border: 1px solid var(--hud-cyan); padding: 20px; width: 90%; max-width: 400px; background: rgba(0,0,0,0.85); }
+        textarea { width: 100%; height: 60px; background:#111; color:#aaa; border:1px solid #333; font-size:0.7rem; font-family:monospace; }
+        input { background: #111; border: 1px solid #555; color: white; padding: 10px; font-family: monospace; width: 70%; text-transform: uppercase; margin-top:5px;}
+        .btn-main { background: var(--hud-cyan); color: #000; border: none; padding: 15px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
+        .btn-sec { background: transparent; border: 1px solid var(--hud-cyan); color: var(--hud-cyan); padding: 10px; width: 100%; margin-top: 5px; cursor: pointer; }
+
+        /* HUD */
+        .hud-top { display: flex; justify-content: space-between; padding: 10px; pointer-events: auto; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
+        .status-pill { border: 1px solid #555; padding: 5px 10px; font-size: 0.7rem; background: rgba(0,0,0,0.5); color:#888; }
+        .status-pill.active { border-color: var(--hud-green); color: var(--hud-green); }
+
+        .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; box-sizing: border-box; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; }
         
-        /* RETICLE */
-        .reticle-container {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 200px; height: 200px; pointer-events: none;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .reticle-ring { width: 100%; height: 100%; border: 1px dashed var(--hud-cyan); border-radius: 50%; animation: rotate 10s linear infinite; opacity: 0.6; }
-        .reticle-center { width: 4px; height: 4px; background: var(--hud-red); position: absolute; box-shadow: 0 0 10px var(--hud-red); }
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .unit-card { border: 1px solid #333; padding: 10px; margin-bottom: 5px; background: rgba(0,0,0,0.6); transition: 0.2s; cursor: pointer; }
+        .unit-card.my-unit { border-left: 4px solid var(--hud-cyan); }
+        .unit-card.enemy-unit { border-left: 4px solid var(--hud-red); }
+        .unit-card:active { transform: scale(0.98); }
 
-        /* CONTROLS & CARDS */
-        .hud-bottom { background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 15px; pointer-events: auto; text-align: center; }
-
-        .unit-selector { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; }
+        .hp-bar { height: 4px; background: #333; margin-top: 5px; width: 100%; }
+        .hp-fill { height: 100%; width: 100%; transition: width 0.3s; }
         
-        .unit-card { 
-            width: 48%; background: rgba(13, 17, 23, 0.85); border: 1px solid #333; padding: 10px; 
-            text-align: left; position: relative; cursor: pointer; transition: 0.2s; min-height: 80px;
-        }
-        .unit-card.active { border-color: var(--hud-cyan); box-shadow: 0 0 10px rgba(0, 242, 255, 0.2); }
-        .unit-card.target { border-color: var(--hud-red); box-shadow: 0 0 10px rgba(255, 0, 85, 0.2); }
+        .btn-fire { width: 100%; background: var(--hud-red); color: white; border: none; padding: 15px; font-size: 1.5rem; font-weight: bold; margin-top: 10px; clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%); cursor: pointer; }
         
-        .name { font-weight: bold; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .stat-row { font-size: 0.75rem; display: flex; justify-content: space-between; color: #aaa; }
-        .hp-bar { height: 4px; background: #333; margin-top: 8px; width: 100%; }
-        .hp-fill { height: 100%; background: var(--hud-cyan); width: 100%; transition: width 0.3s; }
-        .hp-fill.critical { background: var(--hud-red); }
+        #combat-log { position: absolute; top: 60px; left: 10px; width: 60%; font-size: 0.7rem; text-shadow: 1px 1px 0 #000; pointer-events: none; }
+        .log-entry { margin-bottom: 2px; opacity: 0.9; }
+        .log-hit { color: var(--hud-cyan); } .log-dmg { color: var(--hud-red); font-weight:bold; }
 
-        /* --- ICONS & TOOLTIPS --- */
-        .ability-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-        .hud-icon { 
-            width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
-            background: rgba(0, 242, 255, 0.1); border: 1px solid var(--hud-cyan); border-radius: 4px;
-            font-size: 14px; cursor: help; transition: 0.2s;
-        }
-        .hud-icon:hover, .hud-icon:active { background: var(--hud-cyan); color: #000; transform: scale(1.1); }
-        .hud-icon.gear { border-color: var(--hud-gold); color: var(--hud-gold); background: rgba(255, 204, 0, 0.1); }
-        
-        /* TOOLTIP OVERLAY */
-        #tooltip-modal {
-            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0, 10, 20, 0.95); border: 1px solid var(--hud-cyan);
-            padding: 15px; width: 80%; max-width: 300px; text-align: center;
-            z-index: 200; display: none; box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
-            animation: popIn 0.2s ease-out; pointer-events: auto;
-        }
-        #tooltip-modal h3 { margin: 0 0 5px 0; color: var(--hud-cyan); font-size: 1rem; text-transform: uppercase; }
-        #tooltip-modal p { margin: 0; font-size: 0.8rem; color: #ddd; }
-        #tooltip-modal .close-tip { margin-top: 10px; font-size: 0.7rem; color: #666; cursor: pointer; border-top: 1px solid #333; padding-top:5px; display:block;}
-        @keyframes popIn { from { transform: translate(-50%, -40%); opacity: 0; } to { opacity: 1; transform: translate(-50%, -50%); } }
-
-        /* ACTIONS */
-        .btn-fire { 
-            width: 100%; background: var(--hud-red); color: white; border: none; padding: 15px; 
-            font-size: 1.5rem; font-weight: bold; letter-spacing: 3px;
-            clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%);
-            animation: pulse-red 2s infinite; cursor: pointer;
-        }
-        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 0, 85, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 0, 85, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 0, 85, 0); } }
-
-        /* LOG */
-        #combat-log { position: absolute; top: 60px; left: 10px; width: 220px; font-size: 0.7rem; color: #fff; text-shadow: 1px 1px 0 #000; pointer-events: none; }
-        .log-entry { margin-bottom: 4px; opacity: 0.9; }
-        .log-hit { color: var(--hud-cyan); }
-        .log-dmg { color: var(--hud-red); font-weight: bold; font-size: 1.1rem; }
-
-        #flash-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; opacity:0; pointer-events:none; z-index:50; transition: opacity 0.1s; }
+        /* WAITING OVERLAY */
+        #wait-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--hud-cyan); display:none; }
     </style>
 </head>
 <body>
 
     <video id="ar-feed" autoplay playsinline muted></video>
     <div class="scan-line"></div>
-    <div id="flash-overlay"></div>
 
-    <div id="tooltip-modal" onclick="this.style.display='none'">
-        <h3 id="tip-title">HABILIDAD</h3>
-        <p id="tip-desc">Descripción...</p>
-        <span class="close-tip">[ TOCAR PARA CERRAR ]</span>
+    <div id="wait-overlay">
+        <h2>SINCRONIZANDO...</h2>
+        <p>Intercambiando datos de escuadra</p>
+        <div style="font-size:2rem;">⇄</div>
     </div>
 
-    <div id="setup-screen" class="screen">
-        <h1 style="color:var(--hud-cyan)">SQUAD COMMAND <span style="font-size:0.5em; vertical-align:middle; border:1px solid var(--hud-cyan); padding:2px;">AR</span></h1>
-        <p style="font-size:0.8rem; color:#888;">PEGAR DATOS JSON</p>
-        <textarea id="import-data" placeholder='{"squad":{...}}'></textarea>
-        <button onclick="initSystem(true)">INICIAR CÁMARA</button>
-        <button style="background:transparent; border:1px solid #555; color:#888; margin-top:10px;" onclick="initSystem(false)">MODO SIMULACIÓN</button>
+    <div id="lobby-screen" class="screen">
+        <h1 style="color:var(--hud-cyan); margin-bottom:5px;">SQUAD VERSUS</h1>
+        <div style="font-size:0.7rem; color:#888; margin-bottom:20px;">DEPLOYMENT LINK v4.0</div>
+
+        <div class="lobby-box">
+            <h3 style="color:var(--hud-green)">TU ESCUADRA (JSON)</h3>
+            <textarea id="json-input" placeholder='Pega AQUÍ el JSON de TU escuadra (generado en Squad Forge)'></textarea>
+            
+            <hr style="border:0; border-top:1px solid #333; margin:15px 0;">
+
+            <div id="host-section">
+                <button class="btn-main" onclick="startHost()">CREAR PARTIDA (HOST)</button>
+                <div id="host-code-display" style="display:none; margin-top:10px;">
+                    <span style="color:#aaa">TU CÓDIGO:</span><br>
+                    <span id="my-code" style="color:var(--hud-gold); font-size:1.5rem; font-weight:bold;">...</span>
+                    <p style="font-size:0.7rem; color:#666">Esperando al rival...</p>
+                </div>
+            </div>
+
+            <p style="color:#555">- O -</p>
+
+            <div id="join-section">
+                <input type="text" id="join-code" placeholder="CÓDIGO RIVAL">
+                <button class="btn-sec" onclick="startJoin()">UNIRSE</button>
+            </div>
+            <p id="status-msg" style="color:var(--hud-red); font-size:0.8rem; margin-top:10px;"></p>
+        </div>
     </div>
 
-    <div id="hud-screen" class="screen hidden">
+    <div id="hud-screen" class="screen transparent hidden">
         <div class="hud-top">
-            <div class="turn-marker">TURNO 1</div>
-            <div style="font-size:0.8rem" id="phase-display">FASE: DISPARO</div>
+            <div class="status-pill active" id="role-indicator">---</div>
+            <div class="status-pill active">LIVE LINK</div>
         </div>
 
-        <div class="reticle-container">
-            <div class="reticle-ring"></div>
-            <div class="reticle-center"></div>
-            <div style="position:absolute; top: 110%; color: var(--hud-red); font-size: 0.8rem; background:rgba(0,0,0,0.5); padding:2px 5px;" id="reticle-text">SCANNING...</div>
-        </div>
-        
         <div id="combat-log"></div>
 
         <div class="hud-bottom">
-            <div class="unit-selector">
-                <div class="unit-card active" id="card-atk" onclick="cycleUnit('atk')">
-                    <div style="font-size:0.7rem; color:var(--hud-cyan); display:flex; justify-content:space-between;">
-                        <span>AGENTE ACTIVO</span>
-                        <span style="font-size:0.6rem">▼ TOCAR</span>
-                    </div>
-                    <div class="name" id="atk-name">...</div>
-                    <div class="stat-row"><span id="atk-w">---</span></div>
-                    <div class="ability-row" id="atk-abilities"></div>
-                    <div class="hp-bar"><div class="hp-fill" id="atk-hp-bar"></div></div>
+            <div class="unit-card my-unit" onclick="nextMyUnit()">
+                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--hud-cyan);">
+                    <span>YO (MIS TROPAS)</span> <span id="my-stats">---</span>
                 </div>
-
-                <div class="unit-card target" id="card-def" onclick="cycleUnit('def')">
-                    <div style="font-size:0.7rem; color:var(--hud-red); display:flex; justify-content:space-between;">
-                        <span>OBJETIVO</span>
-                        <span style="font-size:0.6rem">▼ TOCAR</span>
-                    </div>
-                    <div class="name" id="def-name">...</div>
-                    <div class="stat-row"><span id="def-w">---</span></div>
-                    <div class="hp-bar"><div class="hp-fill" id="def-hp-bar"></div></div>
-                </div>
+                <div id="my-name" style="font-weight:bold;">Seleccionando...</div>
+                <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--hud-cyan)"></div></div>
             </div>
 
-            <div style="display:flex; gap:10px; margin-bottom:10px;">
-                <button style="flex:1; padding:10px; font-size:1.2rem; background:#333; color:white; border:1px solid #555;" onclick="switchMode()">🔫/⚔️</button>
-                <button class="btn-fire" style="flex:3" onclick="fire()">ATACAR</button>
+            <div class="unit-card enemy-unit" onclick="nextEnemyUnit()">
+                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--hud-red);">
+                    <span>RIVAL (OBJETIVO)</span> <span id="enemy-stats">---</span>
+                </div>
+                <div id="enemy-name" style="font-weight:bold;">Seleccionando...</div>
+                <div class="hp-bar"><div id="enemy-hp" class="hp-fill" style="background:var(--hud-red)"></div></div>
             </div>
+
+            <button class="btn-fire" onclick="fireWeapon()">ABRIR FUEGO</button>
         </div>
     </div>
 
 <script>
-    // --- ICON & RULES DB ---
-    // Mapeamos los códigos de "squad forge" a iconos y textos
-    const TACTICAL_DB = {
-        // Habilidades
-        'voice': { icon: '📣', name: 'Voz de Mando', desc: 'Permite repetir 1s al impactar a unidades cercanas.' },
-        'stealth': { icon: '🥷', name: 'Sigilo', desc: '-1 a ser Impactado si estás en cobertura.' },
-        'bionics': { icon: '🦾', name: 'Biónica', desc: 'Aumenta la VIDA máxima (+4).' },
-        'stim': { icon: '💉', name: 'Estimulantes', desc: 'Mejora movimiento y VIDA temporalmente.' },
-        'frenzy': { icon: '🤬', name: 'Frenesí', desc: '+2 Ataques en Melee, pero peor Salvación.' },
-        'none': null,
-        // Equipo
-        'granada': { icon: '💣', name: 'Granada', desc: 'Un uso. Ataque de área Daño 4.' },
-        'scope': { icon: '🔭', name: 'Mira', desc: '+2 al atributo de Proyectiles.' },
-        'shield': { icon: '🛡️', name: 'Escudo', desc: 'Mejora la Salvación en +1 (Invulnerable).' },
-        // Armas Especiales
-        'sniper': { icon: '🎯', name: 'Francotirador', desc: 'Disparo preciso de largo alcance.' },
-        'minigun': { icon: '🌪️', name: 'Rotatorio', desc: 'Muchos disparos, baja precisión.' }
-    };
+    // --- ESTADO GLOBAL ---
+    let myRole = null; // 'host' o 'guest'
+    let myRawData = null; // Mi JSON original
+    
+    // Almacenes de unidades procesadas
+    let myUnits = [];     
+    let enemyUnits = [];
+    
+    // Índices de selección
+    let myIdx = 0;
+    let enemyIdx = 0;
 
-    let units = [];
-    let currentAtk = 0;
-    let currentDef = 0;
-    let combatMode = 'ranged';
-    let unitState = {};
+    // Estado de vida global (Key: uniqueID, Value: HP)
+    let globalHP = {};
 
-    async function initSystem(useCam) {
-        const raw = document.getElementById('import-data').value;
-        if(!raw) return alert("Pega JSON primero.");
+    // Red
+    let peer = null;
+    let conn = null;
+
+    // --- 1. SETUP & VALIDACIÓN ---
+    function getLocalSquad() {
+        const raw = document.getElementById('json-input').value;
+        if(!raw) { alert("¡Debes pegar tu JSON de escuadra primero!"); return null; }
         try {
             const data = JSON.parse(raw);
-            units = Object.values(data.squad);
-            if(units.length < 1) throw new Error("Lista vacía");
-            units.forEach(u => { unitState[u.id] = { currentHP: parseInt(u.stats.hp), maxHP: parseInt(u.stats.hp) }; });
-            if(units.length > 1) currentDef = 1;
-        } catch(e) { return alert("JSON inválido: " + e.message); }
-
-        if(useCam) {
-            try {
-                // Pedimos cámara trasera para "efecto AR"
-                const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                document.getElementById('ar-feed').srcObject = s;
-            } catch(e) { alert("Sin cámara (o bloqueada). Usando simulación."); }
+            return Object.values(data.squad); // Array de unidades
+        } catch(e) {
+            alert("JSON inválido"); return null;
         }
-
-        document.getElementById('setup-screen').classList.add('hidden');
-        document.getElementById('hud-screen').classList.remove('hidden');
-        updateUI();
     }
 
-    function updateUI() {
-        const atk = units[currentAtk];
-        const def = units[currentDef];
-        const atkS = unitState[atk.id];
-        const defS = unitState[def.id];
+    // --- 2. CONEXIÓN P2P ---
+    function startHost() {
+        const squad = getLocalSquad();
+        if(!squad) return;
+        myRawData = squad;
+        myRole = 'host';
 
-        // --- ATTACKER CARD ---
-        document.getElementById('atk-name').innerText = `#${atk.id} ${atk.name}`;
-        let atkTxt = (combatMode === 'ranged') 
-            ? (atk.stats.r_atk !== '-' ? `🔫 ${atk.stats.r_atk}x | ${atk.stats.r_hit}` : "🚫 SIN RANGO")
-            : `⚔️ ${atk.stats.m_atk}x | ${atk.stats.m_hit}`;
-        document.getElementById('atk-w').innerText = atkTxt;
-        updateHealth('atk-hp-bar', atkS.currentHP, atkS.maxHP);
+        document.getElementById('status-msg').innerText = "Iniciando red...";
+        const id = "SQ-" + Math.floor(Math.random()*9999);
+        peer = new Peer(id);
 
-        // --- RENDER ICONS ---
-        const iconCont = document.getElementById('atk-abilities');
-        iconCont.innerHTML = "";
+        peer.on('open', (pid) => {
+            document.getElementById('host-code-display').style.display = 'block';
+            document.getElementById('my-code').innerText = pid;
+            document.getElementById('join-section').style.display = 'none';
+        });
+
+        peer.on('connection', (c) => {
+            conn = c;
+            handleConnection();
+        });
+    }
+
+    function startJoin() {
+        const squad = getLocalSquad();
+        if(!squad) return;
+        myRawData = squad;
+        myRole = 'guest';
+
+        const target = document.getElementById('join-code').value;
+        if(!target) return alert("Falta código");
+
+        peer = new Peer(); // ID automático para el guest
+        peer.on('open', () => {
+            conn = peer.connect(target);
+            handleConnection();
+        });
+    }
+
+    // --- 3. HANDSHAKE (INTERCAMBIO DE DATOS) ---
+    function handleConnection() {
+        document.getElementById('wait-overlay').style.display = 'flex';
+
+        conn.on('open', () => {
+            console.log("Conectado. Enviando mi escuadra...");
+            // ENVIAR MI ESCUADRA AL RIVAL
+            conn.send({
+                type: 'HANDSHAKE',
+                role: myRole,
+                squad: myRawData
+            });
+        });
+
+        conn.on('data', (data) => {
+            console.log("Datos recibidos:", data.type);
+            
+            if (data.type === 'HANDSHAKE') {
+                // RECIBIMOS LA ESCUADRA ENEMIGA
+                processGameStart(myRawData, data.squad);
+            }
+            else if (data.type === 'ATTACK') {
+                // RECIBIMOS UN ATAQUE
+                resolveIncomingAttack(data);
+            }
+            else if (data.type === 'SYNC_HP') {
+                // ACTUALIZACIÓN DE VIDA
+                updateGlobalHP(data.hpState);
+            }
+        });
+    }
+
+    // --- 4. INICIO DE PARTIDA ---
+    function processGameStart(localList, remoteList) {
+        // Procesamos IDs únicos para evitar choques (Host siempre es prefix 'H', Guest 'G')
+        const prefixMe = (myRole === 'host') ? 'H-' : 'G-';
+        const prefixOp = (myRole === 'host') ? 'G-' : 'H-';
+
+        // 1. Procesar MIS unidades
+        myUnits = localList.map(u => ({ ...u, uid: prefixMe + u.id }));
         
-        // Prioridad: Habilidad > Equipo > Arma especial
-        addIcon(iconCont, atk.ability, false);
-        addIcon(iconCont, atk.gear, true);
-        if(atk.weap === 'sniper' || atk.weap === 'minigun' || atk.weap === 'plasma') {
-            addIcon(iconCont, atk.weap, false); 
-        }
+        // 2. Procesar unidades ENEMIGAS
+        enemyUnits = remoteList.map(u => ({ ...u, uid: prefixOp + u.id }));
 
-        // --- DEFENDER CARD ---
-        document.getElementById('def-name').innerText = `#${def.id} ${def.name}`;
-        document.getElementById('def-w').innerText = `🛡️ SV ${def.stats.sv} | HP ${defS.currentHP}`;
-        updateHealth('def-hp-bar', defS.currentHP, defS.maxHP);
+        // 3. Inicializar HP Global
+        [...myUnits, ...enemyUnits].forEach(u => {
+            globalHP[u.uid] = { curr: parseInt(u.stats.hp), max: parseInt(u.stats.hp) };
+        });
 
-        // Reticle
-        const hitProb = hitChance(atk, combatMode);
-        document.getElementById('reticle-text').innerText = `LOCK: ${def.name} [${hitProb}%]`;
-        document.querySelector('.reticle-ring').style.borderColor = hitProb > 50 ? 'var(--hud-cyan)' : 'var(--hud-gold)';
+        // 4. Arrancar UI
+        setTimeout(() => {
+            document.getElementById('wait-overlay').style.display = 'none';
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('hud-screen').classList.remove('hidden');
+            
+            // Iniciar cámara
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(s => document.getElementById('ar-feed').srcObject = s).catch(e=>{});
+
+            document.getElementById('role-indicator').innerText = myRole === 'host' ? "HOST (J1)" : "GUEST (J2)";
+            updateHUD();
+        }, 1000);
     }
 
-    // Dibuja el icono y asigna el evento Click
-    function addIcon(container, code, isGear) {
-        if(!code || code === 'none') return;
-        const data = TACTICAL_DB[code];
+    // --- 5. GAMEPLAY ---
+    function nextMyUnit() { myIdx = (myIdx + 1) % myUnits.length; updateHUD(); }
+    function nextEnemyUnit() { enemyIdx = (enemyIdx + 1) % enemyUnits.length; updateHUD(); }
+
+    function updateHUD() {
+        const me = myUnits[myIdx];
+        const enemy = enemyUnits[enemyIdx];
+
+        // Render MY card
+        const meHP = globalHP[me.uid];
+        document.getElementById('my-name').innerText = me.name;
+        document.getElementById('my-stats').innerText = `🔫 ${me.stats.r_atk} / ${me.stats.r_hit}`;
+        document.getElementById('my-hp').style.width = (meHP.curr / meHP.max * 100) + "%";
+
+        // Render ENEMY card
+        const enHP = globalHP[enemy.uid];
+        document.getElementById('enemy-name').innerText = enemy.name;
+        document.getElementById('enemy-stats').innerText = `🛡️ SV ${enemy.stats.sv}`;
+        document.getElementById('enemy-hp').style.width = (enHP.curr / enHP.max * 100) + "%";
+    }
+
+    // --- 6. COMBATE ---
+    function fireWeapon() {
+        const atk = myUnits[myIdx];
+        const def = enemyUnits[enemyIdx];
+        const atkHP = globalHP[atk.uid];
+
+        if(atkHP.curr <= 0) return log("❌ UNIDAD CAÍDA NO PUEDE DISPARAR");
+
+        // Calcular dados localmente (Atacante tiene la autoridad)
+        let dice = parseInt(atk.stats.r_atk);
+        let hitVal = parseInt(atk.stats.r_hit.replace('+',''));
+        let dmg = parseInt(atk.stats.r_dmg);
+
+        let hits = 0;
+        let rolls = [];
+        for(let i=0; i<dice; i++) {
+            let r = Math.ceil(Math.random()*6);
+            rolls.push(r);
+            if(r >= hitVal) hits++;
+        }
+
+        log(`YO: [${rolls.join(',')}] -> ${hits} IMPACTOS`);
+
+        // Enviar datos al rival para que calcule su defensa
+        // Le decimos: "Mi unidad X te pegó Y veces con daño Z"
+        conn.send({
+            type: 'ATTACK',
+            atkName: atk.name,
+            defUid: def.uid, // ID único del objetivo
+            hits: hits,
+            dmg: dmg,
+            svVal: parseInt(def.stats.sv) // Dato de referencia
+        });
+    }
+
+    function resolveIncomingAttack(data) {
+        // Soy el defensor. Recibo datos de ataque.
+        const defUnit = myUnits.find(u => u.uid === data.defUid);
         
-        const el = document.createElement('div');
-        el.className = isGear ? 'hud-icon gear' : 'hud-icon';
-        
-        if(data) {
-            el.innerHTML = data.icon;
-            el.onclick = (e) => {
-                e.stopPropagation(); // Evitar click en la tarjeta de unidad
-                showTooltip(data.name, data.desc);
-            };
-        } else {
-            el.innerHTML = "❓";
-            el.onclick = (e) => { e.stopPropagation(); showTooltip(code, "Sin datos tácticos."); };
-        }
-        container.appendChild(el);
-    }
+        // Si no encuentro la unidad (error raro), ignorar
+        if(!defUnit) return;
 
-    function showTooltip(title, desc) {
-        document.getElementById('tip-title').innerText = title;
-        document.getElementById('tip-desc').innerText = desc;
-        document.getElementById('tooltip-modal').style.display = 'block';
-    }
-
-    function updateHealth(id, cur, max) {
-        const pct = (cur/max)*100;
-        const el = document.getElementById(id);
-        el.style.width = pct + "%";
-        el.className = pct < 30 ? "hp-fill critical" : "hp-fill";
-    }
-
-    function cycleUnit(side) {
-        if(side==='atk') currentAtk = (currentAtk+1)%units.length;
-        else currentDef = (currentDef+1)%units.length;
-        updateUI();
-    }
-
-    function switchMode() {
-        combatMode = (combatMode==='ranged')?'melee':'ranged';
-        document.getElementById('phase-display').innerText = combatMode==='ranged' ? "FASE: DISPARO" : "FASE: COMBATE";
-        updateUI();
-    }
-
-    function hitChance(u, m) {
-        let h = (m==='ranged') ? u.stats.r_hit : u.stats.m_hit;
-        if(h==='-') return 0;
-        let val = parseInt(h.replace('+',''));
-        return Math.round(((7-val)/6)*100);
-    }
-
-    function fire() {
-        const atk = units[currentAtk];
-        const def = units[currentDef];
-        
-        let num=0, hitT=0, dmg=0;
-        if(combatMode==='ranged') {
-            if(atk.stats.r_atk==='-') return log("🚫 SIN RANGO");
-            num=parseInt(atk.stats.r_atk); hitT=parseInt(atk.stats.r_hit); dmg=parseInt(atk.stats.r_dmg);
-        } else {
-            num=parseInt(atk.stats.m_atk); hitT=parseInt(atk.stats.m_hit); dmg=parseInt(atk.stats.m_dmg);
+        let saves = 0;
+        let sRolls = [];
+        // Tirar salvaciones automáticamente
+        for(let i=0; i<data.hits; i++) {
+            let r = Math.ceil(Math.random()*6);
+            sRolls.push(r);
+            if(r >= parseInt(defUnit.stats.sv)) saves++;
         }
 
-        let hits=0, rolls=[];
-        for(let i=0;i<num;i++){ let r=Math.ceil(Math.random()*6); rolls.push(r); if(r>=hitT) hits++; }
-        log(`${combatMode.toUpperCase()}: [${rolls}] >> ${hits} HITS`);
+        let wounds = data.hits - saves;
+        let totalDmg = wounds * data.dmg;
 
-        if(hits>0) {
-            setTimeout(()=>{
-                let svT=parseInt(def.stats.sv), saves=0, sRolls=[];
-                for(let i=0;i<hits;i++){ let r=Math.ceil(Math.random()*6); sRolls.push(r); if(r>=svT) saves++; }
-                let w=hits-saves;
-                log(`🛡️ SAVE ${svT}+: [${sRolls}] >> ${w} DAÑOS`);
-                
-                if(w>0) {
-                    let total=w*dmg;
-                    unitState[def.id].currentHP = Math.max(0, unitState[def.id].currentHP - total);
-                    document.getElementById('flash-overlay').style.opacity=0.5;
-                    setTimeout(()=>document.getElementById('flash-overlay').style.opacity=0, 100);
-                    log(`<span class="log-dmg">💥 -${total} HP</span>`);
-                }
-                updateUI();
-            }, 500);
-        } else {
-            log("💨 FALLO");
+        log(`RIVAL dispara a ${defUnit.name}: ${wounds} entran (-${totalDmg} HP)`);
+
+        // Aplicar daño
+        if(totalDmg > 0) {
+            globalHP[defUnit.uid].curr = Math.max(0, globalHP[defUnit.uid].curr - totalDmg);
+            // ENVIAR NUEVO ESTADO DE VIDA A TODOS (Sync)
+            conn.send({ type: 'SYNC_HP', hpState: globalHP });
+            updateHUD();
+            
+            // Efecto visual
+            document.body.style.backgroundColor = "#500";
+            setTimeout(()=>document.body.style.backgroundColor="#000", 100);
         }
     }
 
-    function log(m) {
-        const c=document.getElementById('combat-log');
-        c.innerHTML = `<div class="log-entry">${m}</div>` + c.innerHTML;
+    function updateGlobalHP(newState) {
+        globalHP = newState;
+        updateHUD();
+    }
+
+    function log(msg) {
+        const c = document.getElementById('combat-log');
+        c.innerHTML = `<div class="log-entry">> ${msg}</div>` + c.innerHTML;
     }
 </script>
 </body>
