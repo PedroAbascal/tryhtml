@@ -3,169 +3,345 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: DEBUG MODE</title>
+    <title>SQUAD COMMAND: v5 STABLE</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --c: #00f2ff; --r: #ff0055; --bg: #0d1117; }
-        body { margin: 0; background: #000; font-family: monospace; color: var(--c); overflow: hidden; }
-        
-        /* DIAGNOSTIC CONSOLE */
-        #sys-log { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 150px; 
-            background: rgba(0,0,0,0.9); border-bottom: 1px solid var(--c);
-            overflow-y: auto; font-size: 10px; padding: 5px; z-index: 999;
-            pointer-events: none;
-        }
-        .log-line { margin-bottom: 2px; border-bottom: 1px solid #222; }
-        .log-err { color: var(--r); font-weight: bold; }
-        .log-ok { color: #0f0; }
+        :root { --c: #00f2ff; --r: #ff0055; --g: #00ff99; --bg: rgba(0, 10, 20, 0.95); }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; color: var(--c); user-select: none; }
 
-        /* UI */
-        .screen { position: absolute; top: 150px; width: 100%; height: calc(100% - 150px); padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; }
-        .hidden { display: none !important; }
+        /* FONDO AR */
+        #ar-feed { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; filter: contrast(1.2) brightness(0.7); }
+        .scan-line { position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: rgba(0, 242, 255, 0.3); animation: scan 3s linear infinite; pointer-events: none; }
+        @keyframes scan { 0% { top: 0%; opacity:0; } 100% { top: 100%; opacity:0; } }
+
+        /* PANTALLAS */
+        .screen { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; background: #0d1117; z-index: 10; transition: 0.3s; align-items: center; }
+        .screen.hidden { display: none !important; }
+        .screen.transparent { background: transparent; pointer-events: none; padding: 0; }
+
+        /* LOBBY UI */
+        .box { border: 1px solid var(--c); padding: 15px; width: 100%; max-width: 400px; background: rgba(0,0,0,0.9); margin-bottom: 10px; text-align: center; }
+        textarea { width: 100%; height: 50px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; box-sizing: border-box; }
+        input { background: #111; border: 1px solid var(--c); color: white; padding: 10px; font-family: monospace; width: 100%; text-align: center; font-size: 1.2rem; box-sizing: border-box; margin: 10px 0; }
         
-        input, textarea { background: #111; color: white; border: 1px solid #555; width: 100%; padding: 10px; margin-bottom: 10px; }
-        button { background: var(--c); color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; margin-bottom: 5px; }
+        .btn { background: var(--c); color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; font-size: 1rem; clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%); }
+        .btn:active { transform: scale(0.98); }
+
+        /* HUD UI */
+        .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; justify-content: space-between; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); pointer-events: auto; box-sizing: border-box; }
+        .badge { border: 1px solid #555; padding: 5px 10px; font-size: 0.7rem; background: rgba(0,0,0,0.6); color: #888; }
+        .badge.on { border-color: var(--g); color: var(--g); box-shadow: 0 0 5px var(--g); }
+
+        .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; box-sizing: border-box; }
         
-        .card { border: 1px solid #333; padding: 10px; margin-bottom: 10px; width: 100%; }
-        .my-unit { border-left: 4px solid var(--c); }
-        .enemy-unit { border-left: 4px solid var(--r); }
+        .card { border: 1px solid #333; padding: 10px; margin-bottom: 8px; background: rgba(0,0,0,0.7); cursor: pointer; position: relative; }
+        .card.my { border-left: 4px solid var(--c); }
+        .card.enemy { border-left: 4px solid var(--r); }
+        
+        .hp-bar { height: 4px; background: #333; margin-top: 5px; width: 100%; }
+        .hp-fill { height: 100%; transition: width 0.3s; }
+
+        .log-area { position: absolute; top: 60px; left: 10px; font-size: 0.7rem; pointer-events: none; width: 70%; text-shadow: 1px 1px 0 #000; }
+        .log-line { margin-bottom: 3px; opacity: 0.9; }
+
+        /* EFECTOS */
+        .flash { animation: flashRed 0.2s; }
+        @keyframes flashRed { 0%, 100% { background: transparent; } 50% { background: rgba(255, 0, 0, 0.3); } }
     </style>
 </head>
 <body>
 
-    <div id="sys-log"><div>SISTEMA INICIADO...</div></div>
+    <div id="flash-fx" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none;"></div>
+    <video id="ar-feed" autoplay playsinline muted></video>
+    <div class="scan-line"></div>
 
-    <div id="lobby" class="screen">
-        <h3>CONFIGURACIÓN DE RED</h3>
-        <textarea id="json-input" placeholder="PEGA JSON AQUÍ" style="height:50px;"></textarea>
-        
-        <div style="width:100%; border:1px solid #333; padding:10px; margin-bottom:20px;">
-            <p style="margin:0 0 5px 0; font-size:0.8rem; color:#888;">TU IDENTIFICADOR DE RED:</p>
-            <div id="my-peer-id" style="font-size:1.5rem; color:var(--r); font-weight:bold;">OBTENIENDO ID...</div>
+    <div id="lobby-screen" class="screen">
+        <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
+        <div style="font-size:0.7rem; color:#666; margin-bottom:15px;">v5 STABLE LINK</div>
+
+        <div class="box">
+            <div style="font-size:0.7rem; margin-bottom:5px;">1. PEGA TU JSON DE ESCUADRA</div>
+            <textarea id="json-input" placeholder='{"squad":{...}}'></textarea>
         </div>
 
-        <input type="text" id="remote-id" placeholder="ID DEL RIVAL (EJ: SQ-4821)">
-        <button onclick="connectToPeer()">CONECTAR CON RIVAL</button>
-        <button onclick="location.reload()" style="background:#333; color:#fff">REINICIAR</button>
+        <div class="box">
+            <div style="font-size:0.7rem; margin-bottom:5px;">2. TU CÓDIGO DE RED</div>
+            <div id="my-id" style="font-size:1.8rem; font-weight:bold; color:var(--g); letter-spacing:2px;">...</div>
+            <div style="font-size:0.6rem; color:#666;">Comparte esto con tu rival</div>
+        </div>
+
+        <div class="box">
+            <div style="font-size:0.7rem; margin-bottom:5px;">3. CONECTAR CON RIVAL</div>
+            <input type="text" id="target-id" placeholder="CÓDIGO RIVAL">
+            <button class="btn" onclick="connectAndPlay()">INICIAR ENLACE</button>
+            <div id="status-msg" style="color:var(--r); font-size:0.8rem; margin-top:10px;"></div>
+        </div>
     </div>
 
-    <div id="game" class="screen hidden">
-        <h3>EN COMBATE</h3>
-        <div id="game-status" style="color:var(--r)">ESPERANDO DATOS...</div>
-        <div id="battle-area" style="width:100%"></div>
-        <button onclick="fireTest()">DISPARAR (TEST)</button>
+    <div id="game-screen" class="screen transparent hidden">
+        <div class="hud-top">
+            <div class="badge on">LINK ESTABLE</div>
+            <div class="badge" id="role-badge">---</div>
+        </div>
+
+        <div class="log-area" id="combat-log"></div>
+
+        <div class="hud-bottom">
+            <div class="card my" onclick="nextMyUnit()">
+                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--c)">
+                    <span>MIS TROPAS (YO)</span> <span id="my-w">---</span>
+                </div>
+                <div id="my-name" style="font-weight:bold; font-size:1.1rem;">---</div>
+                <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
+            </div>
+
+            <div class="card enemy" onclick="nextEnemyUnit()">
+                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--r)">
+                    <span>OBJETIVO (RIVAL)</span> <span id="enemy-w">---</span>
+                </div>
+                <div id="enemy-name" style="font-weight:bold; font-size:1.1rem;">---</div>
+                <div class="hp-bar"><div id="enemy-hp" class="hp-fill" style="background:var(--r)"></div></div>
+            </div>
+
+            <button class="btn" style="background:var(--r); color:#fff; margin-top:10px;" onclick="fireWeapon()">ABRIR FUEGO</button>
+        </div>
     </div>
 
 <script>
-    // --- LOGGER VISUAL ---
-    function log(msg, type='') {
-        const d = new Date();
-        const time = `${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
-        const el = document.getElementById('sys-log');
-        const colorClass = type === 'error' ? 'log-err' : (type === 'success' ? 'log-ok' : '');
-        el.innerHTML = `<div class="log-line ${colorClass}">[${time}] ${msg}</div>` + el.innerHTML;
-    }
-
-    // --- VARIABLES ---
+    // --- VARIABLES GLOBALES ---
     let peer = null;
     let conn = null;
-    let mySquad = null;
-
-    // --- 1. INICIAR PEER (AUTOMÁTICO) ---
-    // Generamos una ID aleatoria corta
-    const myId = "SQ-" + Math.floor(Math.random() * 9000 + 1000);
+    let myIdStr = "SQ-" + Math.floor(Math.random() * 8999 + 1000); // ID Aleatoria
     
-    log("Iniciando PeerJS con ID: " + myId);
+    // Datos de juego
+    let myRawSquad = [];    // Mi JSON original
+    let myUnits = [];       // Mis unidades procesadas
+    let enemyUnits = [];    // Unidades del rival
+    let globalHP = {};      // Vida de todos { "H-1": {curr:10, max:10} }
+    
+    // Indices de selección UI
+    let myIdx = 0;
+    let enIdx = 0;
 
-    try {
-        peer = new Peer(myId, {
-            debug: 2
-        });
-
-        peer.on('open', (id) => {
-            log("✅ CONECTADO AL SERVIDOR PEERJS", 'success');
-            log("TU ID ES: " + id, 'success');
-            document.getElementById('my-peer-id').innerText = id;
-        });
-
-        peer.on('connection', (c) => {
-            log("🔔 ¡ALGUIEN SE ESTÁ CONECTANDO A TI!", 'success');
-            conn = c;
-            setupConnection();
-        });
-
-        peer.on('error', (err) => {
-            log("❌ ERROR CRÍTICO: " + err.type, 'error');
-            log("Detalle: " + err.message);
-            if(err.type === 'peer-unavailable') log("El ID del rival no existe o no está conectado.");
-            if(err.type === 'network') log("Problema de internet / Firewall.");
-        });
-
-        peer.on('disconnected', () => {
-            log("⚠️ Desconectado del servidor de señalización.");
-            peer.reconnect();
-        });
-
-    } catch (e) {
-        log("❌ ERROR AL CREAR PEER: " + e.message, 'error');
-    }
-
-    // --- 2. CONECTAR MANUALMENTE ---
-    function connectToPeer() {
-        const target = document.getElementById('remote-id').value.trim();
-        const json = document.getElementById('json-input').value;
-        
-        if(!json) return log("⚠️ PEGA EL JSON PRIMERO", 'error');
-        if(!target) return log("⚠️ ESCRIBE LA ID DEL RIVAL", 'error');
-        
+    // --- INICIO AUTOMÁTICO DE PEER ---
+    // Iniciamos PeerJS nada más cargar para tener la ID lista
+    window.onload = function() {
         try {
-            mySquad = JSON.parse(json);
-        } catch(e) { return log("JSON INVÁLIDO", 'error'); }
+            document.getElementById('my-id').innerText = "INIT...";
+            peer = new Peer(myIdStr);
 
-        log("Intentando conectar con: " + target + "...");
+            peer.on('open', (id) => {
+                document.getElementById('my-id').innerText = id;
+            });
+
+            // Si alguien se conecta a MÍ (yo soy el Host pasivo)
+            peer.on('connection', (c) => {
+                conn = c;
+                setupConnection('host');
+            });
+
+            peer.on('error', (err) => alert("Error Red: " + err.type));
+        } catch(e) { alert("Error crítico PeerJS"); }
+    };
+
+    // --- CONECTARSE AL RIVAL (Yo soy el Guest activo) ---
+    function connectAndPlay() {
+        // 1. Validar JSON
+        const jsonTxt = document.getElementById('json-input').value;
+        if(!jsonTxt) return msg("⚠️ Falta tu JSON de escuadra");
+        try {
+            const data = JSON.parse(jsonTxt);
+            myRawSquad = Object.values(data.squad);
+        } catch(e) { return msg("⚠️ JSON Incorrecto"); }
+
+        // 2. Validar ID Rival
+        const target = document.getElementById('target-id').value.trim();
+        if(target.length < 4) return msg("⚠️ Escribe ID del rival");
+
+        msg("Conectando...");
         conn = peer.connect(target);
-        setupConnection();
+        setupConnection('guest');
     }
 
-    // --- 3. CONFIGURAR CONEXIÓN ---
-    function setupConnection() {
+    // --- LÓGICA DE CONEXIÓN Y HANDSHAKE ---
+    function setupConnection(role) {
         conn.on('open', () => {
-            log("🤝 ¡CANAL P2P ABIERTO!", 'success');
-            document.getElementById('lobby').classList.add('hidden');
-            document.getElementById('game').classList.remove('hidden');
-            document.getElementById('game-status').innerText = "CONECTADO";
+            msg("¡Conectado! Intercambiando datos...");
             
-            // Enviar saludo de prueba
-            conn.send({ type: 'TEST', msg: 'Hola desde el otro lado' });
+            // Si soy el que inició la conexión, ya tengo mi JSON parseado.
+            // Si soy el que recibió la conexión (Host), debo parsear mi JSON ahora.
+            if(role === 'host') {
+                const jsonTxt = document.getElementById('json-input').value;
+                if(!jsonTxt) { 
+                    alert("¡Rival conectado pero TÚ no has puesto tu JSON!"); 
+                    conn.close(); return;
+                }
+                myRawSquad = Object.values(JSON.parse(jsonTxt).squad);
+            }
+
+            // ENVIAR MI ESCUADRA (HANDSHAKE)
+            conn.send({ type: 'HANDSHAKE', squad: myRawSquad, role: role });
         });
 
         conn.on('data', (data) => {
-            log("📨 DATO RECIBIDO: " + data.type);
-            if(data.type === 'TEST') {
-                alert("¡SINCRONIZACIÓN EXITOSA! Mensaje: " + data.msg);
+            if(data.type === 'HANDSHAKE') {
+                // He recibido la escuadra del rival. ¡A JUGAR!
+                startGame(data.squad, data.role); // data.role es el rol del OTRO
             }
-            if(data.type === 'FIRE') {
-                log(`🔥 DISPARO RECIBIDO: ${data.dmg} DAÑO`, 'error');
-                document.body.style.background = '#300';
-                setTimeout(()=> document.body.style.background = '#000', 200);
-            }
+            if(data.type === 'ATTACK') resolveRemoteAttack(data);
+            if(data.type === 'SYNC') updateHP(data.state);
         });
 
-        conn.on('close', () => {
-            log("❌ CONEXIÓN CERRADA POR EL RIVAL", 'error');
-            alert("Rival desconectado");
-            location.reload();
+        conn.on('close', () => { alert("Rival desconectado"); location.reload(); });
+    }
+
+    // --- INICIO DEL JUEGO ---
+    function startGame(enemyRawSquad, enemyRole) {
+        // Definir prefijos para IDs únicos
+        // Si yo inicié (guest), mi prefijo es 'G-', el suyo 'H-'
+        // Si yo recibí (host), mi prefijo es 'H-', el suyo 'G-'
+        // Pero para simplificar: El que tiene rol 'host' es H, el otro G.
+        
+        // Determinar MI rol real basado en lo que recibí
+        // Si el otro dice que es 'guest', yo soy 'host'.
+        let myRealRole = (enemyRole === 'guest') ? 'host' : 'guest';
+        
+        let myPrefix = (myRealRole === 'host') ? 'H-' : 'G-';
+        let enPrefix = (myRealRole === 'host') ? 'G-' : 'H-';
+
+        // Procesar Mis Unidades
+        myUnits = myRawSquad.map(u => ({ ...u, uid: myPrefix + u.id }));
+        
+        // Procesar Unidades Enemigas
+        enemyUnits = enemyRawSquad.map(u => ({ ...u, uid: enPrefix + u.id }));
+
+        // Inicializar Vida Global
+        [...myUnits, ...enemyUnits].forEach(u => {
+            globalHP[u.uid] = { c: parseInt(u.stats.hp), m: parseInt(u.stats.hp) };
+        });
+
+        // UI Switch
+        document.getElementById('lobby-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        document.getElementById('role-badge').innerText = myRealRole.toUpperCase();
+        
+        // Activar Cámara
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(s => document.getElementById('ar-feed').srcObject = s).catch(e=>{});
+
+        updateHUD();
+        log(`SISTEMA EN LÍNEA. ${myUnits.length} vs ${enemyUnits.length} TANGOs.`);
+    }
+
+    // --- BUCLE DE JUEGO ---
+    function updateHUD() {
+        const me = myUnits[myIdx];
+        const en = enemyUnits[enIdx];
+        const meState = globalHP[me.uid];
+        const enState = globalHP[en.uid];
+
+        // My Card
+        document.getElementById('my-name').innerText = me.name;
+        document.getElementById('my-w').innerText = `🔫 ${me.stats.r_atk}/${me.stats.r_hit}`;
+        document.getElementById('my-hp').style.width = (meState.c / meState.m * 100) + "%";
+
+        // Enemy Card
+        document.getElementById('enemy-name').innerText = en.name;
+        document.getElementById('enemy-w').innerText = `🛡️ SV ${en.stats.sv}`;
+        document.getElementById('enemy-hp').style.width = (enState.c / enState.m * 100) + "%";
+        
+        // Visual muerte
+        if(meState.c <= 0) document.querySelector('.card.my').style.opacity = 0.5;
+        else document.querySelector('.card.my').style.opacity = 1;
+        
+        if(enState.c <= 0) document.querySelector('.card.enemy').style.opacity = 0.5;
+        else document.querySelector('.card.enemy').style.opacity = 1;
+    }
+
+    function nextMyUnit() { myIdx = (myIdx + 1) % myUnits.length; updateHUD(); }
+    function nextEnemyUnit() { enIdx = (enIdx + 1) % enemyUnits.length; updateHUD(); }
+
+    // --- COMBATE ---
+    function fireWeapon() {
+        const me = myUnits[myIdx];
+        const en = enemyUnits[enIdx];
+        
+        if(globalHP[me.uid].c <= 0) return log("❌ UNIDAD CAÍDA. NO PUEDE ATACAR.");
+        if(globalHP[en.uid].c <= 0) return log("❌ OBJETIVO YA ELIMINADO.");
+
+        // Cálculo Local de Ataque
+        let dice = parseInt(me.stats.r_atk);
+        let hitT = parseInt(me.stats.r_hit.replace('+',''));
+        let dmg = parseInt(me.stats.r_dmg);
+
+        let hits = 0;
+        let rolls = [];
+        for(let i=0; i<dice; i++) {
+            let r = Math.ceil(Math.random()*6);
+            rolls.push(r);
+            if(r >= hitT) hits++;
+        }
+
+        log(`YO DISPARO: [${rolls.join(',')}] -> ${hits} IMPACTOS`);
+
+        // Enviar al rival para que resuelva su defensa
+        conn.send({
+            type: 'ATTACK',
+            uName: me.name, // Nombre de quien dispara
+            tUid: en.uid,   // A quién disparo (ID único)
+            hits: hits,
+            dmg: dmg,
+            sv: parseInt(en.stats.sv)
         });
     }
 
-    function fireTest() {
-        if(conn && conn.open) {
-            log("Enviando disparo de prueba...");
-            conn.send({ type: 'FIRE', dmg: 10 });
-        } else {
-            log("❌ NO HAY CONEXIÓN ACTIVA", 'error');
+    function resolveRemoteAttack(data) {
+        // Soy el defensor.
+        const target = myUnits.find(u => u.uid === data.tUid);
+        if(!target) return; // Error de ID
+
+        let saves = 0;
+        let rolls = [];
+        for(let i=0; i<data.hits; i++) {
+            let r = Math.ceil(Math.random()*6);
+            rolls.push(r);
+            if(r >= parseInt(target.stats.sv)) saves++;
         }
+
+        let wounds = data.hits - saves;
+        let totalDmg = wounds * data.dmg;
+
+        log(`RIVAL (${data.uName}) ataca a ${target.name}: ${wounds} entran.`);
+
+        if(totalDmg > 0) {
+            globalHP[target.uid].c = Math.max(0, globalHP[target.uid].c - totalDmg);
+            flashScreen();
+            log(`💥 -${totalDmg} DAÑO RECIBIDO!`);
+            
+            // Reenviar estado actualizado a todos
+            conn.send({ type: 'SYNC', state: globalHP });
+            updateHUD();
+        } else {
+            log("🛡️ ATAQUE BLOQUEADO");
+        }
+    }
+
+    function updateHP(newState) {
+        globalHP = newState;
+        updateHUD();
+    }
+
+    // --- UTILS ---
+    function msg(txt) { document.getElementById('status-msg').innerText = txt; }
+    function log(txt) { 
+        const c = document.getElementById('combat-log');
+        c.innerHTML = `<div class="log-line">> ${txt}</div>` + c.innerHTML;
+    }
+    function flashScreen() {
+        const f = document.getElementById('flash-fx');
+        f.classList.remove('flash');
+        void f.offsetWidth; // trigger reflow
+        f.classList.add('flash');
     }
 
 </script>
