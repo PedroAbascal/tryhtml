@@ -3,365 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: VERSUS</title>
+    <title>SQUAD COMMAND: DEBUG MODE</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root {
-            --hud-cyan: #00f2ff;
-            --hud-red: #ff0055;
-            --hud-gold: #ffcc00;
-            --hud-green: #00ff99;
-            --hud-bg: rgba(0, 10, 20, 0.9);
+        :root { --c: #00f2ff; --r: #ff0055; --bg: #0d1117; }
+        body { margin: 0; background: #000; font-family: monospace; color: var(--c); overflow: hidden; }
+        
+        /* DIAGNOSTIC CONSOLE */
+        #sys-log { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 150px; 
+            background: rgba(0,0,0,0.9); border-bottom: 1px solid var(--c);
+            overflow-y: auto; font-size: 10px; padding: 5px; z-index: 999;
+            pointer-events: none;
         }
+        .log-line { margin-bottom: 2px; border-bottom: 1px solid #222; }
+        .log-err { color: var(--r); font-weight: bold; }
+        .log-ok { color: #0f0; }
 
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; color: var(--hud-cyan); user-select: none; }
-
-        /* VIDEO & SCANLINE */
-        #ar-feed { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; filter: contrast(1.1) brightness(0.8); }
-        .scan-line { position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: rgba(0, 242, 255, 0.3); animation: scan 3s linear infinite; z-index: 0; pointer-events: none; }
-        @keyframes scan { 0% { top: 0%; opacity:0; } 100% { top: 100%; opacity:0; } }
-
-        /* SCREENS */
-        .screen { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0; box-sizing: border-box; background: #0d1117; z-index: 10; transition: 0.3s; }
-        .screen.hidden { display: none !important; }
-        .screen.transparent { background: transparent; pointer-events: none; }
+        /* UI */
+        .screen { position: absolute; top: 150px; width: 100%; height: calc(100% - 150px); padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; }
+        .hidden { display: none !important; }
         
-        /* LOBBY */
-        #lobby-screen { align-items: center; justify-content: center; padding: 20px; text-align: center; }
-        .lobby-box { border: 1px solid var(--hud-cyan); padding: 20px; width: 90%; max-width: 400px; background: rgba(0,0,0,0.85); }
-        textarea { width: 100%; height: 60px; background:#111; color:#aaa; border:1px solid #333; font-size:0.7rem; font-family:monospace; }
-        input { background: #111; border: 1px solid #555; color: white; padding: 10px; font-family: monospace; width: 70%; text-transform: uppercase; margin-top:5px;}
-        .btn-main { background: var(--hud-cyan); color: #000; border: none; padding: 15px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
-        .btn-sec { background: transparent; border: 1px solid var(--hud-cyan); color: var(--hud-cyan); padding: 10px; width: 100%; margin-top: 5px; cursor: pointer; }
-
-        /* HUD */
-        .hud-top { display: flex; justify-content: space-between; padding: 10px; pointer-events: auto; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
-        .status-pill { border: 1px solid #555; padding: 5px 10px; font-size: 0.7rem; background: rgba(0,0,0,0.5); color:#888; }
-        .status-pill.active { border-color: var(--hud-green); color: var(--hud-green); }
-
-        .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; box-sizing: border-box; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; }
+        input, textarea { background: #111; color: white; border: 1px solid #555; width: 100%; padding: 10px; margin-bottom: 10px; }
+        button { background: var(--c); color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; margin-bottom: 5px; }
         
-        .unit-card { border: 1px solid #333; padding: 10px; margin-bottom: 5px; background: rgba(0,0,0,0.6); transition: 0.2s; cursor: pointer; }
-        .unit-card.my-unit { border-left: 4px solid var(--hud-cyan); }
-        .unit-card.enemy-unit { border-left: 4px solid var(--hud-red); }
-        .unit-card:active { transform: scale(0.98); }
-
-        .hp-bar { height: 4px; background: #333; margin-top: 5px; width: 100%; }
-        .hp-fill { height: 100%; width: 100%; transition: width 0.3s; }
-        
-        .btn-fire { width: 100%; background: var(--hud-red); color: white; border: none; padding: 15px; font-size: 1.5rem; font-weight: bold; margin-top: 10px; clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%); cursor: pointer; }
-        
-        #combat-log { position: absolute; top: 60px; left: 10px; width: 60%; font-size: 0.7rem; text-shadow: 1px 1px 0 #000; pointer-events: none; }
-        .log-entry { margin-bottom: 2px; opacity: 0.9; }
-        .log-hit { color: var(--hud-cyan); } .log-dmg { color: var(--hud-red); font-weight:bold; }
-
-        /* WAITING OVERLAY */
-        #wait-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--hud-cyan); display:none; }
+        .card { border: 1px solid #333; padding: 10px; margin-bottom: 10px; width: 100%; }
+        .my-unit { border-left: 4px solid var(--c); }
+        .enemy-unit { border-left: 4px solid var(--r); }
     </style>
 </head>
 <body>
 
-    <video id="ar-feed" autoplay playsinline muted></video>
-    <div class="scan-line"></div>
+    <div id="sys-log"><div>SISTEMA INICIADO...</div></div>
 
-    <div id="wait-overlay">
-        <h2>SINCRONIZANDO...</h2>
-        <p>Intercambiando datos de escuadra</p>
-        <div style="font-size:2rem;">⇄</div>
+    <div id="lobby" class="screen">
+        <h3>CONFIGURACIÓN DE RED</h3>
+        <textarea id="json-input" placeholder="PEGA JSON AQUÍ" style="height:50px;"></textarea>
+        
+        <div style="width:100%; border:1px solid #333; padding:10px; margin-bottom:20px;">
+            <p style="margin:0 0 5px 0; font-size:0.8rem; color:#888;">TU IDENTIFICADOR DE RED:</p>
+            <div id="my-peer-id" style="font-size:1.5rem; color:var(--r); font-weight:bold;">OBTENIENDO ID...</div>
+        </div>
+
+        <input type="text" id="remote-id" placeholder="ID DEL RIVAL (EJ: SQ-4821)">
+        <button onclick="connectToPeer()">CONECTAR CON RIVAL</button>
+        <button onclick="location.reload()" style="background:#333; color:#fff">REINICIAR</button>
     </div>
 
-    <div id="lobby-screen" class="screen">
-        <h1 style="color:var(--hud-cyan); margin-bottom:5px;">SQUAD VERSUS</h1>
-        <div style="font-size:0.7rem; color:#888; margin-bottom:20px;">DEPLOYMENT LINK v4.0</div>
-
-        <div class="lobby-box">
-            <h3 style="color:var(--hud-green)">TU ESCUADRA (JSON)</h3>
-            <textarea id="json-input" placeholder='Pega AQUÍ el JSON de TU escuadra (generado en Squad Forge)'></textarea>
-            
-            <hr style="border:0; border-top:1px solid #333; margin:15px 0;">
-
-            <div id="host-section">
-                <button class="btn-main" onclick="startHost()">CREAR PARTIDA (HOST)</button>
-                <div id="host-code-display" style="display:none; margin-top:10px;">
-                    <span style="color:#aaa">TU CÓDIGO:</span><br>
-                    <span id="my-code" style="color:var(--hud-gold); font-size:1.5rem; font-weight:bold;">...</span>
-                    <p style="font-size:0.7rem; color:#666">Esperando al rival...</p>
-                </div>
-            </div>
-
-            <p style="color:#555">- O -</p>
-
-            <div id="join-section">
-                <input type="text" id="join-code" placeholder="CÓDIGO RIVAL">
-                <button class="btn-sec" onclick="startJoin()">UNIRSE</button>
-            </div>
-            <p id="status-msg" style="color:var(--hud-red); font-size:0.8rem; margin-top:10px;"></p>
-        </div>
-    </div>
-
-    <div id="hud-screen" class="screen transparent hidden">
-        <div class="hud-top">
-            <div class="status-pill active" id="role-indicator">---</div>
-            <div class="status-pill active">LIVE LINK</div>
-        </div>
-
-        <div id="combat-log"></div>
-
-        <div class="hud-bottom">
-            <div class="unit-card my-unit" onclick="nextMyUnit()">
-                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--hud-cyan);">
-                    <span>YO (MIS TROPAS)</span> <span id="my-stats">---</span>
-                </div>
-                <div id="my-name" style="font-weight:bold;">Seleccionando...</div>
-                <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--hud-cyan)"></div></div>
-            </div>
-
-            <div class="unit-card enemy-unit" onclick="nextEnemyUnit()">
-                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--hud-red);">
-                    <span>RIVAL (OBJETIVO)</span> <span id="enemy-stats">---</span>
-                </div>
-                <div id="enemy-name" style="font-weight:bold;">Seleccionando...</div>
-                <div class="hp-bar"><div id="enemy-hp" class="hp-fill" style="background:var(--hud-red)"></div></div>
-            </div>
-
-            <button class="btn-fire" onclick="fireWeapon()">ABRIR FUEGO</button>
-        </div>
+    <div id="game" class="screen hidden">
+        <h3>EN COMBATE</h3>
+        <div id="game-status" style="color:var(--r)">ESPERANDO DATOS...</div>
+        <div id="battle-area" style="width:100%"></div>
+        <button onclick="fireTest()">DISPARAR (TEST)</button>
     </div>
 
 <script>
-    // --- ESTADO GLOBAL ---
-    let myRole = null; // 'host' o 'guest'
-    let myRawData = null; // Mi JSON original
-    
-    // Almacenes de unidades procesadas
-    let myUnits = [];     
-    let enemyUnits = [];
-    
-    // Índices de selección
-    let myIdx = 0;
-    let enemyIdx = 0;
-
-    // Estado de vida global (Key: uniqueID, Value: HP)
-    let globalHP = {};
-
-    // Red
-    let peer = null;
-    let conn = null;
-
-    // --- 1. SETUP & VALIDACIÓN ---
-    function getLocalSquad() {
-        const raw = document.getElementById('json-input').value;
-        if(!raw) { alert("¡Debes pegar tu JSON de escuadra primero!"); return null; }
-        try {
-            const data = JSON.parse(raw);
-            return Object.values(data.squad); // Array de unidades
-        } catch(e) {
-            alert("JSON inválido"); return null;
-        }
+    // --- LOGGER VISUAL ---
+    function log(msg, type='') {
+        const d = new Date();
+        const time = `${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
+        const el = document.getElementById('sys-log');
+        const colorClass = type === 'error' ? 'log-err' : (type === 'success' ? 'log-ok' : '');
+        el.innerHTML = `<div class="log-line ${colorClass}">[${time}] ${msg}</div>` + el.innerHTML;
     }
 
-    // --- 2. CONEXIÓN P2P ---
-    function startHost() {
-        const squad = getLocalSquad();
-        if(!squad) return;
-        myRawData = squad;
-        myRole = 'host';
+    // --- VARIABLES ---
+    let peer = null;
+    let conn = null;
+    let mySquad = null;
 
-        document.getElementById('status-msg').innerText = "Iniciando red...";
-        const id = "SQ-" + Math.floor(Math.random()*9999);
-        peer = new Peer(id);
+    // --- 1. INICIAR PEER (AUTOMÁTICO) ---
+    // Generamos una ID aleatoria corta
+    const myId = "SQ-" + Math.floor(Math.random() * 9000 + 1000);
+    
+    log("Iniciando PeerJS con ID: " + myId);
 
-        peer.on('open', (pid) => {
-            document.getElementById('host-code-display').style.display = 'block';
-            document.getElementById('my-code').innerText = pid;
-            document.getElementById('join-section').style.display = 'none';
+    try {
+        peer = new Peer(myId, {
+            debug: 2
+        });
+
+        peer.on('open', (id) => {
+            log("✅ CONECTADO AL SERVIDOR PEERJS", 'success');
+            log("TU ID ES: " + id, 'success');
+            document.getElementById('my-peer-id').innerText = id;
         });
 
         peer.on('connection', (c) => {
+            log("🔔 ¡ALGUIEN SE ESTÁ CONECTANDO A TI!", 'success');
             conn = c;
-            handleConnection();
+            setupConnection();
         });
+
+        peer.on('error', (err) => {
+            log("❌ ERROR CRÍTICO: " + err.type, 'error');
+            log("Detalle: " + err.message);
+            if(err.type === 'peer-unavailable') log("El ID del rival no existe o no está conectado.");
+            if(err.type === 'network') log("Problema de internet / Firewall.");
+        });
+
+        peer.on('disconnected', () => {
+            log("⚠️ Desconectado del servidor de señalización.");
+            peer.reconnect();
+        });
+
+    } catch (e) {
+        log("❌ ERROR AL CREAR PEER: " + e.message, 'error');
     }
 
-    function startJoin() {
-        const squad = getLocalSquad();
-        if(!squad) return;
-        myRawData = squad;
-        myRole = 'guest';
+    // --- 2. CONECTAR MANUALMENTE ---
+    function connectToPeer() {
+        const target = document.getElementById('remote-id').value.trim();
+        const json = document.getElementById('json-input').value;
+        
+        if(!json) return log("⚠️ PEGA EL JSON PRIMERO", 'error');
+        if(!target) return log("⚠️ ESCRIBE LA ID DEL RIVAL", 'error');
+        
+        try {
+            mySquad = JSON.parse(json);
+        } catch(e) { return log("JSON INVÁLIDO", 'error'); }
 
-        const target = document.getElementById('join-code').value;
-        if(!target) return alert("Falta código");
-
-        peer = new Peer(); // ID automático para el guest
-        peer.on('open', () => {
-            conn = peer.connect(target);
-            handleConnection();
-        });
+        log("Intentando conectar con: " + target + "...");
+        conn = peer.connect(target);
+        setupConnection();
     }
 
-    // --- 3. HANDSHAKE (INTERCAMBIO DE DATOS) ---
-    function handleConnection() {
-        document.getElementById('wait-overlay').style.display = 'flex';
-
+    // --- 3. CONFIGURAR CONEXIÓN ---
+    function setupConnection() {
         conn.on('open', () => {
-            console.log("Conectado. Enviando mi escuadra...");
-            // ENVIAR MI ESCUADRA AL RIVAL
-            conn.send({
-                type: 'HANDSHAKE',
-                role: myRole,
-                squad: myRawData
-            });
+            log("🤝 ¡CANAL P2P ABIERTO!", 'success');
+            document.getElementById('lobby').classList.add('hidden');
+            document.getElementById('game').classList.remove('hidden');
+            document.getElementById('game-status').innerText = "CONECTADO";
+            
+            // Enviar saludo de prueba
+            conn.send({ type: 'TEST', msg: 'Hola desde el otro lado' });
         });
 
         conn.on('data', (data) => {
-            console.log("Datos recibidos:", data.type);
-            
-            if (data.type === 'HANDSHAKE') {
-                // RECIBIMOS LA ESCUADRA ENEMIGA
-                processGameStart(myRawData, data.squad);
+            log("📨 DATO RECIBIDO: " + data.type);
+            if(data.type === 'TEST') {
+                alert("¡SINCRONIZACIÓN EXITOSA! Mensaje: " + data.msg);
             }
-            else if (data.type === 'ATTACK') {
-                // RECIBIMOS UN ATAQUE
-                resolveIncomingAttack(data);
+            if(data.type === 'FIRE') {
+                log(`🔥 DISPARO RECIBIDO: ${data.dmg} DAÑO`, 'error');
+                document.body.style.background = '#300';
+                setTimeout(()=> document.body.style.background = '#000', 200);
             }
-            else if (data.type === 'SYNC_HP') {
-                // ACTUALIZACIÓN DE VIDA
-                updateGlobalHP(data.hpState);
-            }
+        });
+
+        conn.on('close', () => {
+            log("❌ CONEXIÓN CERRADA POR EL RIVAL", 'error');
+            alert("Rival desconectado");
+            location.reload();
         });
     }
 
-    // --- 4. INICIO DE PARTIDA ---
-    function processGameStart(localList, remoteList) {
-        // Procesamos IDs únicos para evitar choques (Host siempre es prefix 'H', Guest 'G')
-        const prefixMe = (myRole === 'host') ? 'H-' : 'G-';
-        const prefixOp = (myRole === 'host') ? 'G-' : 'H-';
-
-        // 1. Procesar MIS unidades
-        myUnits = localList.map(u => ({ ...u, uid: prefixMe + u.id }));
-        
-        // 2. Procesar unidades ENEMIGAS
-        enemyUnits = remoteList.map(u => ({ ...u, uid: prefixOp + u.id }));
-
-        // 3. Inicializar HP Global
-        [...myUnits, ...enemyUnits].forEach(u => {
-            globalHP[u.uid] = { curr: parseInt(u.stats.hp), max: parseInt(u.stats.hp) };
-        });
-
-        // 4. Arrancar UI
-        setTimeout(() => {
-            document.getElementById('wait-overlay').style.display = 'none';
-            document.getElementById('lobby-screen').classList.add('hidden');
-            document.getElementById('hud-screen').classList.remove('hidden');
-            
-            // Iniciar cámara
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .then(s => document.getElementById('ar-feed').srcObject = s).catch(e=>{});
-
-            document.getElementById('role-indicator').innerText = myRole === 'host' ? "HOST (J1)" : "GUEST (J2)";
-            updateHUD();
-        }, 1000);
-    }
-
-    // --- 5. GAMEPLAY ---
-    function nextMyUnit() { myIdx = (myIdx + 1) % myUnits.length; updateHUD(); }
-    function nextEnemyUnit() { enemyIdx = (enemyIdx + 1) % enemyUnits.length; updateHUD(); }
-
-    function updateHUD() {
-        const me = myUnits[myIdx];
-        const enemy = enemyUnits[enemyIdx];
-
-        // Render MY card
-        const meHP = globalHP[me.uid];
-        document.getElementById('my-name').innerText = me.name;
-        document.getElementById('my-stats').innerText = `🔫 ${me.stats.r_atk} / ${me.stats.r_hit}`;
-        document.getElementById('my-hp').style.width = (meHP.curr / meHP.max * 100) + "%";
-
-        // Render ENEMY card
-        const enHP = globalHP[enemy.uid];
-        document.getElementById('enemy-name').innerText = enemy.name;
-        document.getElementById('enemy-stats').innerText = `🛡️ SV ${enemy.stats.sv}`;
-        document.getElementById('enemy-hp').style.width = (enHP.curr / enHP.max * 100) + "%";
-    }
-
-    // --- 6. COMBATE ---
-    function fireWeapon() {
-        const atk = myUnits[myIdx];
-        const def = enemyUnits[enemyIdx];
-        const atkHP = globalHP[atk.uid];
-
-        if(atkHP.curr <= 0) return log("❌ UNIDAD CAÍDA NO PUEDE DISPARAR");
-
-        // Calcular dados localmente (Atacante tiene la autoridad)
-        let dice = parseInt(atk.stats.r_atk);
-        let hitVal = parseInt(atk.stats.r_hit.replace('+',''));
-        let dmg = parseInt(atk.stats.r_dmg);
-
-        let hits = 0;
-        let rolls = [];
-        for(let i=0; i<dice; i++) {
-            let r = Math.ceil(Math.random()*6);
-            rolls.push(r);
-            if(r >= hitVal) hits++;
-        }
-
-        log(`YO: [${rolls.join(',')}] -> ${hits} IMPACTOS`);
-
-        // Enviar datos al rival para que calcule su defensa
-        // Le decimos: "Mi unidad X te pegó Y veces con daño Z"
-        conn.send({
-            type: 'ATTACK',
-            atkName: atk.name,
-            defUid: def.uid, // ID único del objetivo
-            hits: hits,
-            dmg: dmg,
-            svVal: parseInt(def.stats.sv) // Dato de referencia
-        });
-    }
-
-    function resolveIncomingAttack(data) {
-        // Soy el defensor. Recibo datos de ataque.
-        const defUnit = myUnits.find(u => u.uid === data.defUid);
-        
-        // Si no encuentro la unidad (error raro), ignorar
-        if(!defUnit) return;
-
-        let saves = 0;
-        let sRolls = [];
-        // Tirar salvaciones automáticamente
-        for(let i=0; i<data.hits; i++) {
-            let r = Math.ceil(Math.random()*6);
-            sRolls.push(r);
-            if(r >= parseInt(defUnit.stats.sv)) saves++;
-        }
-
-        let wounds = data.hits - saves;
-        let totalDmg = wounds * data.dmg;
-
-        log(`RIVAL dispara a ${defUnit.name}: ${wounds} entran (-${totalDmg} HP)`);
-
-        // Aplicar daño
-        if(totalDmg > 0) {
-            globalHP[defUnit.uid].curr = Math.max(0, globalHP[defUnit.uid].curr - totalDmg);
-            // ENVIAR NUEVO ESTADO DE VIDA A TODOS (Sync)
-            conn.send({ type: 'SYNC_HP', hpState: globalHP });
-            updateHUD();
-            
-            // Efecto visual
-            document.body.style.backgroundColor = "#500";
-            setTimeout(()=>document.body.style.backgroundColor="#000", 100);
+    function fireTest() {
+        if(conn && conn.open) {
+            log("Enviando disparo de prueba...");
+            conn.send({ type: 'FIRE', dmg: 10 });
+        } else {
+            log("❌ NO HAY CONEXIÓN ACTIVA", 'error');
         }
     }
 
-    function updateGlobalHP(newState) {
-        globalHP = newState;
-        updateHUD();
-    }
-
-    function log(msg) {
-        const c = document.getElementById('combat-log');
-        c.innerHTML = `<div class="log-entry">> ${msg}</div>` + c.innerHTML;
-    }
 </script>
 </body>
 </html>
