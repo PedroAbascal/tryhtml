@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v27 TOTAL WAR</title>
+    <title>SQUAD COMMAND: v28 MISSION TIMER</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -20,19 +20,21 @@
 
         .box { border: 1px solid var(--c); padding: 15px; width: 100%; max-width: 400px; background: rgba(0,0,0,0.95); margin-bottom: 15px; text-align: center; }
         textarea { width: 100%; height: 60px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; }
-        input { background: #000; border: 2px solid var(--gold); color: var(--gold); padding: 10px; font-family: monospace; width: 100%; text-align: center; font-size: 1.5rem; letter-spacing: 2px; margin: 10px 0; text-transform: uppercase; }
+        input, select { background: #000; border: 2px solid var(--gold); color: var(--gold); padding: 10px; font-family: monospace; width: 100%; text-align: center; font-size: 1.2rem; letter-spacing: 2px; margin: 10px 0; text-transform: uppercase; }
         
         .btn { background: var(--c); color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; font-size: 1rem; clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%); margin-top: 5px; pointer-events: auto; }
         .btn.wait { background: #333; color: #888; border: 1px solid #555; animation: pulse 1s infinite; cursor: default; pointer-events: none; }
         @keyframes pulse { 50% { opacity: 0.5; } }
 
         /* HUD ELEMENTS */
-        .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; justify-content: space-between; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); pointer-events: auto; }
-        .turn-badge { border: 2px solid #555; padding: 5px 15px; font-weight: bold; background: #000; color: #555; text-transform: uppercase; font-size: 0.9rem; transition: 0.3s; }
+        .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; justify-content: space-between; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); pointer-events: auto; align-items: center; }
+        .turn-badge { border: 2px solid #555; padding: 5px 15px; font-weight: bold; background: #000; color: #555; text-transform: uppercase; font-size: 0.8rem; transition: 0.3s; }
         .turn-badge.planning { border-color: var(--gold); color: var(--gold); }
         .turn-badge.my-turn { border-color: var(--g); color: var(--g); box-shadow: 0 0 15px var(--g); transform: scale(1.1); }
         .turn-badge.enemy-turn { border-color: var(--r); color: var(--r); opacity: 0.8; }
         
+        .round-counter { font-size: 0.9rem; color: #fff; font-weight: bold; border-bottom: 2px solid var(--c); padding-bottom: 2px; margin-right: 10px; }
+
         .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; }
         .unit-selector { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
         
@@ -59,7 +61,7 @@
         .tactic-row { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.7rem; border-top: 1px solid #333; padding-top: 5px; }
         .mode-toggle { cursor: pointer; padding: 2px 5px; border: 1px solid #555; color: #888; }
         .mode-toggle.selected { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.1); }
-        .strat-select { background: #000; color: var(--c); border: 1px solid #333; font-family: monospace; max-width: 80px; }
+        .strat-select { background: #000; color: var(--c); border: 1px solid #333; font-family: monospace; max-width: 80px; font-size: 0.7rem; }
 
         /* DICE & FX */
         #dice-overlay { 
@@ -102,6 +104,7 @@
         .end-sub { font-size: 1rem; color: #888; margin-bottom: 40px; }
         .win { color: var(--g); text-shadow: 0 0 30px var(--g); }
         .lose { color: var(--r); text-shadow: 0 0 30px var(--r); }
+        .draw { color: var(--c); text-shadow: 0 0 30px var(--c); }
     </style>
 </head>
 <body>
@@ -112,24 +115,32 @@
 
     <div id="game-over-screen">
         <div id="end-title" class="end-title">---</div>
-        <div id="end-sub" class="end-sub">SQUAD NEUTRALIZADO</div>
+        <div id="end-sub" class="end-sub">FIN DE TRANSMISIÓN</div>
         <button class="btn" style="max-width:200px;" onclick="location.reload()">REINICIAR</button>
     </div>
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v27 TOTAL WAR</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v28 MISSION TIMER</div>
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
-            <div style="font-size:0.6rem;">CLAVE DE MISIÓN</div>
-            <input type="text" id="room-id" value="WARZONE-7">
+            <div style="font-size:0.6rem;">CONFIGURACIÓN</div>
+            <select id="round-select">
+                <option value="4">4 RONDAS</option>
+                <option value="5">5 RONDAS</option>
+                <option value="6">6 RONDAS</option>
+            </select>
+            <input type="text" id="room-id" value="WARZONE-8">
             <button class="btn" onclick="initSystem()">DESPLEGAR</button>
         </div>
     </div>
 
     <div id="game-screen" class="screen transparent hidden">
         <div class="hud-top">
-            <div class="turn-badge planning" id="turn-indicator">PLANIFICACIÓN</div>
+            <div style="display:flex; align-items:center;">
+                <div id="round-display" class="round-counter">RND 1/4</div>
+                <div class="turn-badge planning" id="turn-indicator">PLANIFICACIÓN</div>
+            </div>
             <div style="font-size:0.7rem; border:1px solid #555; padding:2px 8px; background:#000;" id="phase-display">RANGO</div>
         </div>
         
@@ -211,6 +222,10 @@
     let gameState = 'PLANNING';
     let isGameOver = false;
     
+    // VARIABLES DE MISION
+    let maxRounds = 4;
+    let currentRound = 1;
+
     let dicePhase='IDLE', activeDice=[], diceTarget=0;
     let pendingHits = { normal: 0, crit: 0 }; 
     
@@ -222,6 +237,10 @@
     function initSystem() {
         const json = document.getElementById('json-input').value;
         const code = document.getElementById('room-id').value.trim().toUpperCase();
+        
+        // LEER SELECCION DE RONDAS
+        maxRounds = parseInt(document.getElementById('round-select').value);
+
         try {
             const raw = Object.values(JSON.parse(json).squad);
             myUnits = raw.map(u => ({ ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', stratagem: 'none', acted: false, reacted: false }));
@@ -233,11 +252,15 @@
         } catch(e) { log("Error JSON"); }
     }
     function startNetwork(code) {
-        TOPIC = `sqcmd/v27/${code}`; 
+        TOPIC = `sqcmd/v28/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
-        client.connect({useSSL:true, onSuccess:()=>{ client.subscribe(TOPIC); publish({type:'HELLO', squad:myUnits}); }});
+        client.connect({useSSL:true, onSuccess:()=>{ 
+            client.subscribe(TOPIC); 
+            // ENVIAMOS maxRounds EN EL HELLO PARA SINCRONIZAR
+            publish({type:'HELLO', squad:myUnits, rounds:maxRounds}); 
+        }});
     }
 
     function onMessage(msg) {
@@ -249,7 +272,10 @@
             if(!enemyUnits.length) {
                 enemyUnits = d.squad;
                 enemyUnits.forEach(u => { if(!globalHP[u.uid]) globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
-                publish({type:'HELLO', squad:myUnits}); updateHUD();
+                // Si el otro jugador ya definio las rondas, nos adaptamos
+                if(d.rounds) maxRounds = d.rounds;
+                publish({type:'HELLO', squad:myUnits, rounds:maxRounds}); 
+                updateHUD();
             }
         }
         else if(d.type === 'READY') {
@@ -289,8 +315,18 @@
     // --- GAMEPLAY ---
     function resetRound() {
         if(isGameOver) return;
+        
+        // CHEQUEO DE LIMITE DE RONDAS
+        if(currentRound >= maxRounds) {
+            triggerGameOver("EXTRACCIÓN", "DRAW");
+            return;
+        }
+        
+        // Nueva ronda
+        currentRound++;
         gameState = 'PLANNING'; iAmReady = false; enemyIsReady = false;
         myUnits.forEach(u => { u.acted = false; u.reacted = false; });
+        
         document.getElementById('planning-controls').style.display = 'block';
         document.getElementById('action-buttons').style.display = 'flex';
         document.getElementById('btn-ready').innerText = "CONFIRMAR ÓRDENES";
@@ -298,8 +334,10 @@
         document.getElementById('turn-indicator').className = "turn-badge planning";
         document.getElementById('turn-indicator').innerText = "PLANIFICACIÓN";
         document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show'));
+        
         enableControls(false); updateHUD();
     }
+
     function commitPlanning() {
         if(gameState !== 'PLANNING') return;
         iAmReady = true; myInitRoll = Math.ceil(Math.random()*100);
@@ -334,7 +372,7 @@
     function enableControls(ok) { document.getElementById('action-buttons').style.opacity = ok?1:0.5; document.getElementById('action-buttons').style.pointerEvents = ok?'auto':'none'; }
     function selectUnit(u) { myIdx = myUnits.indexOf(u); updateHUD(); }
 
-    // --- DICE SYSTEM (Crit + Max Defense) ---
+    // --- DICE SYSTEM ---
     window.startActionPhase = function() {
         if(gameState !== 'MY_TURN') return;
         const me = myUnits[myIdx];
@@ -470,9 +508,10 @@
         
         screen.classList.add('show');
         title.innerText = text;
-        title.className = type === "WIN" ? "end-title win" : "end-title lose";
+        if(type === "WIN") title.className = "end-title win";
+        else if(type === "LOSE") title.className = "end-title lose";
+        else title.className = "end-title draw";
         
-        // Bloquear todo
         document.getElementById('action-buttons').style.display = 'none';
         closeDice();
     }
@@ -488,8 +527,10 @@
     function updateHUD() {
         if(!myUnits.length) return;
         
-        // Verificar victoria en cada update de HUD (incluye sync de HP)
         checkWinCondition(); 
+        
+        // ACTUALIZAR RONDAS
+        document.getElementById('round-display').innerText = `RND ${currentRound}/${maxRounds}`;
 
         const me = myUnits[myIdx];
         const en = enemyUnits[enIdx];
