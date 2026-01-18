@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v38 SECRET OPS</title>
+    <title>SQUAD COMMAND: v40 CONFIRM PASS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -22,6 +22,7 @@
         textarea { width: 100%; height: 60px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; }
         input, select { background: #000; border: 2px solid var(--gold); color: var(--gold); padding: 10px; font-family: monospace; width: 100%; text-align: center; font-size: 1rem; letter-spacing: 2px; margin: 5px 0; text-transform: uppercase; }
         
+        /* Aseguramos que los botones no tengan comportamiento por defecto */
         .btn { 
             background: var(--c); color: #000; border: none; padding: 15px; width: 100%; 
             font-weight: bold; cursor: pointer; font-size: 1rem; 
@@ -30,13 +31,14 @@
         }
         .btn * { pointer-events: none; } 
         .btn.wait { background: #333; color: #888; border: 1px solid #555; animation: pulse 1s infinite; cursor: default; pointer-events: none; }
-        .btn-small { font-size: 0.7rem; padding: 5px; width: auto; display: inline-block; clip-path: none; border: 1px solid var(--gold); background: #000; color: var(--gold); }
+        
+        .btn-small { font-size: 0.7rem; padding: 5px; width: auto; display: inline-block; clip-path: none; border: 1px solid var(--gold); background: #000; color: var(--gold); cursor: pointer; }
 
         .ops-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; width: 100%; display: none; }
         .btn-op { font-size: 0.8rem; padding: 15px 5px; clip-path: none; border: 1px solid #000; color: #000; font-weight: bold; }
         .op-dash { background: var(--c); }
         .op-mission { background: var(--gold); }
-        .op-pass { background: #888; color: #000; }
+        .op-pass { background: #888; color: #000; transition: 0.2s; }
 
         @keyframes pulse { 50% { opacity: 0.5; } }
 
@@ -91,7 +93,7 @@
         .log-area { position: absolute; top: 100px; left: 10px; font-size: 0.6rem; pointer-events: none; width: 60%; text-shadow: 1px 1px 0 #000; opacity: 0.8; }
         .log-line { margin-bottom: 2px; }
 
-        #game-over-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 1s; }
+        #game-over-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
         #game-over-screen.show { opacity: 1; pointer-events: auto; }
         .end-title { font-size: 3rem; font-weight: bold; margin-bottom: 20px; letter-spacing: 5px; }
 
@@ -110,12 +112,12 @@
     <div id="game-over-screen">
         <div id="end-title" class="end-title">---</div>
         <div id="end-score" style="font-size:1.5rem; margin-bottom:20px; color:#fff;"></div>
-        <button type="button" class="btn" style="max-width:200px;" onclick="location.reload()"><span>REINICIAR</span></button>
+        <button type="button" class="btn" style="max-width:200px;" onclick="returnToLobby()"><span>REINICIAR</span></button>
     </div>
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v38 SECRET OPS</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v40 CONFIRM PASS</div>
         
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         
@@ -152,7 +154,7 @@
                 <div id="round-display" style="font-size:0.8rem; font-weight:bold;">RND 1/4</div>
                 <div class="score-detail" id="mission-info">DOMINACION</div>
             </div>
-            <button id="btn-claim-secret" class="btn-small" style="display:none;" onclick="claimSecret()">RECLAMAR SECRETA (+2)</button>
+            <button type="button" id="btn-claim-secret" class="btn-small" style="display:none;" onclick="claimSecret()">RECLAMAR SECRETA (+2)</button>
         </div>
         
         <div class="log-area" id="combat-log"></div>
@@ -201,15 +203,17 @@
             </div>
 
             <div id="combat-actions" style="display:flex; gap:10px;">
-                <button type="button" class="btn" id="btn-combat-mode" style="width:50px; background:#333; color:#fff;" onclick="switchMode()"><span>🔫</span></button>
-                <button type="button" class="btn" id="btn-pass-open" style="flex:1; background:#555; color:#fff;" onclick="performOp('PASAR')"><span>PASAR</span></button>
-                <button type="button" class="btn" id="btn-act" style="flex:2; background:var(--r); color:#fff;" onclick="startActionPhase()"><span>DISPARAR</span></button>
+                <button type="button" class="btn" id="btn-combat-mode" style="width:50px; background:#333; color:#fff;" onclick="resetPassButtons(); switchMode()"><span>🔫</span></button>
+                
+                <button type="button" class="btn" id="btn-pass-open" style="flex:1; background:#555; color:#fff;" onclick="tryPass('btn-pass-open')"><span>PASAR</span></button>
+                
+                <button type="button" class="btn" id="btn-act" style="flex:2; background:var(--r); color:#fff;" onclick="resetPassButtons(); startActionPhase()"><span>DISPARAR</span></button>
             </div>
 
             <div id="ops-actions" class="ops-grid">
-                <button type="button" class="btn btn-op op-dash" onclick="performOp('DASH')"><span>DASH</span></button>
-                <button type="button" class="btn btn-op op-mission" onclick="performOp('MISION')"><span>MISIÓN (+1PV)</span></button>
-                <button type="button" class="btn btn-op op-pass" onclick="performOp('PASAR')"><span>PASAR</span></button>
+                <button type="button" class="btn btn-op op-dash" onclick="resetPassButtons(); performOp('DASH')"><span>DASH</span></button>
+                <button type="button" class="btn btn-op op-mission" onclick="resetPassButtons(); performOp('MISION')"><span>MISIÓN (+1PV)</span></button>
+                <button type="button" id="btn-op-pass" class="btn btn-op op-pass" onclick="tryPass('btn-op-pass')"><span>PASAR</span></button>
             </div>
         </div>
     </div>
@@ -232,21 +236,18 @@
 
 <script>
     const BROKER = "broker.hivemq.com"; const PORT = 8884; 
-    const MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
-    let client=null, TOPIC="";
-    
-    // POOL DE MISIONES SECRETAS
     const SECRET_POOL = ["ASESINATO", "INFILTRACION", "SEGURIDAD", "RECONOCIMIENTO"];
     
+    let MY_ID = "";
+    let client=null, TOPIC="";
     let myUnits=[], enemyUnits=[], globalHP={};
     let initialEnemyCount = 0;
     let myIdx=0, enIdx=0, combatMode='ranged'; 
     let gameState = 'PLANNING';
     let isGameOver = false;
     
-    // SCORING
     let myVP = 0; let enemyVP = 0;
-    let secretMission = null; // null significa desactivado
+    let secretMission = null; 
     let secretClaimed = false;
     let primaryMission = "DOMINACION";
     let secondaryActive = false;
@@ -257,32 +258,80 @@
     let iAmReady=false, enemyIsReady=false;
     let myInitRoll = null, enemyInitRoll = null;
     let consecutivePasses = 0; 
+    let passConfirm = null; // Variable para tracking de confirmación de pase
+
+    function returnToLobby() {
+        if(client) { try{ client.disconnect(); } catch(e){} client=null; }
+        document.getElementById('game-over-screen').classList.remove('show');
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('lobby-screen').classList.remove('hidden');
+        document.getElementById('combat-log').innerHTML = "";
+        isGameOver = false;
+        myUnits = []; enemyUnits = []; globalHP = {};
+        myVP = 0; enemyVP = 0;
+        currentRound = 1;
+        iAmReady = false; enemyIsReady = false;
+    }
+
+    // LOGICA DE CONFIRMACION DE PASE
+    window.tryPass = function(btnId) {
+        const btn = document.getElementById(btnId);
+        if (passConfirm === btnId) {
+            // Segunda pulsación: EJECUTAR
+            performOp('PASAR');
+            resetPassButtons();
+        } else {
+            // Primera pulsación: PEDIR CONFIRMACION
+            resetPassButtons(); // Resetear otros si los hubiera
+            passConfirm = btnId;
+            btn.innerText = "¿CONFIRMAR?";
+            btn.style.background = "var(--gold)";
+            btn.style.color = "#000";
+        }
+    }
+
+    window.resetPassButtons = function() {
+        passConfirm = null;
+        
+        // Reset Open Mode Button
+        const b1 = document.getElementById('btn-pass-open');
+        b1.innerText = "PASAR";
+        b1.style.background = "#555";
+        b1.style.color = "#fff";
+
+        // Reset Ops Mode Button
+        const b2 = document.getElementById('btn-op-pass');
+        b2.innerText = "PASAR";
+        b2.style.background = "#888";
+        b2.style.color = "#000";
+    }
 
     function initSystem() {
+        MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
         const json = document.getElementById('json-input').value;
         const code = document.getElementById('room-id').value.trim().toUpperCase();
         maxRounds = parseInt(document.getElementById('round-select').value, 10);
         primaryMission = document.getElementById('primary-mission').value;
-        
-        // Configuración de secundarias
         const secVal = document.getElementById('secondary-toggle').value;
         secondaryActive = (secVal === "SI");
         
         try {
-            const raw = Object.values(JSON.parse(json).squad);
+            const parsed = JSON.parse(json);
+            if(!parsed.squad) throw new Error("JSON Inválido");
+            const raw = Object.values(parsed.squad);
             myUnits = raw.map(u => ({ ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', stratagem: 'none', acted: false, reacted: false }));
-            myUnits.forEach(u => globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)});
-            
+            myUnits.forEach(u => {
+                let hp = parseInt(u.stats.hp);
+                if(isNaN(hp) || hp <= 0) hp = 1; 
+                globalHP[u.uid] = {c:hp, m:hp};
+            });
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
-            
-            // Asignar misión secreta si aplica
             assignSecretMission();
             updateMissionDisplay();
-
             navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>{});
             updateHUD(); startNetwork(code);
-        } catch(e) { log("Error JSON"); }
+        } catch(e) { alert("ERROR EN JSON: Verifica el formato."); console.error(e); }
     }
 
     function assignSecretMission() {
@@ -303,13 +352,12 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v38/${code}`; 
+        TOPIC = `sqcmd/v39/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
-        client.onConnectionLost=(e)=>{if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000)};
+        client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
         client.connect({useSSL:true, onSuccess:()=>{ 
             client.subscribe(TOPIC); 
-            // Enviar config inicial
             publish({type:'JOIN_REQ', squad:myUnits, pMission: primaryMission, secActive: secondaryActive}); 
         }});
     }
@@ -341,15 +389,10 @@
             if(!enemyUnits.length) {
                 enemyUnits = d.squad;
                 initialEnemyCount = enemyUnits.length;
-                
-                // Si el host tiene configuración diferente, la mantiene, 
-                // pero si el que entra trae info, sync básico.
-                // Prioridad: Host manda.
                 publish({type:'JOIN_ACK', squad:myUnits, rounds:maxRounds, pMission: primaryMission, secActive: secondaryActive}); 
-                
                 enemyUnits.forEach(u => { if(!globalHP[u.uid]) globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
                 updateHUD();
-                log(`RIVAL: ${initialEnemyCount} OPS. BAJA: ${getKillPoints(initialEnemyCount)} PV`);
+                log(`RIVAL: ${initialEnemyCount} OPS.`);
             }
         }
         else if(d.type === 'JOIN_ACK') {
@@ -359,7 +402,6 @@
                 if(d.rounds) maxRounds = d.rounds;
                 if(d.pMission) primaryMission = d.pMission;
                 
-                // Sincronizar estado de misiones secundarias con el host
                 if(d.secActive !== undefined) {
                     secondaryActive = d.secActive;
                     if(secondaryActive && !secretMission) assignSecretMission();
@@ -369,7 +411,7 @@
 
                 enemyUnits.forEach(u => { if(!globalHP[u.uid]) globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
                 updateHUD();
-                log(`RIVAL: ${initialEnemyCount} OPS. BAJA: ${getKillPoints(initialEnemyCount)} PV`);
+                log(`RIVAL CONECTADO: ${initialEnemyCount} OPS.`);
             }
         }
         else if(d.type === 'SCORE_UPDATE') { enemyVP = d.vp; updateHUD(); }
@@ -425,7 +467,8 @@
         currentRound++;
         gameState = 'PLANNING'; iAmReady = false; enemyIsReady = false;
         myUnits.forEach(u => { u.acted = false; u.reacted = false; });
-        
+        resetPassButtons(); // Reset por seguridad
+
         document.getElementById('planning-controls').style.display = 'block';
         document.getElementById('combat-actions').style.display = 'flex';
         document.getElementById('ops-actions').style.display = 'none';
@@ -458,8 +501,8 @@
     function setTurn(st, p) {
         if(isGameOver) return;
         gameState = st; consecutivePasses = p;
+        resetPassButtons(); // Reset visual
         
-        // Mostrar boton solo si misiones secundarias activas y no reclamada
         if(secondaryActive && !secretClaimed) {
             document.getElementById('btn-claim-secret').style.display = (st === 'MY_TURN') ? 'block' : 'none';
         } else {
@@ -592,12 +635,12 @@
     
     function checkWinCondition() {
         if(isGameOver) return;
-        if(myUnits.length === 0 || enemyUnits.length === 0) return;
+        if (!enemyUnits || enemyUnits.length === 0) return; 
 
         const myAlive = myUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
         const enemyAlive = enemyUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
 
-        if (myAlive === 0 || enemyAlive === 0 || currentRound >= maxRounds) {
+        if (myAlive === 0 || enemyAlive === 0 || currentRound > maxRounds) {
             let res = "EMPATE"; let type = "DRAW";
             if(myVP > enemyVP) { res = "VICTORIA"; type = "WIN"; }
             else if(myVP < enemyVP) { res = "DERROTA"; type = "LOSE"; }
@@ -606,6 +649,7 @@
     }
 
     function triggerGameOver(text, type) {
+        if(isGameOver) return;
         isGameOver = true;
         const screen = document.getElementById('game-over-screen');
         const title = document.getElementById('end-title');
@@ -621,13 +665,14 @@
     }
 
     window.setMode=(m,e)=>{e.stopPropagation(); if(gameState==='PLANNING'){myUnits[myIdx].mode=m; updateHUD();}};
-    window.nextMyUnit=()=>{myIdx=(myIdx+1)%myUnits.length; updateHUD();};
+    window.nextMyUnit=()=>{resetPassButtons(); myIdx=(myIdx+1)%myUnits.length; updateHUD();};
     window.nextEnemyUnit=()=>{if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD();};
     window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
     window.closeDice=()=>{document.getElementById('dice-overlay').classList.remove('show');};
 
     function updateHUD() {
         if(!myUnits.length) return;
+        
         if (enemyUnits.length > 0) {
             const myAlive = myUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
             const enemyAlive = enemyUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
