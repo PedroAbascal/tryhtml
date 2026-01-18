@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v22 ROBUST SYNC</title>
+    <title>SQUAD COMMAND: v23 UNBLOCKED</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -91,11 +91,11 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v22 ROBUST SYNC</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v23 UNBLOCKED</div>
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem;">CLAVE DE MISIÓN</div>
-            <input type="text" id="room-id" value="WARZONE-2">
+            <input type="text" id="room-id" value="WARZONE-3">
             <button class="btn" onclick="initSystem()">DESPLEGAR</button>
             <div id="conn-log" style="color:#aaa; font-size:0.6rem; margin-top:10px;"></div>
         </div>
@@ -169,7 +169,7 @@
     
     let dicePhase='IDLE', activeDice=[], diceTarget=0, pendingHits=0;
     
-    // VARIABLES DE SINCRONIZACIÓN CRITICAS
+    // VARIABLES DE SINCRONIZACIÓN
     let iAmReady=false, enemyIsReady=false;
     let myInitRoll = null, enemyInitRoll = null;
     let consecutivePasses = 0; 
@@ -196,7 +196,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v22/${code}`; // NUEVO CANAL v22
+        TOPIC = `sqcmd/v23/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -215,21 +215,17 @@
             if(!enemyUnits.length || !enemyUnits[0]) {
                 enemyUnits = d.squad;
                 enemyUnits.forEach(u => { if(!globalHP[u.uid]) globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
-                publish({type:'HELLO', squad:myUnits}); // Responder saludo
+                publish({type:'HELLO', squad:myUnits}); 
                 log("RIVAL DETECTADO.");
                 updateHUD();
             }
         }
         else if(d.type === 'READY') {
-            // RIVAL CONFIRMÓ
             enemyUnits = d.squad; 
             enemyIsReady = true;
             enemyInitRoll = d.roll;
-            
             document.getElementById('en-ready-mark').classList.add('show');
             log(`RIVAL LISTO (Iniciativa: ${d.roll}).`);
-            
-            // Intento arrancar si yo ya estaba listo
             checkStartRound();
         }
         else if(d.type === 'DICE_SYNC') {
@@ -244,19 +240,21 @@
         else if(d.type === 'DAMAGE_RESOLVE') {
             applyDamage(d.dmg);
             closeDice();
-            
             const me = myUnits[myIdx];
             if(!me.acted) me.acted = true; 
             else me.reacted = true;        
-            
             publish({type:'SYNC_SQUAD', squad: myUnits});
             passTurn(0); 
         }
         else if(d.type === 'SABOTAJE') {
+            // PROTECCIÓN: Si estoy planificando, ignorar órdenes antiguas de sabotaje
+            if(gameState === 'PLANNING') return;
             log(`RIVAL SABOTAJE.`);
             setTurn('MY_TURN', 0); 
         }
         else if(d.type === 'CHANGE_TURN') {
+            // PROTECCIÓN: Si estoy planificando, ignorar órdenes antiguas de turno
+            if(gameState === 'PLANNING') return;
             const incomingPasses = d.passes || 0;
             setTurn('MY_TURN', incomingPasses);
         }
@@ -279,23 +277,20 @@
         log("--- NUEVA RONDA ---");
         gameState = 'PLANNING';
         
-        // RESET COMPLETO DE ESTADO
         iAmReady = false;
         enemyIsReady = false;
         myInitRoll = null;
         enemyInitRoll = null;
         consecutivePasses = 0; 
         
-        // Reset local units
         myUnits.forEach(u => { u.acted = false; u.reacted = false; });
         
-        // UI Reset
         document.getElementById('planning-controls').style.display = 'block';
         document.getElementById('action-buttons').style.display = 'flex';
         
         const btn = document.getElementById('btn-ready');
         btn.innerText = "CONFIRMAR ÓRDENES";
-        btn.className = "btn"; // Quitar wait
+        btn.className = "btn"; 
         
         document.getElementById('turn-indicator').innerText = "PLANIFICACIÓN";
         document.getElementById('turn-indicator').className = "turn-badge planning";
@@ -312,7 +307,6 @@
         iAmReady = true;
         myInitRoll = Math.ceil(Math.random()*100);
         
-        // UI Feedback Local
         const btn = document.getElementById('btn-ready');
         btn.innerText = "ESPERANDO RIVAL...";
         btn.className = "btn wait";
@@ -325,14 +319,12 @@
     }
 
     function checkStartRound() {
-        // Solo arrancar si AMBOS están listos
         if(iAmReady && enemyIsReady) {
             log("¡AMBOS LISTOS! COMBATE INICIADO.");
             
             document.getElementById('planning-controls').style.display = 'none';
             document.getElementById('action-buttons').style.display = 'flex';
             
-            // Lógica de Iniciativa: Gana el mayor. Empate = RIVAL (simplificación)
             if((myInitRoll || 0) >= (enemyInitRoll || 0)) {
                 setTurn('MY_TURN', 0);
             } else {
@@ -352,7 +344,8 @@
     }
 
     function setTurn(st, passesVal) {
-        if(gameState === 'PLANNING') return; // Ignorar si se cuela mensaje viejo
+        // CORRECCIÓN CRÍTICA: Eliminado el 'if(gameState === PLANNING) return;'
+        // Ahora se obedece la orden. La protección está en onMessage.
 
         gameState = st;
         consecutivePasses = passesVal;
