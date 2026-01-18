@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v20 SYNCED RESET</title>
+    <title>SQUAD COMMAND: v22 ROBUST SYNC</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -21,9 +21,9 @@
         .box { border: 1px solid var(--c); padding: 15px; width: 100%; max-width: 400px; background: rgba(0,0,0,0.95); margin-bottom: 15px; text-align: center; }
         textarea { width: 100%; height: 60px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; }
         input { background: #000; border: 2px solid var(--gold); color: var(--gold); padding: 10px; font-family: monospace; width: 100%; text-align: center; font-size: 1.5rem; letter-spacing: 2px; margin: 10px 0; text-transform: uppercase; }
+        
         .btn { background: var(--c); color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; font-size: 1rem; clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%); margin-top: 5px; pointer-events: auto; }
-        .btn:disabled { background: #333; color: #555; cursor: not-allowed; border: 1px solid #444; }
-        .btn.wait { background: var(--gold); animation: pulse 1s infinite; }
+        .btn.wait { background: #333; color: #888; border: 1px solid #555; animation: pulse 1s infinite; cursor: default; pointer-events: none; }
         @keyframes pulse { 50% { opacity: 0.5; } }
 
         .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; justify-content: space-between; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); pointer-events: auto; }
@@ -42,6 +42,10 @@
         
         .card.finished { opacity: 0.3; filter: grayscale(1); pointer-events: none; border-color: #222; }
         .card.finished::after { content: "FIN"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 0.8rem; }
+
+        .ready-marker { position:absolute; top:-10px; right:-5px; background:var(--g); color:#000; font-size:0.6rem; padding:2px 5px; font-weight:bold; display:none; animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .ready-marker.show { display:block; }
+        @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
 
         .card.my { border-left: 4px solid var(--c); }
         .card.enemy { border-left: 4px solid var(--r); }
@@ -87,11 +91,11 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v20 SYNCED RESET</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v22 ROBUST SYNC</div>
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem;">CLAVE DE MISIÓN</div>
-            <input type="text" id="room-id" value="WARZONE-1">
+            <input type="text" id="room-id" value="WARZONE-2">
             <button class="btn" onclick="initSystem()">DESPLEGAR</button>
             <div id="conn-log" style="color:#aaa; font-size:0.6rem; margin-top:10px;"></div>
         </div>
@@ -125,6 +129,7 @@
                         </select>
                     </div>
                     <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
+                    <div id="my-ready-mark" class="ready-marker">LISTO</div>
                 </div>
                 
                 <div class="card enemy" onclick="nextEnemyUnit()" id="en-card">
@@ -133,12 +138,13 @@
                     </div>
                     <div id="enemy-name">ESPERANDO...</div>
                     <div class="hp-bar"><div id="enemy-hp" class="hp-fill" style="background:var(--r)"></div></div>
+                    <div id="en-ready-mark" class="ready-marker">¡LISTO!</div>
                 </div>
             </div>
 
             <div style="display:flex; gap:10px;" id="action-buttons">
-                <button class="btn" style="flex:1; background:#333; color:#fff;" onclick="switchMode()">🔫/⚔️</button>
-                <button class="btn" id="btn-act" style="flex:3; background:var(--r); color:#fff;" onclick="startActionPhase()">ATACAR</button>
+                <button class="btn" id="btn-combat-mode" style="flex:1; background:#333; color:#fff;" onclick="switchMode()">🔫</button>
+                <button class="btn" id="btn-act" style="flex:3; background:var(--r); color:#fff;" onclick="startActionPhase()">DISPARAR</button>
             </div>
         </div>
     </div>
@@ -157,14 +163,15 @@
     const MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
     let client=null, TOPIC="";
     
-    // acted = Ya hizo su acción normal
-    // reacted = Ya hizo su reacción (Overwatch)
     let myUnits=[], enemyUnits=[], globalHP={};
-    let myIdx=0, enIdx=0, combatMode='ranged';
+    let myIdx=0, enIdx=0, combatMode='ranged'; 
     let gameState = 'PLANNING';
     
     let dicePhase='IDLE', activeDice=[], diceTarget=0, pendingHits=0;
+    
+    // VARIABLES DE SINCRONIZACIÓN CRITICAS
     let iAmReady=false, enemyIsReady=false;
+    let myInitRoll = null, enemyInitRoll = null;
     let consecutivePasses = 0; 
     
     // --- INIT ---
@@ -189,14 +196,14 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v20/${code}`;
+        TOPIC = `sqcmd/v22/${code}`; // NUEVO CANAL v22
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
         client.connect({useSSL:true, onSuccess:()=>{
             client.subscribe(TOPIC);
             publish({type:'HELLO', squad:myUnits});
-            log("CONECTADO.");
+            log("CONECTADO. ESPERANDO RIVAL...");
         }});
     }
 
@@ -205,17 +212,25 @@
         if(d.sender === MY_ID) return;
 
         if(d.type === 'HELLO') {
-            if(!enemyUnits.length) {
+            if(!enemyUnits.length || !enemyUnits[0]) {
                 enemyUnits = d.squad;
                 enemyUnits.forEach(u => { if(!globalHP[u.uid]) globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
-                publish({type:'HELLO', squad:myUnits});
+                publish({type:'HELLO', squad:myUnits}); // Responder saludo
+                log("RIVAL DETECTADO.");
                 updateHUD();
             }
         }
         else if(d.type === 'READY') {
+            // RIVAL CONFIRMÓ
             enemyUnits = d.squad; 
             enemyIsReady = true;
-            checkStartRound(d.roll);
+            enemyInitRoll = d.roll;
+            
+            document.getElementById('en-ready-mark').classList.add('show');
+            log(`RIVAL LISTO (Iniciativa: ${d.roll}).`);
+            
+            // Intento arrancar si yo ya estaba listo
+            checkStartRound();
         }
         else if(d.type === 'DICE_SYNC') {
             showDiceOverlay(d.phase, d.dice, d.target, false); 
@@ -246,7 +261,6 @@
             setTurn('MY_TURN', incomingPasses);
         }
         else if(d.type === 'ROUND_OVER') {
-            // EL OTRO JUGADOR DETECTÓ EL FIN, ME MANDA LA ORDEN
             resetRound();
         }
         else if(d.type === 'SYNC_SQUAD') {
@@ -264,9 +278,13 @@
     function resetRound() {
         log("--- NUEVA RONDA ---");
         gameState = 'PLANNING';
+        
+        // RESET COMPLETO DE ESTADO
         iAmReady = false;
         enemyIsReady = false;
-        consecutivePasses = 0; // Resetear contador local
+        myInitRoll = null;
+        enemyInitRoll = null;
+        consecutivePasses = 0; 
         
         // Reset local units
         myUnits.forEach(u => { u.acted = false; u.reacted = false; });
@@ -274,14 +292,57 @@
         // UI Reset
         document.getElementById('planning-controls').style.display = 'block';
         document.getElementById('action-buttons').style.display = 'flex';
-        document.getElementById('btn-ready').innerText = "CONFIRMAR ÓRDENES";
-        document.getElementById('btn-ready').classList.remove('wait');
+        
+        const btn = document.getElementById('btn-ready');
+        btn.innerText = "CONFIRMAR ÓRDENES";
+        btn.className = "btn"; // Quitar wait
         
         document.getElementById('turn-indicator').innerText = "PLANIFICACIÓN";
         document.getElementById('turn-indicator').className = "turn-badge planning";
+        document.getElementById('my-ready-mark').classList.remove('show');
+        document.getElementById('en-ready-mark').classList.remove('show');
         
         enableControls(false); 
         updateHUD();
+    }
+
+    function commitPlanning() {
+        if(gameState !== 'PLANNING') return;
+        
+        iAmReady = true;
+        myInitRoll = Math.ceil(Math.random()*100);
+        
+        // UI Feedback Local
+        const btn = document.getElementById('btn-ready');
+        btn.innerText = "ESPERANDO RIVAL...";
+        btn.className = "btn wait";
+        document.getElementById('my-ready-mark').classList.add('show');
+        
+        log(`ORDENES ENVIADAS (Iniciativa: ${myInitRoll})`);
+        publish({type:'READY', squad:myUnits, roll:myInitRoll});
+        
+        checkStartRound();
+    }
+
+    function checkStartRound() {
+        // Solo arrancar si AMBOS están listos
+        if(iAmReady && enemyIsReady) {
+            log("¡AMBOS LISTOS! COMBATE INICIADO.");
+            
+            document.getElementById('planning-controls').style.display = 'none';
+            document.getElementById('action-buttons').style.display = 'flex';
+            
+            // Lógica de Iniciativa: Gana el mayor. Empate = RIVAL (simplificación)
+            if((myInitRoll || 0) >= (enemyInitRoll || 0)) {
+                setTurn('MY_TURN', 0);
+            } else {
+                setTurn('ENEMY_TURN', 0);
+            }
+        } else if (iAmReady && !enemyIsReady) {
+            log("Esperando confirmación del rival...");
+        } else if (!iAmReady && enemyIsReady) {
+            log("¡Rival listo! Confirma tus órdenes.");
+        }
     }
 
     function passTurn(currentPasses) {
@@ -291,18 +352,15 @@
     }
 
     function setTurn(st, passesVal) {
-        // SI ESTOY EN PLANNING, IGNORAR CAMBIOS DE TURNO RETARDADOS
-        if(gameState === 'PLANNING') return;
+        if(gameState === 'PLANNING') return; // Ignorar si se cuela mensaje viejo
 
         gameState = st;
         consecutivePasses = passesVal;
         
-        // --- DETECCIÓN DE FIN DE RONDA ---
-        // Si me llega el turno con 2 pases acumulados, significa que nadie puede mover.
         if(st === 'MY_TURN' && consecutivePasses >= 2) {
             log("FIN DE RONDA DETECTADO.");
-            publish({type: 'ROUND_OVER'}); // AVISAR A TODOS
-            resetRound(); // RESETEARME
+            publish({type: 'ROUND_OVER'}); 
+            resetRound(); 
             return;
         }
 
@@ -328,7 +386,7 @@
             }
             else {
                 log("SIN ACCIONES. PASANDO...");
-                passTurn(consecutivePasses); // Pasar la "patata caliente"
+                passTurn(consecutivePasses);
                 enableControls(false);
             }
 
@@ -468,24 +526,7 @@
     // --- PLANIFICACIÓN ---
     window.setMode = function(m, e) { e.stopPropagation(); if(gameState !== 'PLANNING') return; myUnits[myIdx].mode = m; updateHUD(); }
     window.setStrat = function(v, e) { e.stopPropagation(); if(gameState !== 'PLANNING') return; myUnits[myIdx].stratagem = v; }
-    window.commitPlanning = function() {
-        if(gameState !== 'PLANNING') return;
-        iAmReady = true;
-        document.getElementById('btn-ready').innerText = "ESPERANDO...";
-        document.getElementById('btn-ready').classList.add('wait');
-        window.myInit = Math.ceil(Math.random()*100);
-        publish({type:'READY', squad:myUnits, roll:window.myInit});
-        if(enemyIsReady) checkStartRound(window.enemyInit || 0);
-    }
-    function checkStartRound(enRoll) {
-        window.enemyInit = enRoll;
-        if(iAmReady && enemyIsReady) {
-            document.getElementById('planning-controls').style.display = 'none';
-            document.getElementById('action-buttons').style.display = 'flex';
-            if((window.myInit || 0) >= enRoll) setTurn('MY_TURN', 0); else setTurn('ENEMY_TURN', 0);
-        }
-    }
-
+    
     // --- UTILS ---
     window.nextMyUnit = function() { myIdx=(myIdx+1)%myUnits.length; updateHUD(); }
     window.nextEnemyUnit = function() { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
@@ -504,11 +545,26 @@
         if(me.reacted) mc.classList.add('finished');
         else if(me.acted) mc.classList.add('exhausted');
 
+        // BOTONES DE COMBATE
+        const btnMode = document.getElementById('btn-combat-mode');
+        const btnAct = document.getElementById('btn-act');
+        
+        if(combatMode === 'ranged') {
+            btnMode.innerText = "🔫";
+            btnMode.style.background = "#333";
+            btnAct.innerText = "DISPARAR";
+        } else {
+            btnMode.innerText = "⚔️";
+            btnMode.style.background = "#552200"; 
+            btnAct.innerText = "GOLPEAR";
+        }
+        document.getElementById('phase-display').innerText = combatMode === 'ranged' ? "RANGO" : "MELEE";
+
         if(gameState === 'PLANNING') {
             document.getElementById('my-tactics').style.display = 'flex';
             document.getElementById('btn-mode-open').className = me.mode==='open'?'mode-toggle selected':'mode-toggle';
             document.getElementById('btn-mode-hidden').className = me.mode==='hidden'?'mode-toggle selected':'mode-toggle';
-            const btnAct = document.getElementById('btn-act');
+            
             btnAct.innerText = me.mode==='open' ? "ATACAR" : "SABOTAJE";
             btnAct.style.background = me.mode==='open' ? 'var(--r)' : 'var(--gold)';
         } else {
