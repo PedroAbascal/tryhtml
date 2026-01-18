@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v25 UNLOCKED</title>
+    <title>SQUAD COMMAND: v26 CRITICAL OPS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -35,7 +35,6 @@
         .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; }
         .unit-selector { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
         
-        /* CORRECCIÓN PRINCIPAL AQUÍ: pointer-events auto en cards finished */
         .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.85); cursor: pointer; min-height: 100px; transition: 0.2s; position: relative; display: flex; flex-direction: column; justify-content: space-between; pointer-events: auto !important; }
         .card.active { border-color: #fff; transform: scale(1.02); z-index: 5; }
         
@@ -75,20 +74,27 @@
         .dice-header { font-size: 1.2rem; margin-bottom: 10px; color: var(--gold); font-weight: bold; }
         .dice-sub { font-size: 0.8rem; color: #888; margin-bottom: 20px; }
         .dice-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 20px; }
-        .die { font-size: 4rem; cursor: pointer; transition: transform 0.2s; }
+        
+        .die { font-size: 4rem; cursor: pointer; transition: transform 0.2s; position:relative; }
+        .die.rolling { animation: spin 0.3s linear infinite; color: #fff; }
+        .die.locked { pointer-events: none; opacity: 0.5; } 
+        
+        /* ESTILOS DE DADOS */
+        .die.crit { color: var(--gold); text-shadow: 0 0 25px var(--gold); animation: pop 0.2s; }
         .die.hit { color: var(--g); text-shadow: 0 0 20px var(--g); }
         .die.miss { color: #444; }
         .die.save-ok { color: var(--c); text-shadow: 0 0 20px var(--c); }
         .die.save-fail { color: var(--r); opacity: 0.8; }
-        .die.rolling { animation: spin 0.3s linear infinite; color: #fff; }
-        .die.locked { pointer-events: none; opacity: 0.5; } 
+        
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pop { 50% { transform: scale(1.3); } }
         
         #flash-fx { pointer-events:none; position:fixed; top:0; left:0; width:100%; height:100%; }
         .flash { animation: flashRed 0.3s; }
         @keyframes flashRed { 50% { background: rgba(255, 0, 0, 0.5); } }
         .log-area { position: absolute; top: 60px; left: 10px; font-size: 0.7rem; pointer-events: none; width: 70%; text-shadow: 1px 1px 0 #000; }
         .log-line { margin-bottom: 3px; opacity: 0.9; }
+        .crit-text { color: var(--gold); font-weight: bold; }
     </style>
 </head>
 <body>
@@ -99,13 +105,12 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v25 UNLOCKED CYCLE</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v26 CRITICAL OPS</div>
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem;">CLAVE DE MISIÓN</div>
-            <input type="text" id="room-id" value="WARZONE-5">
+            <input type="text" id="room-id" value="WARZONE-6">
             <button class="btn" onclick="initSystem()">DESPLEGAR</button>
-            <div id="conn-log" style="color:#aaa; font-size:0.6rem; margin-top:10px;"></div>
         </div>
     </div>
 
@@ -119,7 +124,6 @@
 
         <div class="hud-bottom">
             <div id="planning-controls" style="text-align:center; margin-bottom:10px;">
-                <div style="font-size:0.8rem; color:var(--gold); margin-bottom:5px;">NUEVA RONDA: CONFIGURAR</div>
                 <button class="btn" id="btn-ready" onclick="commitPlanning()">CONFIRMAR ÓRDENES</button>
             </div>
 
@@ -127,16 +131,14 @@
                 <div class="card my" onclick="nextMyUnit()" id="my-card">
                     <div>
                         <div style="display:flex; justify-content:space-between; font-size:0.6rem;"><span>YO</span></div>
-                        <div id="my-name" style="font-weight:bold; margin-bottom:2px;">---</div>
+                        <div id="my-name" style="font-weight:bold;">---</div>
                         <div id="my-weapon" class="weapon-name">---</div>
-                        
                         <div class="stat-grid">
                             <div class="stat-box"><span class="stat-label">RNG</span><span class="stat-val hl" id="my-r">--</span></div>
                             <div class="stat-box"><span class="stat-label">MEL</span><span class="stat-val" id="my-m">--</span></div>
                             <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="my-sv">--</span></div>
                         </div>
                     </div>
-
                     <div>
                         <div class="tactic-row" id="my-tactics">
                             <span id="btn-mode-open" class="mode-toggle selected" onclick="setMode('open', event)">⚔️</span>
@@ -157,16 +159,14 @@
                         <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)">
                             <span>RIVAL</span> <span id="en-mode-icon">❓</span>
                         </div>
-                        <div id="enemy-name" style="font-weight:bold; margin-bottom:2px;">ESPERANDO...</div>
+                        <div id="enemy-name" style="font-weight:bold;">ESPERANDO...</div>
                         <div id="en-weapon" class="weapon-name">---</div>
-                        
                         <div class="stat-grid">
                             <div class="stat-box"><span class="stat-label">RNG</span><span class="stat-val" id="en-r">--</span></div>
                             <div class="stat-box"><span class="stat-label">MEL</span><span class="stat-val" id="en-m">--</span></div>
                             <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="en-sv">--</span></div>
                         </div>
                     </div>
-
                     <div class="hp-bar"><div id="enemy-hp" class="hp-fill" style="background:var(--r)"></div></div>
                     <div id="en-ready-mark" class="ready-marker">¡LISTO!</div>
                 </div>
@@ -197,44 +197,34 @@
     let myIdx=0, enIdx=0, combatMode='ranged'; 
     let gameState = 'PLANNING';
     
-    let dicePhase='IDLE', activeDice=[], diceTarget=0, pendingHits=0;
+    let dicePhase='IDLE', activeDice=[], diceTarget=0;
+    // NUEVA ESTRUCTURA DE DAÑO PENDIENTE
+    let pendingHits = { normal: 0, crit: 0 }; 
     
-    // SYNC VARS
     let iAmReady=false, enemyIsReady=false;
     let myInitRoll = null, enemyInitRoll = null;
     let consecutivePasses = 0; 
-    
+
     // --- INIT ---
     function initSystem() {
         const json = document.getElementById('json-input').value;
         const code = document.getElementById('room-id').value.trim().toUpperCase();
         try {
             const raw = Object.values(JSON.parse(json).squad);
-            myUnits = raw.map(u => ({ 
-                ...u, uid: `${MY_ID}_${u.id}`, 
-                mode: 'open', stratagem: 'none', 
-                acted: false, reacted: false 
-            }));
+            myUnits = raw.map(u => ({ ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', stratagem: 'none', acted: false, reacted: false }));
             myUnits.forEach(u => globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)});
-            
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
             navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>{});
-            updateHUD();
-            startNetwork(code);
+            updateHUD(); startNetwork(code);
         } catch(e) { log("Error JSON"); }
     }
-
     function startNetwork(code) {
-        TOPIC = `sqcmd/v25/${code}`; 
+        TOPIC = `sqcmd/v26/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
-        client.connect({useSSL:true, onSuccess:()=>{
-            client.subscribe(TOPIC);
-            publish({type:'HELLO', squad:myUnits});
-            log("CONECTADO. ESPERANDO RIVAL...");
-        }});
+        client.connect({useSSL:true, onSuccess:()=>{ client.subscribe(TOPIC); publish({type:'HELLO', squad:myUnits}); }});
     }
 
     function onMessage(msg) {
@@ -242,198 +232,109 @@
         if(d.sender === MY_ID) return;
 
         if(d.type === 'HELLO') {
-            if(!enemyUnits.length || !enemyUnits[0]) {
+            if(!enemyUnits.length) {
                 enemyUnits = d.squad;
                 enemyUnits.forEach(u => { if(!globalHP[u.uid]) globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
-                publish({type:'HELLO', squad:myUnits}); 
-                log("RIVAL DETECTADO.");
-                updateHUD();
+                publish({type:'HELLO', squad:myUnits}); updateHUD();
             }
         }
         else if(d.type === 'READY') {
-            enemyUnits = d.squad; 
-            enemyIsReady = true;
-            enemyInitRoll = d.roll;
+            enemyUnits = d.squad; enemyIsReady = true; enemyInitRoll = d.roll;
             document.getElementById('en-ready-mark').classList.add('show');
-            log(`RIVAL LISTO (Iniciativa: ${d.roll}).`);
             checkStartRound();
         }
         else if(d.type === 'DICE_SYNC') {
+            // Visualización remota
             showDiceOverlay(d.phase, d.dice, d.target, false); 
             document.getElementById('dice-sub').innerText = `${d.uName} tirando...`;
-            pendingHits = d.hits || 0;
+            pendingHits = d.hitsStruct || { normal: 0, crit: 0 };
         }
         else if(d.type === 'REQ_DEFENSE') {
-            pendingHits = d.hits;
+            pendingHits = d.hitsStruct; // {normal: X, crit: Y}
             startDefensePhase();
         }
         else if(d.type === 'DAMAGE_RESOLVE') {
-            applyDamage(d.dmg);
-            closeDice();
+            applyDamage(d.dmg); closeDice();
             const me = myUnits[myIdx];
-            if(!me.acted) me.acted = true; 
-            else me.reacted = true;        
+            if(!me.acted) me.acted = true; else me.reacted = true;        
             publish({type:'SYNC_SQUAD', squad: myUnits});
             passTurn(0); 
         }
         else if(d.type === 'SABOTAJE') {
             if(gameState === 'PLANNING') return;
-            log(`RIVAL SABOTAJE.`);
-            setTurn('MY_TURN', 0); 
+            log(`RIVAL SABOTAJE.`); setTurn('MY_TURN', 0); 
         }
         else if(d.type === 'CHANGE_TURN') {
             if(gameState === 'PLANNING') return;
-            const incomingPasses = d.passes || 0;
-            setTurn('MY_TURN', incomingPasses);
+            setTurn('MY_TURN', d.passes || 0);
         }
-        else if(d.type === 'ROUND_OVER') {
-            resetRound();
-        }
-        else if(d.type === 'SYNC_SQUAD') {
-            enemyUnits = d.squad; 
-            updateHUD();
-        }
-        else if(d.type === 'SYNC_HP') {
-            globalHP = {...globalHP, ...d.state};
-            updateHUD();
-        }
+        else if(d.type === 'ROUND_OVER') resetRound();
+        else if(d.type === 'SYNC_SQUAD') { enemyUnits = d.squad; updateHUD(); }
+        else if(d.type === 'SYNC_HP') { globalHP = {...globalHP, ...d.state}; updateHUD(); }
     }
 
-    // --- LOGICA ---
-    
+    // --- GAMEPLAY ---
     function resetRound() {
-        log("--- NUEVA RONDA ---");
-        gameState = 'PLANNING';
-        iAmReady = false; enemyIsReady = false;
-        myInitRoll = null; enemyInitRoll = null;
-        consecutivePasses = 0; 
-        
+        gameState = 'PLANNING'; iAmReady = false; enemyIsReady = false;
         myUnits.forEach(u => { u.acted = false; u.reacted = false; });
-        
         document.getElementById('planning-controls').style.display = 'block';
         document.getElementById('action-buttons').style.display = 'flex';
-        
-        const btn = document.getElementById('btn-ready');
-        btn.innerText = "CONFIRMAR ÓRDENES";
-        btn.className = "btn"; 
-        
-        document.getElementById('turn-indicator').innerText = "PLANIFICACIÓN";
+        document.getElementById('btn-ready').innerText = "CONFIRMAR ÓRDENES";
+        document.getElementById('btn-ready').className = "btn";
         document.getElementById('turn-indicator').className = "turn-badge planning";
-        document.getElementById('my-ready-mark').classList.remove('show');
-        document.getElementById('en-ready-mark').classList.remove('show');
-        
-        enableControls(false); 
-        updateHUD();
+        document.getElementById('turn-indicator').innerText = "PLANIFICACIÓN";
+        document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show'));
+        enableControls(false); updateHUD();
     }
-
     function commitPlanning() {
         if(gameState !== 'PLANNING') return;
-        iAmReady = true;
-        myInitRoll = Math.ceil(Math.random()*100);
-        
-        const btn = document.getElementById('btn-ready');
-        btn.innerText = "ESPERANDO RIVAL...";
-        btn.className = "btn wait";
+        iAmReady = true; myInitRoll = Math.ceil(Math.random()*100);
+        document.getElementById('btn-ready').innerText = "ESPERANDO...";
+        document.getElementById('btn-ready').className = "btn wait";
         document.getElementById('my-ready-mark').classList.add('show');
-        
-        log(`ORDENES ENVIADAS (Iniciativa: ${myInitRoll})`);
         publish({type:'READY', squad:myUnits, roll:myInitRoll});
         checkStartRound();
     }
-
     function checkStartRound() {
         if(iAmReady && enemyIsReady) {
-            log("¡AMBOS LISTOS! COMBATE INICIADO.");
             document.getElementById('planning-controls').style.display = 'none';
             document.getElementById('action-buttons').style.display = 'flex';
-            if((myInitRoll || 0) >= (enemyInitRoll || 0)) setTurn('MY_TURN', 0);
-            else setTurn('ENEMY_TURN', 0);
-        } else if (iAmReady && !enemyIsReady) log("Esperando confirmación...");
-        else if (!iAmReady && enemyIsReady) log("¡Rival listo! Confirma.");
-    }
-
-    function passTurn(currentPasses) {
-        const newPasses = currentPasses + 1;
-        setTurn('ENEMY_TURN', newPasses); 
-        publish({type: 'CHANGE_TURN', passes: newPasses});
-    }
-
-    function setTurn(st, passesVal) {
-        gameState = st;
-        consecutivePasses = passesVal;
-        
-        if(st === 'MY_TURN' && consecutivePasses >= 2) {
-            log("FIN DE RONDA.");
-            publish({type: 'ROUND_OVER'}); 
-            resetRound(); return;
+            if((myInitRoll||0) >= (enemyInitRoll||0)) setTurn('MY_TURN', 0); else setTurn('ENEMY_TURN', 0);
         }
-
+    }
+    function passTurn(p) { setTurn('ENEMY_TURN', p+1); publish({type:'CHANGE_TURN', passes:p+1}); }
+    function setTurn(st, p) {
+        gameState = st; consecutivePasses = p;
+        if(st === 'MY_TURN' && consecutivePasses >= 2) { publish({type:'ROUND_OVER'}); resetRound(); return; }
         const b = document.getElementById('turn-indicator');
         if(st === 'MY_TURN') {
-            const freshUnits = myUnits.filter(u => !u.acted && globalHP[u.uid].c > 0);
-            const reactUnits = myUnits.filter(u => u.acted && !u.reacted && globalHP[u.uid].c > 0);
-            const enemyHasFresh = enemyUnits.some(u => !u.acted && globalHP[u.uid].c > 0);
-
-            if(freshUnits.length > 0) {
-                b.innerText = "TU TURNO"; b.className = "turn-badge my-turn";
-                enableControls(true); selectUnit(freshUnits[0]);
-            } 
-            else if(freshUnits.length === 0 && enemyHasFresh && reactUnits.length > 0) {
-                b.innerText = "REACCIÓN"; b.className = "turn-badge planning";
-                enableControls(true); selectUnit(reactUnits[0]);
-                log("⚠️ MODO REACCIÓN");
-            }
-            else {
-                log("SIN ACCIONES. PASANDO...");
-                passTurn(consecutivePasses); enableControls(false);
-            }
-        } else {
-            b.innerText = "TURNO RIVAL"; b.className = "turn-badge enemy-turn";
-            enableControls(false);
-        }
+            const fresh = myUnits.filter(u => !u.acted && globalHP[u.uid].c > 0);
+            const react = myUnits.filter(u => u.acted && !u.reacted && globalHP[u.uid].c > 0);
+            if(fresh.length) { b.innerText="TU TURNO"; b.className="turn-badge my-turn"; enableControls(true); selectUnit(fresh[0]); }
+            else if(react.length && enemyUnits.some(u=>!u.acted)) { b.innerText="REACCIÓN"; b.className="turn-badge planning"; enableControls(true); selectUnit(react[0]); }
+            else { passTurn(consecutivePasses); enableControls(false); }
+        } else { b.innerText="TURNO RIVAL"; b.className="turn-badge enemy-turn"; enableControls(false); }
         updateHUD();
     }
+    function enableControls(ok) { document.getElementById('action-buttons').style.opacity = ok?1:0.5; document.getElementById('action-buttons').style.pointerEvents = ok?'auto':'none'; }
+    function selectUnit(u) { myIdx = myUnits.indexOf(u); updateHUD(); }
 
-    function enableControls(enabled) {
-        const div = document.getElementById('action-buttons');
-        div.style.opacity = enabled ? 1 : 0.5;
-        div.style.pointerEvents = enabled ? 'auto' : 'none';
-    }
-
-    function selectUnit(u) {
-        myIdx = myUnits.indexOf(u);
-        updateHUD();
-    }
-
-    // --- ACCIÓN ---
+    // --- DICE SYSTEM ---
     window.startActionPhase = function() {
         if(gameState !== 'MY_TURN') return;
         const me = myUnits[myIdx];
+        if(me.reacted || globalHP[me.uid].c <= 0) return log("Unidad no disponible");
         
-        if(me.reacted) return log("Unidad finalizada");
-        if(globalHP[me.uid].c <= 0) return log("Caído");
-        
-        const hasFresh = myUnits.some(u => !u.acted && globalHP[u.uid].c > 0);
-        if(me.acted && hasFresh) return log("❌ USA UNIDADES FRESCAS PRIMERO");
-
-        if(me.mode === 'hidden') {
-            log(`${me.name} SABOTAJE.`);
-            me.acted = true;
-            if(hasFresh) me.reacted = true; 
-            publish({type:'SABOTAJE'});
-            publish({type:'SYNC_SQUAD', squad: myUnits});
-            passTurn(0); return;
+        if(me.mode==='hidden') {
+            log(`${me.name} SABOTAJE.`); me.acted=true; 
+            if(myUnits.some(u=>!u.acted)) me.reacted=true;
+            publish({type:'SABOTAJE'}); publish({type:'SYNC_SQUAD', squad:myUnits}); passTurn(0); return;
         }
 
         let count = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
         diceTarget = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
-        
-        if(me.stratagem === 'aim') diceTarget = Math.max(2, diceTarget - 1);
-        if(me.acted) {
-            count = Math.ceil(count / 3); 
-            diceTarget = diceTarget + 1; 
-            log(`⚠️ REACCIÓN: ${count} DADOS A ${diceTarget}+`);
-        }
+        if(me.stratagem==='aim') diceTarget = Math.max(2, diceTarget-1);
+        if(me.acted) { count=Math.ceil(count/3); diceTarget++; }
 
         activeDice = Array(count).fill(0).map(()=>Math.ceil(Math.random()*6));
         dicePhase = 'ATTACK_ROLL';
@@ -446,7 +347,12 @@
         let sv = parseInt(me.stats.sv);
         if(me.mode === 'hidden') sv = Math.max(2, sv - 1);
         diceTarget = sv;
-        activeDice = Array(pendingHits).fill(0).map(()=>Math.ceil(Math.random()*6));
+
+        // MAX 3 DADOS DE DEFENSA
+        const totalIncoming = pendingHits.normal + pendingHits.crit;
+        const defCount = Math.min(3, totalIncoming);
+        
+        activeDice = Array(defCount).fill(0).map(()=>Math.ceil(Math.random()*6));
         dicePhase = 'DEFENSE_ROLL';
         showDiceOverlay(dicePhase, activeDice, diceTarget, true);
         syncDiceToRival("DEFENSA");
@@ -461,15 +367,19 @@
         ov.classList.add('show'); pool.innerHTML = "";
         tit.innerText = phase === 'ATTACK_ROLL' ? "ATAQUE" : "DEFENSA";
         tit.style.color = phase === 'ATTACK_ROLL' ? "var(--r)" : "var(--c)";
+        
         btn.style.display = isInteractive ? 'block' : 'none';
         btn.innerText = phase === 'ATTACK_ROLL' ? "CONFIRMAR IMPACTOS" : "CONFIRMAR DAÑO";
 
         dice.forEach((val, i) => {
             const d = document.createElement('div'); d.className = 'die';
             d.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][val];
-            const success = val >= target;
-            if(phase === 'ATTACK_ROLL') d.classList.add(success ? 'hit' : 'miss');
-            else d.classList.add(success ? 'save-ok' : 'save-fail');
+            
+            // LOGICA VISUAL DE CRITICOS
+            if(val === 6) d.classList.add('crit');
+            else if(val >= target) d.classList.add(phase==='ATTACK_ROLL'?'hit':'save-ok');
+            else d.classList.add(phase==='ATTACK_ROLL'?'miss':'save-fail');
+
             if(isInteractive) {
                 d.onclick = () => {
                     d.className = 'die rolling';
@@ -485,50 +395,79 @@
     }
 
     function syncDiceToRival(uName) {
-        let hits = 0;
-        if(dicePhase === 'ATTACK_ROLL') hits = activeDice.filter(x => x >= diceTarget).length;
-        publish({ type: 'DICE_SYNC', phase: dicePhase, dice: activeDice, target: diceTarget, uName: uName, hits: hits });
+        // Estructura para contar Normales y Críticos
+        let hitsStruct = { normal: 0, crit: 0 };
+        if(dicePhase === 'ATTACK_ROLL') {
+            activeDice.forEach(val => {
+                if(val === 6) hitsStruct.crit++;
+                else if(val >= diceTarget) hitsStruct.normal++;
+            });
+        }
+        publish({ type: 'DICE_SYNC', phase: dicePhase, dice: activeDice, target: diceTarget, uName: uName, hitsStruct: hitsStruct });
     }
 
     window.proceedPhase = function() {
         if(dicePhase === 'ATTACK_ROLL') {
-            const hits = activeDice.filter(x => x >= diceTarget).length;
-            publish({ type: 'REQ_DEFENSE', hits: hits, uName: myUnits[myIdx].name });
-            document.getElementById('dice-sub').innerText = "Esperando defensa...";
+            let hitsStruct = { normal: 0, crit: 0 };
+            activeDice.forEach(val => {
+                if(val === 6) hitsStruct.crit++;
+                else if(val >= diceTarget) hitsStruct.normal++;
+            });
+            
+            publish({ type: 'REQ_DEFENSE', hitsStruct: hitsStruct, uName: myUnits[myIdx].name });
+            document.getElementById('dice-sub').innerHTML = 
+                `Impactos: ${hitsStruct.normal} <span class="crit-text">+ ${hitsStruct.crit} CRIT</span>`;
             document.getElementById('btn-dice-main').style.display = 'none';
+        
         } else if(dicePhase === 'DEFENSE_ROLL') {
-            const saves = activeDice.filter(x => x >= diceTarget).length;
-            const finalHits = Math.max(0, pendingHits - saves);
-            const totalDmg = finalHits * 1; 
+            // RESOLUCION DE DAÑO
+            let defCrits = activeDice.filter(x => x === 6).length;
+            let defNormals = activeDice.filter(x => x >= diceTarget && x < 6).length;
+
+            let incCrits = pendingHits.crit;
+            let incNormals = pendingHits.normal;
+
+            // 1. Críticos bloquean Críticos
+            let critsBlocked = Math.min(incCrits, defCrits);
+            incCrits -= critsBlocked;
+            let remainingDefCrits = defCrits - critsBlocked;
+
+            // 2. Críticos sobrantes bloquean Normales
+            let normalsBlockedByCrit = Math.min(incNormals, remainingDefCrits);
+            incNormals -= normalsBlockedByCrit;
+
+            // 3. Normales bloquean Normales (NO PUEDEN BLOQUEAR CRITICOS)
+            let normalsBlockedByNormal = Math.min(incNormals, defNormals);
+            incNormals -= normalsBlockedByNormal;
+
+            const totalDmg = incCrits + incNormals;
+            
+            log(`DAÑO: ${totalDmg} (${incCrits} CRIT + ${incNormals} NORM)`);
+
             const me = myUnits[myIdx];
             globalHP[me.uid].c = Math.max(0, globalHP[me.uid].c - totalDmg);
+            
             publish({ type: 'DAMAGE_RESOLVE', dmg: totalDmg }); 
             publish({ type: 'SYNC_HP', state: globalHP });
-            closeDice();
-            applyDamage(totalDmg);
+            closeDice(); applyDamage(totalDmg);
         }
     }
-    
-    function applyDamage(amount) {
-        log(`DAÑO: ${amount}`);
-        const f = document.getElementById('flash-fx');
-        f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');
-    }
 
-    // --- UI HELPERS ---
-    window.setMode = function(m, e) { e.stopPropagation(); if(gameState !== 'PLANNING') return; myUnits[myIdx].mode = m; updateHUD(); }
-    window.setStrat = function(v, e) { e.stopPropagation(); if(gameState !== 'PLANNING') return; myUnits[myIdx].stratagem = v; }
-    window.nextMyUnit = function() { myIdx=(myIdx+1)%myUnits.length; updateHUD(); }
-    window.nextEnemyUnit = function() { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
-    window.switchMode = function() { combatMode = combatMode==='ranged'?'melee':'ranged'; updateHUD(); }
-    window.closeDice = function() { document.getElementById('dice-overlay').classList.remove('show'); }
+    function applyDamage(n) { document.getElementById('flash-fx').className = n>0?'flash':''; setTimeout(()=>document.getElementById('flash-fx').className='',300); }
+    
+    // --- UI ---
+    window.setMode=(m,e)=>{e.stopPropagation(); if(gameState==='PLANNING'){myUnits[myIdx].mode=m; updateHUD();}};
+    window.setStrat=(v,e)=>{e.stopPropagation(); if(gameState==='PLANNING') myUnits[myIdx].stratagem=v;};
+    window.nextMyUnit=()=>{myIdx=(myIdx+1)%myUnits.length; updateHUD();};
+    window.nextEnemyUnit=()=>{if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD();};
+    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
+    window.closeDice=()=>{document.getElementById('dice-overlay').classList.remove('show');};
 
     function updateHUD() {
         if(!myUnits.length) return;
         const me = myUnits[myIdx];
         const en = enemyUnits[enIdx];
 
-        // MY CARD
         document.getElementById('my-name').innerText = me.name;
         document.getElementById('my-weapon').innerText = me.equipment?.main || "RIFLE ESTÁNDAR";
         document.getElementById('my-r').innerText = `${me.stats.r_atk}d / ${me.stats.r_hit}`;
@@ -538,52 +477,37 @@
         
         const mc = document.getElementById('my-card');
         mc.className = "card my"; 
-        if(me.reacted) mc.classList.add('finished');
-        else if(me.acted) mc.classList.add('exhausted');
+        if(me.reacted) mc.classList.add('finished'); else if(me.acted) mc.classList.add('exhausted');
 
-        // BOTONES DE COMBATE
-        const btnMode = document.getElementById('btn-combat-mode');
         const btnAct = document.getElementById('btn-act');
-        
-        if(combatMode === 'ranged') {
-            btnMode.innerText = "🔫"; btnMode.style.background = "#333";
-            btnAct.innerText = "DISPARAR";
-        } else {
-            btnMode.innerText = "⚔️"; btnMode.style.background = "#552200"; 
-            btnAct.innerText = "GOLPEAR";
-        }
-        document.getElementById('phase-display').innerText = combatMode === 'ranged' ? "RANGO" : "MELEE";
-
-        // TACTICS ROW
         if(gameState === 'PLANNING') {
             document.getElementById('my-tactics').style.display = 'flex';
             document.getElementById('btn-mode-open').className = me.mode==='open'?'mode-toggle selected':'mode-toggle';
             document.getElementById('btn-mode-hidden').className = me.mode==='hidden'?'mode-toggle selected':'mode-toggle';
-            
             btnAct.innerText = me.mode==='open' ? "ATACAR" : "SABOTAJE";
             btnAct.style.background = me.mode==='open' ? 'var(--r)' : 'var(--gold)';
         } else {
             document.getElementById('my-tactics').style.display = 'none';
+            document.getElementById('btn-combat-mode').innerText = combatMode === 'ranged' ? "🔫" : "⚔️";
+            document.getElementById('phase-display').innerText = combatMode === 'ranged' ? "RANGO" : "MELEE";
+            btnAct.innerText = combatMode === 'ranged' ? "DISPARAR" : "GOLPEAR";
+            btnAct.style.background = 'var(--r)';
         }
 
-        // ENEMY CARD
         if(en) {
             document.getElementById('enemy-name').innerText = en.name;
             document.getElementById('en-weapon').innerText = en.equipment?.main || "DESC.";
             document.getElementById('en-r').innerText = `${en.stats.r_atk}d / ${en.stats.r_hit}`;
             document.getElementById('en-m').innerText = `${en.stats.m_atk}d / ${en.stats.m_hit}`;
             document.getElementById('en-sv').innerText = `${en.stats.sv}`;
-            
             document.getElementById('enemy-hp').style.width = (globalHP[en.uid].c/globalHP[en.uid].m*100)+"%";
             document.getElementById('en-mode-icon').innerText = en.mode==='open' ? '⚔️' : '🛡️';
             
             const ec = document.getElementById('en-card');
             ec.className = "card enemy";
-            if(en.reacted) ec.classList.add('finished');
-            else if(en.acted) ec.classList.add('exhausted');
+            if(en.reacted) ec.classList.add('finished'); else if(en.acted) ec.classList.add('exhausted');
         }
     }
-
     function publish(p) { if(client){ p.sender=MY_ID; client.send(TOPIC, JSON.stringify(p)); } }
     function log(t) { document.getElementById('combat-log').innerHTML = `<div class="log-line">> ${t}</div>` + document.getElementById('combat-log').innerHTML; }
 </script>
