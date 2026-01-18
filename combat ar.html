@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v17 TURN LOOP</title>
+    <title>SQUAD COMMAND: v18 ASYMMETRIC</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -18,7 +18,6 @@
         .screen.hidden { display: none !important; }
         .screen.transparent { background: transparent; pointer-events: none; padding: 0; }
 
-        /* UI ELEMENTS */
         .box { border: 1px solid var(--c); padding: 15px; width: 100%; max-width: 400px; background: rgba(0,0,0,0.95); margin-bottom: 15px; text-align: center; }
         textarea { width: 100%; height: 60px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; }
         input { background: #000; border: 2px solid var(--gold); color: var(--gold); padding: 10px; font-family: monospace; width: 100%; text-align: center; font-size: 1.5rem; letter-spacing: 2px; margin: 10px 0; text-transform: uppercase; }
@@ -27,7 +26,6 @@
         .btn.wait { background: var(--gold); animation: pulse 1s infinite; }
         @keyframes pulse { 50% { opacity: 0.5; } }
 
-        /* HUD */
         .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; justify-content: space-between; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); pointer-events: auto; }
         .turn-badge { border: 2px solid #555; padding: 5px 15px; font-weight: bold; background: #000; color: #555; text-transform: uppercase; font-size: 0.9rem; transition: 0.3s; }
         .turn-badge.planning { border-color: var(--gold); color: var(--gold); }
@@ -39,22 +37,23 @@
         .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.8); cursor: pointer; min-height: 80px; transition: 0.2s; position: relative; }
         .card.active { border-color: #fff; transform: scale(1.02); }
         
-        /* ESTADO AGOTADO */
-        .card.exhausted { opacity: 0.4; filter: grayscale(1); border-color: #222; pointer-events: none; }
-        .card.exhausted::after { content: "AGOTADO"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-10deg); color: #fff; font-weight: bold; border: 2px solid #fff; padding: 2px 5px; font-size: 0.8rem; background: rgba(0,0,0,0.8); }
+        /* ESTADOS DE UNIDAD */
+        .card.exhausted { border-color: var(--gold); opacity: 0.9; } /* Puede reaccionar */
+        .card.exhausted::after { content: "REACCIÓN"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-10deg); color: var(--gold); font-weight: bold; border: 2px solid var(--gold); padding: 2px 5px; font-size: 0.7rem; background: rgba(0,0,0,0.9); }
+        
+        .card.finished { opacity: 0.3; filter: grayscale(1); pointer-events: none; border-color: #222; }
+        .card.finished::after { content: "FIN"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 0.8rem; }
 
         .card.my { border-left: 4px solid var(--c); }
         .card.enemy { border-left: 4px solid var(--r); }
         .hp-bar { height: 4px; background: #333; margin-top: 5px; width: 100%; }
         .hp-fill { height: 100%; transition: width 0.3s; }
 
-        /* PLANNING CONTROLS */
         .tactic-row { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.7rem; border-top: 1px solid #333; padding-top: 5px; }
         .mode-toggle { cursor: pointer; padding: 2px 5px; border: 1px solid #555; color: #888; }
         .mode-toggle.selected { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.1); }
         .strat-select { background: #000; color: var(--c); border: 1px solid #333; font-family: monospace; max-width: 80px; }
 
-        /* DICE OVERLAY */
         #dice-overlay { 
             position: absolute; bottom: 0; left: 0; width: 100%; height: 60%; 
             background: rgba(0, 15, 30, 0.98); border-top: 4px solid var(--gold); 
@@ -89,7 +88,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v17 TURN LOOP</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v18 ASYMMETRIC</div>
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem;">CLAVE DE MISIÓN</div>
@@ -117,7 +116,6 @@
                 <div class="card my" onclick="nextMyUnit()" id="my-card">
                     <div style="display:flex; justify-content:space-between; font-size:0.6rem;"><span>YO</span> <span id="my-w">---</span></div>
                     <div id="my-name">---</div>
-                    
                     <div class="tactic-row" id="my-tactics">
                         <span id="btn-mode-open" class="mode-toggle selected" onclick="setMode('open', event)">⚔️ ABT</span>
                         <span id="btn-mode-hidden" class="mode-toggle" onclick="setMode('hidden', event)">🛡️ OCU</span>
@@ -127,7 +125,6 @@
                             <option value="med">Med</option>
                         </select>
                     </div>
-
                     <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
                 </div>
                 
@@ -161,38 +158,39 @@
     const MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
     let client=null, TOPIC="";
     
-    // Estados: PLANNING, MY_TURN, ENEMY_TURN
-    let gameState = 'PLANNING'; 
+    // acted = Ya hizo su acción normal
+    // reacted = Ya hizo su reacción (Overwatch)
     let myUnits=[], enemyUnits=[], globalHP={};
     let myIdx=0, enIdx=0, combatMode='ranged';
+    let gameState = 'PLANNING';
     
-    // Variables Dados Live
-    let dicePhase = 'IDLE'; 
-    let activeDice = [], diceTarget = 0, pendingHits = 0;
-
-    // Sincronización Inicio
-    let iAmReady = false, enemyIsReady = false;
-
+    let dicePhase='IDLE', activeDice=[], diceTarget=0, pendingHits=0;
+    let iAmReady=false, enemyIsReady=false;
+    
     // --- INIT ---
     function initSystem() {
         const json = document.getElementById('json-input').value;
         const code = document.getElementById('room-id').value.trim().toUpperCase();
         try {
             const raw = Object.values(JSON.parse(json).squad);
-            myUnits = raw.map(u => ({ ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', stratagem: 'none', acted: false }));
+            // AGREGAMOS 'reacted' al estado inicial
+            myUnits = raw.map(u => ({ 
+                ...u, uid: `${MY_ID}_${u.id}`, 
+                mode: 'open', stratagem: 'none', 
+                acted: false, reacted: false 
+            }));
             myUnits.forEach(u => globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)});
             
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
             navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>{});
-            
             updateHUD();
             startNetwork(code);
         } catch(e) { log("Error JSON"); }
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v17/${code}`;
+        TOPIC = `sqcmd/v18/${code}`;
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -203,7 +201,6 @@
         }});
     }
 
-    // --- MENSAJERÍA ---
     function onMessage(msg) {
         const d = JSON.parse(msg.payloadString);
         if(d.sender === MY_ID) return;
@@ -228,30 +225,29 @@
         }
         else if(d.type === 'REQ_DEFENSE') {
             pendingHits = d.hits;
-            startDefensePhase(); // El rival me pide que defienda
+            startDefensePhase();
         }
         else if(d.type === 'DAMAGE_RESOLVE') {
-            // El rival (Defensor) terminó de calcular su daño.
-            // Recibo daño y confirmación
             applyDamage(d.dmg);
             closeDice();
             
-            // LA CLAVE: El atacante (yo) al recibir la confirmación, finaliza su turno.
-            // Marco mi unidad como actuada.
-            myUnits[myIdx].acted = true;
-            publish({type:'SYNC_SQUAD', squad: myUnits}); // Le aviso al rival que mi unidad está out
-            passTurn(); // Paso el turno al rival
+            // Cuando el defensor termina, yo (atacante) cierro mi acción
+            const me = myUnits[myIdx];
+            if(!me.acted) me.acted = true; // Fue acción normal
+            else me.reacted = true;        // Fue reacción (Overwatch)
+            
+            publish({type:'SYNC_SQUAD', squad: myUnits});
+            passTurn();
         }
         else if(d.type === 'SABOTAJE') {
-            log(`RIVAL REALIZA SABOTAJE.`);
-            // El rival terminó su sabotaje, me pasa el turno.
+            log(`RIVAL SABOTAJE.`);
             setTurn('MY_TURN');
         }
         else if(d.type === 'CHANGE_TURN') {
             setTurn('MY_TURN');
         }
         else if(d.type === 'SYNC_SQUAD') {
-            enemyUnits = d.squad; // Actualizo si están agotados
+            enemyUnits = d.squad; 
             updateHUD();
         }
         else if(d.type === 'SYNC_HP') {
@@ -262,7 +258,6 @@
 
     // --- TURNOS ---
     function passTurn() {
-        // Verificar si me quedan unidades
         setTurn('ENEMY_TURN');
         publish({type: 'CHANGE_TURN'});
     }
@@ -271,109 +266,134 @@
         gameState = st;
         const b = document.getElementById('turn-indicator');
         if(st === 'MY_TURN') {
-            // Verificar si me quedan unidades
-            const hasUnits = myUnits.some(u => !u.acted && globalHP[u.uid].c > 0);
-            if(!hasUnits) {
-                // Si no me quedan, le devuelvo el turno inmediatamente o termino ronda
-                log("SIN UNIDADES DISPONIBLES. PASANDO...");
-                publish({type: 'CHANGE_TURN'}); 
-                // Aquí iría lógica de fin de ronda
-                return;
+            
+            // ANALISIS DE UNIDADES DISPONIBLES
+            const freshUnits = myUnits.filter(u => !u.acted && globalHP[u.uid].c > 0);
+            const reactUnits = myUnits.filter(u => u.acted && !u.reacted && globalHP[u.uid].c > 0);
+            
+            // Comprobar si el enemigo tiene unidades frescas
+            const enemyHasFresh = enemyUnits.some(u => !u.acted && globalHP[u.uid].c > 0);
+
+            // CASO 1: Tengo unidades normales -> DEBO usarlas
+            if(freshUnits.length > 0) {
+                b.innerText = "TU TURNO"; 
+                b.className = "turn-badge my-turn";
+                enableControls(true);
+                selectUnit(freshUnits[0]); // Auto-select primera fresca
+            } 
+            // CASO 2: No tengo frescas, pero el enemigo SÍ (Asimetría) -> Puedo Reaccionar
+            else if(freshUnits.length === 0 && enemyHasFresh && reactUnits.length > 0) {
+                b.innerText = "REACCIÓN / OVERWATCH";
+                b.className = "turn-badge planning"; // Color amarillo
+                enableControls(true);
+                selectUnit(reactUnits[0]); // Auto-select primera reacción
+                log("⚠️ MODO REACCIÓN ACTIVADO: DADOS 1/3, -1 HIT");
+            }
+            // CASO 3: Nadie tiene nada -> Pasar turno (o fin de ronda)
+            else {
+                log("SIN ACCIONES DISPONIBLES. PASANDO...");
+                publish({type: 'CHANGE_TURN'});
+                enableControls(false);
             }
 
-            b.innerText = "TU TURNO"; b.className = "turn-badge my-turn";
-            document.getElementById('action-buttons').style.opacity = 1;
-            document.getElementById('action-buttons').style.pointerEvents = 'auto';
-            // Auto-seleccionar una unidad disponible
-            findNextAvailableUnit();
         } else {
             b.innerText = "TURNO RIVAL"; b.className = "turn-badge enemy-turn";
-            document.getElementById('action-buttons').style.opacity = 0.5;
-            document.getElementById('action-buttons').style.pointerEvents = 'none';
+            enableControls(false);
         }
         updateHUD();
     }
 
-    function findNextAvailableUnit() {
-        // Si la actual ya actuó, buscar la siguiente
-        if(myUnits[myIdx].acted || globalHP[myUnits[myIdx].uid].c <= 0) {
-            for(let i=0; i<myUnits.length; i++) {
-                let checkIdx = (myIdx + i) % myUnits.length;
-                if(!myUnits[checkIdx].acted && globalHP[myUnits[checkIdx].uid].c > 0) {
-                    myIdx = checkIdx;
-                    updateHUD();
-                    return;
-                }
-            }
-        }
+    function enableControls(enabled) {
+        const div = document.getElementById('action-buttons');
+        div.style.opacity = enabled ? 1 : 0.5;
+        div.style.pointerEvents = enabled ? 'auto' : 'none';
+    }
+
+    function selectUnit(u) {
+        // Encontrar índice
+        myIdx = myUnits.indexOf(u);
+        updateHUD();
     }
 
     // --- ACCIÓN ---
     window.startActionPhase = function() {
         if(gameState !== 'MY_TURN') return;
         const me = myUnits[myIdx];
-        if(me.acted) return log("Ya actuó");
+        
+        if(me.reacted) return log("Ya finalizó ronda");
         if(globalHP[me.uid].c <= 0) return log("Caído");
+        
+        // Bloquear si intento usar una unidad agotada cuando aun tengo frescas
+        const hasFresh = myUnits.some(u => !u.acted && globalHP[u.uid].c > 0);
+        if(me.acted && hasFresh) return log("❌ DEBES USAR UNIDADES FRESCAS PRIMERO");
 
         if(me.mode === 'hidden') {
             log(`${me.name} REALIZA SABOTAJE.`);
             me.acted = true;
+            if(hasFresh) me.reacted = true; // Si es fresca consume todo, si no... (simplificado)
             publish({type:'SABOTAJE'});
             publish({type:'SYNC_SQUAD', squad: myUnits});
             passTurn();
             return;
         }
 
+        // --- CÁLCULO DE ATAQUE ---
         let count = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
         diceTarget = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
+        
+        // ESTRATAGEMA AIM
         if(me.stratagem === 'aim') diceTarget = Math.max(2, diceTarget - 1);
+
+        // PENALIZADOR DE REACCIÓN (OVERWATCH)
+        if(me.acted) {
+            count = Math.ceil(count / 3); // 1/3 de ataques
+            diceTarget = diceTarget + 1;  // -1 a Hit (Dificultad sube)
+            log(`⚠️ DISPARO DE REACCIÓN: ${count} DADOS A ${diceTarget}+`);
+        }
 
         activeDice = Array(count).fill(0).map(()=>Math.ceil(Math.random()*6));
         dicePhase = 'ATTACK_ROLL';
-
         showDiceOverlay(dicePhase, activeDice, diceTarget, true);
         syncDiceToRival(me.name);
     }
+
+    // ... (RESTO DEL CÓDIGO DE DADOS Y RED IDÉNTICO A v17) ...
+    // Para ahorrar espacio, asumimos que el sistema de dados (showDiceOverlay, syncDiceToRival, proceedPhase)
+    // es el mismo. Solo cambia updateHUD para mostrar estados.
 
     // --- DEFENSA ---
     function startDefensePhase() {
         const me = myUnits[myIdx];
         let sv = parseInt(me.stats.sv);
         if(me.mode === 'hidden') sv = Math.max(2, sv - 1);
-
         diceTarget = sv;
         activeDice = Array(pendingHits).fill(0).map(()=>Math.ceil(Math.random()*6));
         dicePhase = 'DEFENSE_ROLL';
-
         showDiceOverlay(dicePhase, activeDice, diceTarget, true);
         syncDiceToRival("DEFENSA");
     }
 
-    // --- DADOS LIVE ---
+    // --- DADOS LIVE SYSTEM ---
     function showDiceOverlay(phase, dice, target, isInteractive) {
         const ov = document.getElementById('dice-overlay');
         const pool = document.getElementById('dice-pool');
         const tit = document.getElementById('dice-title');
         const btn = document.getElementById('btn-dice-main');
         
-        ov.classList.add('show');
-        pool.innerHTML = "";
+        ov.classList.add('show'); pool.innerHTML = "";
         
-        tit.innerText = phase === 'ATTACK_ROLL' ? "FASE DE ATAQUE" : "FASE DE DEFENSA";
+        tit.innerText = phase === 'ATTACK_ROLL' ? "ATAQUE" : "DEFENSA";
         tit.style.color = phase === 'ATTACK_ROLL' ? "var(--r)" : "var(--c)";
         
         btn.style.display = isInteractive ? 'block' : 'none';
         btn.innerText = phase === 'ATTACK_ROLL' ? "CONFIRMAR IMPACTOS" : "CONFIRMAR DAÑO";
 
         dice.forEach((val, i) => {
-            const d = document.createElement('div');
-            d.className = 'die';
+            const d = document.createElement('div'); d.className = 'die';
             d.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][val];
             const success = val >= target;
-            
             if(phase === 'ATTACK_ROLL') d.classList.add(success ? 'hit' : 'miss');
             else d.classList.add(success ? 'save-ok' : 'save-fail');
-
             if(isInteractive) {
                 d.onclick = () => {
                     d.className = 'die rolling';
@@ -398,52 +418,38 @@
         if(dicePhase === 'ATTACK_ROLL') {
             const hits = activeDice.filter(x => x >= diceTarget).length;
             publish({ type: 'REQ_DEFENSE', hits: hits, uName: myUnits[myIdx].name });
-            document.getElementById('dice-sub').innerText = "Esperando defensa rival...";
+            document.getElementById('dice-sub').innerText = "Esperando defensa...";
             document.getElementById('btn-dice-main').style.display = 'none';
-        
         } else if(dicePhase === 'DEFENSE_ROLL') {
             const saves = activeDice.filter(x => x >= diceTarget).length;
             const finalHits = Math.max(0, pendingHits - saves);
             const totalDmg = finalHits * 1; 
-            
             const me = myUnits[myIdx];
             globalHP[me.uid].c = Math.max(0, globalHP[me.uid].c - totalDmg);
-            
-            // Envío confirmación al atacante
             publish({ type: 'DAMAGE_RESOLVE', dmg: totalDmg }); 
             publish({ type: 'SYNC_HP', state: globalHP });
-            
             closeDice();
             applyDamage(totalDmg);
-            
-            // EL DEFENSOR NO CAMBIA EL TURNO. 
-            // EL TURNO LO CAMBIA EL ATACANTE CUANDO RECIBE ESTA CONFIRMACIÓN.
+            // Defensor no pasa turno, espera que Atacante reciba confirmación
         }
     }
-
+    
     function applyDamage(amount) {
-        log(`DAÑO TOTAL: ${amount}`);
+        log(`DAÑO: ${amount}`);
         const f = document.getElementById('flash-fx');
         f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');
     }
 
-    // --- PLANIFICACIÓN (Igual que v16) ---
-    window.setMode = function(m, e) {
-        e.stopPropagation(); if(gameState !== 'PLANNING') return;
-        myUnits[myIdx].mode = m; updateHUD();
-    }
-    window.setStrat = function(v, e) {
-        e.stopPropagation(); if(gameState !== 'PLANNING') return;
-        myUnits[myIdx].stratagem = v;
-    }
+    // --- PLANIFICACIÓN ---
+    window.setMode = function(m, e) { e.stopPropagation(); if(gameState !== 'PLANNING') return; myUnits[myIdx].mode = m; updateHUD(); }
+    window.setStrat = function(v, e) { e.stopPropagation(); if(gameState !== 'PLANNING') return; myUnits[myIdx].stratagem = v; }
     window.commitPlanning = function() {
         if(gameState !== 'PLANNING') return;
         iAmReady = true;
         document.getElementById('btn-ready').innerText = "ESPERANDO...";
         document.getElementById('btn-ready').classList.add('wait');
-        const initRoll = Math.ceil(Math.random()*100);
-        window.myInit = initRoll;
-        publish({type:'READY', squad:myUnits, roll:initRoll});
+        window.myInit = Math.ceil(Math.random()*100);
+        publish({type:'READY', squad:myUnits, roll:window.myInit});
         if(enemyIsReady) checkStartRound(window.enemyInit || 0);
     }
     function checkStartRound(enRoll) {
@@ -467,13 +473,16 @@
         const en = enemyUnits[enIdx];
 
         // My Card
-        document.getElementById('my-name').innerText = me.name + (me.acted ? " (AGOTADO)" : "");
+        document.getElementById('my-name').innerText = me.name;
         document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
         const mc = document.getElementById('my-card');
         
-        // VISUALIZACIÓN DE AGOTADO
-        if(me.acted) mc.classList.add('exhausted'); else mc.classList.remove('exhausted');
-        
+        // ESTADOS VISUALES
+        mc.className = "card my"; // Reset
+        if(me.reacted) mc.classList.add('finished');
+        else if(me.acted) mc.classList.add('exhausted');
+
+        // Planning UI
         if(gameState === 'PLANNING') {
             document.getElementById('my-tactics').style.display = 'flex';
             document.getElementById('btn-mode-open').className = me.mode==='open'?'mode-toggle selected':'mode-toggle';
@@ -485,15 +494,14 @@
             document.getElementById('my-tactics').style.display = 'none';
         }
 
-        // Enemy Card
         if(en) {
             document.getElementById('enemy-name').innerText = en.name;
             document.getElementById('enemy-hp').style.width = (globalHP[en.uid].c/globalHP[en.uid].m*100)+"%";
             document.getElementById('en-mode-icon').innerText = en.mode==='open' ? '⚔️' : '🛡️';
-            
-            // Ver si enemigo está agotado
             const ec = document.getElementById('en-card');
-            if(en.acted) ec.classList.add('exhausted'); else ec.classList.remove('exhausted');
+            ec.className = "card enemy";
+            if(en.reacted) ec.classList.add('finished');
+            else if(en.acted) ec.classList.add('exhausted');
         }
     }
 
