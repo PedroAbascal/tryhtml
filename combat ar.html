@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v18 ASYMMETRIC</title>
+    <title>SQUAD COMMAND: v19 INFINITE WAR</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -37,8 +37,7 @@
         .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.8); cursor: pointer; min-height: 80px; transition: 0.2s; position: relative; }
         .card.active { border-color: #fff; transform: scale(1.02); }
         
-        /* ESTADOS DE UNIDAD */
-        .card.exhausted { border-color: var(--gold); opacity: 0.9; } /* Puede reaccionar */
+        .card.exhausted { border-color: var(--gold); opacity: 0.9; } 
         .card.exhausted::after { content: "REACCIÓN"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-10deg); color: var(--gold); font-weight: bold; border: 2px solid var(--gold); padding: 2px 5px; font-size: 0.7rem; background: rgba(0,0,0,0.9); }
         
         .card.finished { opacity: 0.3; filter: grayscale(1); pointer-events: none; border-color: #222; }
@@ -88,7 +87,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v18 ASYMMETRIC</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v19 INFINITE WAR</div>
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem;">CLAVE DE MISIÓN</div>
@@ -108,7 +107,7 @@
 
         <div class="hud-bottom">
             <div id="planning-controls" style="text-align:center; margin-bottom:10px;">
-                <div style="font-size:0.8rem; color:var(--gold); margin-bottom:5px;">CONFIGURA TUS UNIDADES</div>
+                <div style="font-size:0.8rem; color:var(--gold); margin-bottom:5px;">NUEVA RONDA: CONFIGURAR</div>
                 <button class="btn" id="btn-ready" onclick="commitPlanning()">CONFIRMAR ÓRDENES</button>
             </div>
 
@@ -166,6 +165,7 @@
     
     let dicePhase='IDLE', activeDice=[], diceTarget=0, pendingHits=0;
     let iAmReady=false, enemyIsReady=false;
+    let consecutivePasses = 0; // Para detectar fin de ronda
     
     // --- INIT ---
     function initSystem() {
@@ -173,7 +173,6 @@
         const code = document.getElementById('room-id').value.trim().toUpperCase();
         try {
             const raw = Object.values(JSON.parse(json).squad);
-            // AGREGAMOS 'reacted' al estado inicial
             myUnits = raw.map(u => ({ 
                 ...u, uid: `${MY_ID}_${u.id}`, 
                 mode: 'open', stratagem: 'none', 
@@ -190,7 +189,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v18/${code}`;
+        TOPIC = `sqcmd/v19/${code}`;
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -231,20 +230,21 @@
             applyDamage(d.dmg);
             closeDice();
             
-            // Cuando el defensor termina, yo (atacante) cierro mi acción
             const me = myUnits[myIdx];
-            if(!me.acted) me.acted = true; // Fue acción normal
-            else me.reacted = true;        // Fue reacción (Overwatch)
+            if(!me.acted) me.acted = true; 
+            else me.reacted = true;        
             
             publish({type:'SYNC_SQUAD', squad: myUnits});
-            passTurn();
+            passTurn(0); // Reiniciamos pases porque hubo acción
         }
         else if(d.type === 'SABOTAJE') {
             log(`RIVAL SABOTAJE.`);
-            setTurn('MY_TURN');
+            setTurn('MY_TURN', 0); // Reiniciamos pases
         }
         else if(d.type === 'CHANGE_TURN') {
-            setTurn('MY_TURN');
+            // VERIFICAR FIN DE RONDA POR AGOTAMIENTO MUTUO
+            const incomingPasses = d.passes || 0;
+            setTurn('MY_TURN', incomingPasses);
         }
         else if(d.type === 'SYNC_SQUAD') {
             enemyUnits = d.squad; 
@@ -256,43 +256,73 @@
         }
     }
 
-    // --- TURNOS ---
-    function passTurn() {
-        setTurn('ENEMY_TURN');
-        publish({type: 'CHANGE_TURN'});
+    // --- TURNOS Y LÓGICA DE RONDA ---
+    
+    function resetRound() {
+        log("--- FIN DE RONDA ---");
+        gameState = 'PLANNING';
+        iAmReady = false;
+        enemyIsReady = false;
+        
+        // Reset local units
+        myUnits.forEach(u => { u.acted = false; u.reacted = false; });
+        
+        // UI Reset
+        document.getElementById('planning-controls').style.display = 'block';
+        document.getElementById('action-buttons').style.display = 'flex';
+        document.getElementById('btn-ready').innerText = "CONFIRMAR ÓRDENES";
+        document.getElementById('btn-ready').classList.remove('wait');
+        
+        // Quitar indicador de turno activo
+        document.getElementById('turn-indicator').innerText = "PLANIFICACIÓN";
+        document.getElementById('turn-indicator').className = "turn-badge planning";
+        
+        enableControls(false); // Esperar a 'ready'
+        updateHUD();
     }
 
-    function setTurn(st) {
+    function passTurn(currentPasses) {
+        // Incrementamos contador de pases
+        const newPasses = currentPasses + 1;
+        setTurn('ENEMY_TURN', newPasses); // Estado visual local
+        publish({type: 'CHANGE_TURN', passes: newPasses});
+    }
+
+    function setTurn(st, passesVal) {
         gameState = st;
+        consecutivePasses = passesVal;
+        
+        // CRITERIO DE RESET: Si el turno llega a mí con 2 o más pases consecutivos,
+        // significa: Yo pasé -> Rival pasó -> Me toca (Nadie hizo nada).
+        if(st === 'MY_TURN' && consecutivePasses >= 2) {
+            resetRound();
+            return;
+        }
+
         const b = document.getElementById('turn-indicator');
         if(st === 'MY_TURN') {
             
-            // ANALISIS DE UNIDADES DISPONIBLES
             const freshUnits = myUnits.filter(u => !u.acted && globalHP[u.uid].c > 0);
             const reactUnits = myUnits.filter(u => u.acted && !u.reacted && globalHP[u.uid].c > 0);
-            
-            // Comprobar si el enemigo tiene unidades frescas
             const enemyHasFresh = enemyUnits.some(u => !u.acted && globalHP[u.uid].c > 0);
 
-            // CASO 1: Tengo unidades normales -> DEBO usarlas
             if(freshUnits.length > 0) {
                 b.innerText = "TU TURNO"; 
                 b.className = "turn-badge my-turn";
                 enableControls(true);
-                selectUnit(freshUnits[0]); // Auto-select primera fresca
+                selectUnit(freshUnits[0]);
             } 
-            // CASO 2: No tengo frescas, pero el enemigo SÍ (Asimetría) -> Puedo Reaccionar
             else if(freshUnits.length === 0 && enemyHasFresh && reactUnits.length > 0) {
                 b.innerText = "REACCIÓN / OVERWATCH";
-                b.className = "turn-badge planning"; // Color amarillo
+                b.className = "turn-badge planning";
                 enableControls(true);
-                selectUnit(reactUnits[0]); // Auto-select primera reacción
-                log("⚠️ MODO REACCIÓN ACTIVADO: DADOS 1/3, -1 HIT");
+                selectUnit(reactUnits[0]);
+                log("⚠️ MODO REACCIÓN");
             }
-            // CASO 3: Nadie tiene nada -> Pasar turno (o fin de ronda)
             else {
-                log("SIN ACCIONES DISPONIBLES. PASANDO...");
-                publish({type: 'CHANGE_TURN'});
+                // Si no tengo nada, paso el turno, incrementando el contador de pases recibidos
+                log("SIN ACCIONES. PASANDO...");
+                passTurn(consecutivePasses); 
                 enableControls(false);
             }
 
@@ -310,7 +340,6 @@
     }
 
     function selectUnit(u) {
-        // Encontrar índice
         myIdx = myUnits.indexOf(u);
         updateHUD();
     }
@@ -320,35 +349,31 @@
         if(gameState !== 'MY_TURN') return;
         const me = myUnits[myIdx];
         
-        if(me.reacted) return log("Ya finalizó ronda");
+        if(me.reacted) return log("Unidad finalizada");
         if(globalHP[me.uid].c <= 0) return log("Caído");
         
-        // Bloquear si intento usar una unidad agotada cuando aun tengo frescas
         const hasFresh = myUnits.some(u => !u.acted && globalHP[u.uid].c > 0);
         if(me.acted && hasFresh) return log("❌ DEBES USAR UNIDADES FRESCAS PRIMERO");
 
         if(me.mode === 'hidden') {
             log(`${me.name} REALIZA SABOTAJE.`);
             me.acted = true;
-            if(hasFresh) me.reacted = true; // Si es fresca consume todo, si no... (simplificado)
+            if(hasFresh) me.reacted = true; 
             publish({type:'SABOTAJE'});
             publish({type:'SYNC_SQUAD', squad: myUnits});
-            passTurn();
+            passTurn(0); // Acción realizada, reset passes
             return;
         }
 
-        // --- CÁLCULO DE ATAQUE ---
         let count = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
         diceTarget = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
         
-        // ESTRATAGEMA AIM
         if(me.stratagem === 'aim') diceTarget = Math.max(2, diceTarget - 1);
 
-        // PENALIZADOR DE REACCIÓN (OVERWATCH)
         if(me.acted) {
-            count = Math.ceil(count / 3); // 1/3 de ataques
-            diceTarget = diceTarget + 1;  // -1 a Hit (Dificultad sube)
-            log(`⚠️ DISPARO DE REACCIÓN: ${count} DADOS A ${diceTarget}+`);
+            count = Math.ceil(count / 3); 
+            diceTarget = diceTarget + 1; 
+            log(`⚠️ REACCIÓN: ${count} DADOS A ${diceTarget}+`);
         }
 
         activeDice = Array(count).fill(0).map(()=>Math.ceil(Math.random()*6));
@@ -357,11 +382,7 @@
         syncDiceToRival(me.name);
     }
 
-    // ... (RESTO DEL CÓDIGO DE DADOS Y RED IDÉNTICO A v17) ...
-    // Para ahorrar espacio, asumimos que el sistema de dados (showDiceOverlay, syncDiceToRival, proceedPhase)
-    // es el mismo. Solo cambia updateHUD para mostrar estados.
-
-    // --- DEFENSA ---
+    // --- DEFENSA Y DADOS (Standard) ---
     function startDefensePhase() {
         const me = myUnits[myIdx];
         let sv = parseInt(me.stats.sv);
@@ -373,7 +394,6 @@
         syncDiceToRival("DEFENSA");
     }
 
-    // --- DADOS LIVE SYSTEM ---
     function showDiceOverlay(phase, dice, target, isInteractive) {
         const ov = document.getElementById('dice-overlay');
         const pool = document.getElementById('dice-pool');
@@ -430,7 +450,6 @@
             publish({ type: 'SYNC_HP', state: globalHP });
             closeDice();
             applyDamage(totalDmg);
-            // Defensor no pasa turno, espera que Atacante reciba confirmación
         }
     }
     
@@ -457,7 +476,7 @@
         if(iAmReady && enemyIsReady) {
             document.getElementById('planning-controls').style.display = 'none';
             document.getElementById('action-buttons').style.display = 'flex';
-            if((window.myInit || 0) >= enRoll) setTurn('MY_TURN'); else setTurn('ENEMY_TURN');
+            if((window.myInit || 0) >= enRoll) setTurn('MY_TURN', 0); else setTurn('ENEMY_TURN', 0);
         }
     }
 
@@ -472,17 +491,13 @@
         const me = myUnits[myIdx];
         const en = enemyUnits[enIdx];
 
-        // My Card
         document.getElementById('my-name').innerText = me.name;
         document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
         const mc = document.getElementById('my-card');
-        
-        // ESTADOS VISUALES
-        mc.className = "card my"; // Reset
+        mc.className = "card my"; 
         if(me.reacted) mc.classList.add('finished');
         else if(me.acted) mc.classList.add('exhausted');
 
-        // Planning UI
         if(gameState === 'PLANNING') {
             document.getElementById('my-tactics').style.display = 'flex';
             document.getElementById('btn-mode-open').className = me.mode==='open'?'mode-toggle selected':'mode-toggle';
