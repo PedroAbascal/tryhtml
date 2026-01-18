@@ -3,72 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v14 TACTICAL</title>
+    <title>SQUAD COMMAND: v15 LIVE WAR</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
         :root { --c: #00f2ff; --r: #ff0055; --g: #00ff99; --gold: #ffcc00; --bg: #0d1117; }
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; color: var(--c); user-select: none; }
 
-        /* AR LAYER */
         #ar-feed { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; filter: contrast(1.2) brightness(0.6); }
         .scan-line { position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: rgba(0, 242, 255, 0.3); animation: scan 3s linear infinite; pointer-events: none; }
         @keyframes scan { 0% { top: 0%; opacity:0; } 100% { top: 100%; opacity:0; } }
 
-        /* SCREENS */
         .screen { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; background: var(--bg); z-index: 10; transition: 0.3s; align-items: center; }
         .screen.hidden { display: none !important; }
         .screen.transparent { background: transparent; pointer-events: none; padding: 0; }
 
-        /* UI ELEMENTS */
         .box { border: 1px solid var(--c); padding: 15px; width: 100%; max-width: 400px; background: rgba(0,0,0,0.95); margin-bottom: 15px; text-align: center; }
         textarea { width: 100%; height: 60px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; }
         input { background: #000; border: 2px solid var(--gold); color: var(--gold); padding: 10px; font-family: monospace; width: 100%; text-align: center; font-size: 1.5rem; letter-spacing: 2px; margin: 10px 0; text-transform: uppercase; }
         .btn { background: var(--c); color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; font-size: 1rem; clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%); margin-top: 5px; pointer-events: auto; }
         .btn:disabled { background: #555; color: #888; cursor: not-allowed; }
-        .btn.wait { background: var(--gold); animation: pulse 1s infinite; }
-        @keyframes pulse { 50% { opacity: 0.5; } }
 
-        /* HUD TOP */
         .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; justify-content: space-between; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); pointer-events: auto; }
         .turn-badge { border: 2px solid #555; padding: 5px 15px; font-weight: bold; background: #000; color: #555; text-transform: uppercase; font-size: 0.9rem; }
         .turn-badge.my-turn { border-color: var(--g); color: var(--g); box-shadow: 0 0 10px var(--g); }
         .turn-badge.enemy-turn { border-color: var(--r); color: var(--r); }
-        .turn-badge.planning { border-color: var(--gold); color: var(--gold); }
-
-        /* HUD BOTTOM */
+        
         .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; }
         .unit-selector { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
-        
         .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.8); cursor: pointer; min-height: 80px; transition: 0.2s; position: relative; }
         .card.active { border-color: #fff; transform: scale(1.02); }
-        .card.exhausted { opacity: 0.5; filter: grayscale(1); border-color: #333; }
         .card.my { border-left: 4px solid var(--c); }
         .card.enemy { border-left: 4px solid var(--r); }
-        
         .hp-bar { height: 4px; background: #333; margin-top: 5px; width: 100%; }
         .hp-fill { height: 100%; transition: width 0.3s; }
 
-        /* PLANNING CONTROLS */
-        .tactic-row { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.7rem; border-top: 1px solid #333; padding-top: 5px; }
-        .mode-toggle { cursor: pointer; padding: 2px 5px; border: 1px solid #555; color: #888; }
-        .mode-toggle.selected { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.1); }
-        .strat-select { background: #000; color: var(--c); border: 1px solid #333; font-family: monospace; max-width: 80px; }
-
-        /* LOG & DICE */
-        .log-area { position: absolute; top: 60px; left: 10px; font-size: 0.7rem; pointer-events: none; width: 70%; text-shadow: 1px 1px 0 #000; }
-        .log-line { margin-bottom: 3px; opacity: 0.9; }
-        
-        #dice-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; background: rgba(0, 10, 20, 0.98); border-top: 2px solid var(--c); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; transform: translateY(100%); transition: transform 0.3s; }
+        /* DICE OVERLAY */
+        #dice-overlay { 
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 60%; 
+            background: rgba(0, 15, 30, 0.98); border-top: 4px solid var(--gold); 
+            z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            transform: translateY(100%); transition: transform 0.3s; pointer-events: auto;
+        }
         #dice-overlay.show { transform: translateY(0); }
+        
+        .dice-header { font-size: 1.2rem; margin-bottom: 10px; color: var(--gold); font-weight: bold; }
+        .dice-sub { font-size: 0.8rem; color: #888; margin-bottom: 20px; }
+        
         .dice-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 20px; }
-        .die { font-size: 3.5rem; cursor: pointer; }
-        .die.hit { color: var(--g); text-shadow: 0 0 15px var(--g); }
+        .die { font-size: 4rem; cursor: pointer; transition: transform 0.2s; }
+        .die.hit { color: var(--g); text-shadow: 0 0 20px var(--g); }
         .die.miss { color: #444; }
-
+        .die.save-ok { color: var(--c); text-shadow: 0 0 20px var(--c); }
+        .die.save-fail { color: var(--r); opacity: 0.8; }
+        
+        .die.rolling { animation: spin 0.3s linear infinite; color: #fff; }
+        .die.locked { pointer-events: none; opacity: 0.5; } /* Cuando no es tu turno */
+        
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
         #flash-fx { pointer-events:none; position:fixed; top:0; left:0; width:100%; height:100%; }
-        .flash { animation: flashRed 0.2s; }
-        @keyframes flashRed { 50% { background: rgba(255, 0, 0, 0.4); } }
+        .flash { animation: flashRed 0.3s; }
+        @keyframes flashRed { 50% { background: rgba(255, 0, 0, 0.5); } }
     </style>
 </head>
 <body>
@@ -79,122 +75,97 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v14 TACTICAL</div>
-
-        <div class="box">
-            <textarea id="json-input" placeholder='{"squad":{...}}'></textarea>
-        </div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v15 LIVE WAR</div>
+        <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem;">CLAVE DE MISIÓN</div>
             <input type="text" id="room-id" value="WARZONE-1">
-            <button class="btn" id="btn-connect" onclick="initSystem()">INICIAR SISTEMAS</button>
+            <button class="btn" onclick="initSystem()">DESPLEGAR</button>
             <div id="conn-log" style="color:#aaa; font-size:0.6rem; margin-top:10px;"></div>
         </div>
     </div>
 
     <div id="game-screen" class="screen transparent hidden">
         <div class="hud-top">
-            <div class="turn-badge planning" id="turn-indicator">PLANIFICACIÓN</div>
+            <div class="turn-badge" id="turn-indicator">ESPERANDO...</div>
             <div style="font-size:0.7rem; border:1px solid #555; padding:2px 8px; background:#000;" id="phase-display">RANGO</div>
         </div>
         
         <div class="log-area" id="combat-log"></div>
 
         <div class="hud-bottom">
-            <div id="planning-controls" style="text-align:center; margin-bottom:10px;">
-                <div style="font-size:0.8rem; color:var(--gold); margin-bottom:5px;">CONFIGURA TUS UNIDADES</div>
-                <button class="btn" id="btn-ready" onclick="commitPlanning()">CONFIRMAR ÓRDENES</button>
-            </div>
-
             <div class="unit-selector">
-                <div class="card my" onclick="nextMyUnit()" id="my-card">
+                <div class="card my" onclick="nextMyUnit()">
                     <div style="display:flex; justify-content:space-between; font-size:0.6rem;"><span>YO</span> <span id="my-w">---</span></div>
-                    <div id="my-name" style="font-weight:bold;">---</div>
-                    
-                    <div class="tactic-row" id="my-tactics">
-                        <span id="btn-mode-open" class="mode-toggle selected" onclick="setMode('open', event)">⚔️ ABT</span>
-                        <span id="btn-mode-hidden" class="mode-toggle" onclick="setMode('hidden', event)">🛡️ OCU</span>
-                        <select class="strat-select" id="strat-select" onchange="setStrat(this.value, event)">
-                            <option value="none">--</option>
-                            <option value="aim">Puntería</option>
-                            <option value="med">Botiquín</option>
-                        </select>
-                    </div>
-
+                    <div id="my-name">---</div>
                     <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
                 </div>
-
-                <div class="card enemy" onclick="nextEnemyUnit()" id="en-card">
-                    <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)">
-                        <span>RIVAL</span> <span id="en-mode-icon">❓</span>
-                    </div>
-                    <div id="enemy-name" style="font-weight:bold;">ESPERANDO...</div>
+                <div class="card enemy" onclick="nextEnemyUnit()">
+                    <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)"><span>RIVAL</span> <span id="enemy-w">---</span></div>
+                    <div id="enemy-name">---</div>
                     <div class="hp-bar"><div id="enemy-hp" class="hp-fill" style="background:var(--r)"></div></div>
                 </div>
             </div>
-
-            <div style="display:flex; gap:10px;" id="action-buttons">
+            <div style="display:flex; gap:10px;">
                 <button class="btn" style="flex:1; background:#333; color:#fff;" onclick="switchMode()">🔫/⚔️</button>
-                <button class="btn" id="btn-act" style="flex:3; background:var(--r); color:#fff;" onclick="performAction()">ATACAR</button>
+                <button class="btn" id="btn-act" style="flex:3; background:var(--r); color:#fff;" onclick="startAttackPhase()">ATACAR</button>
             </div>
         </div>
     </div>
 
     <div id="dice-overlay">
-        <div id="dice-info-text" style="color:#aaa; margin-bottom:10px;"></div>
+        <div class="dice-header" id="dice-title">FASE DE ATAQUE</div>
+        <div class="dice-sub" id="dice-sub">Tirando dados...</div>
         <div class="dice-container" id="dice-pool"></div>
+        
         <div style="display:flex; gap:10px; width:90%;">
-            <button class="btn" style="background:#333;" onclick="closeDice()">CANCELAR</button>
-            <button class="btn" style="background:var(--g); color:#000;" onclick="confirmDice()">CONFIRMAR</button>
+            <button class="btn" id="btn-dice-main" onclick="proceedPhase()">CONFIRMAR</button>
         </div>
     </div>
 
 <script>
-    // --- RED ---
     const BROKER = "broker.hivemq.com"; const PORT = 8884; 
     const MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
     let client=null, TOPIC="";
-
-    // --- GAME STATE ---
-    // 'PLANNING' | 'WAITING' | 'MY_TURN' | 'ENEMY_TURN'
-    let gameState = 'PLANNING'; 
+    
+    let gameState = 'WAITING'; 
     let myUnits=[], enemyUnits=[], globalHP={};
     let myIdx=0, enIdx=0, combatMode='ranged';
-    let iAmReady = false, enemyIsReady = false;
     
+    // --- VARIABLES DE DADOS LIVE ---
+    // phases: 'IDLE', 'ATTACK_ROLL', 'DEFENSE_ROLL'
+    let dicePhase = 'IDLE'; 
+    let activeDice = []; // Array de valores [1,5,6...]
+    let diceTarget = 0;  // Valor a superar
+    let pendingHits = 0; // Hits acumulados para la defensa
+    let actingUnitName = "";
+
     // --- INIT ---
     function initSystem() {
         const json = document.getElementById('json-input').value;
         const code = document.getElementById('room-id').value.trim().toUpperCase();
-        if(!json) return log("Falta JSON");
-        
         try {
             const raw = Object.values(JSON.parse(json).squad);
-            // Inyectar propiedades de estado
-            myUnits = raw.map(u => ({
-                ...u, uid: `${MY_ID}_${u.id}`, 
-                mode: 'open', stratagem: 'none', acted: false
-            }));
+            myUnits = raw.map(u => ({ ...u, uid: `${MY_ID}_${u.id}`, acted: false }));
             myUnits.forEach(u => globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)});
             
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
             navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>{});
-
             updateHUD();
             startNetwork(code);
         } catch(e) { log("Error JSON"); }
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v14/${code}`;
+        TOPIC = `sqcmd/v15/${code}`;
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
-        client.onConnectionLost = (e) => { if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000); };
-        client.onMessageArrived = onMessage;
+        client.onConnectionLost=(e)=>{if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000)};
+        client.onMessageArrived=onMessage;
         client.connect({useSSL:true, onSuccess:()=>{
             client.subscribe(TOPIC);
             publish({type:'HELLO', squad:myUnits});
-            log("CONECTADO. PLANIFICA TU ESTRATEGIA.");
+            log("CONECTADO.");
         }});
     }
 
@@ -207,238 +178,233 @@
             if(!enemyUnits.length) {
                 enemyUnits = d.squad;
                 enemyUnits.forEach(u => { if(!globalHP[u.uid]) globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
-                publish({type:'HELLO', squad:myUnits}); // Handshake back
+                publish({type:'HELLO', squad:myUnits});
                 updateHUD();
-                log("RIVAL CONECTADO.");
+                setTurn('MY_TURN'); // Simple: el último que llega le da el turno al primero (simplificado para demo)
             }
         }
-        else if(d.type === 'READY') {
-            enemyUnits = d.squad; // Actualizar estados (open/hidden)
-            enemyIsReady = true;
-            d.roll = d.roll || 0; // Iniciativa
-            checkStartRound(d.roll);
+        // --- SINCRONIZACIÓN DE DADOS EN VIVO ---
+        else if(d.type === 'DICE_SYNC') {
+            // El rival está tirando dados. Yo solo MIRO.
+            showDiceOverlay(d.phase, d.dice, d.target, false); 
+            actingUnitName = d.uName;
+            pendingHits = d.hits || 0;
+            document.getElementById('dice-sub').innerText = `${d.uName} tirando...`;
         }
-        else if(d.type === 'ACTION') resolveEnemyAction(d);
-        else if(d.type === 'SYNC') { globalHP = {...globalHP, ...d.state}; updateHUD(); }
-        else if(d.type === 'PASS_TURN') {
-            startMyTurn();
+        else if(d.type === 'REQ_DEFENSE') {
+            // El rival terminó de atacar. Me toca DEFENDER.
+            pendingHits = d.hits;
+            actingUnitName = d.uName; // Atacante
+            startDefensePhase();
         }
-    }
-
-    // --- FASE 1: PLANIFICACIÓN ---
-    window.setMode = function(m, e) {
-        e.stopPropagation();
-        if(gameState !== 'PLANNING') return;
-        myUnits[myIdx].mode = m;
-        updateHUD();
-    }
-    window.setStrat = function(v, e) {
-        e.stopPropagation();
-        if(gameState !== 'PLANNING') return;
-        myUnits[myIdx].stratagem = v;
-    }
-
-    window.commitPlanning = function() {
-        if(gameState !== 'PLANNING') return;
-        iAmReady = true;
-        document.getElementById('btn-ready').innerText = "ESPERANDO RIVAL...";
-        document.getElementById('btn-ready').disabled = true;
-        document.getElementById('btn-ready').classList.add('wait');
-        
-        // Enviar mi configuración y una tirada de iniciativa
-        const initiative = Math.ceil(Math.random()*100);
-        publish({type:'READY', squad:myUnits, roll:initiative});
-        
-        // Guardo mi iniciativa temporalmente
-        window.myInitRoll = initiative;
-        
-        if(enemyIsReady) checkStartRound(window.enemyInitRoll || 0);
-    }
-
-    function checkStartRound(enemyRoll) {
-        window.enemyInitRoll = enemyRoll;
-        if(iAmReady && enemyIsReady) {
-            // Ambos listos. Decidir quién empieza.
-            const myRoll = window.myInitRoll || 0;
-            document.getElementById('planning-controls').style.display = 'none'; // Ocultar UI plan
-            
-            if(myRoll >= enemyRoll) {
-                startMyTurn();
-            } else {
-                startEnemyTurn();
-            }
+        else if(d.type === 'DAMAGE_RESOLVE') {
+            // El rival terminó de defender. Aplico resultados.
+            applyDamage(d.dmg);
+            closeDice();
+            setTurn('MY_TURN'); // Me devuelve el turno
+        }
+        else if(d.type === 'SYNC_HP') {
+            globalHP = {...globalHP, ...d.state};
+            updateHUD();
         }
     }
 
-    // --- FASE 2: TURNOS ---
-    function startMyTurn() {
-        // Verificar si me quedan unidades
-        const available = myUnits.some(u => !u.acted);
-        if(!available) {
-            log("RONDA FINALIZADA (Sin tropas).");
-            // Aquí iría lógica de nueva ronda, por ahora reset simple
-            return; 
-        }
-
-        gameState = 'MY_TURN';
+    // --- CONTROL DE TURNOS ---
+    function setTurn(st) {
+        gameState = st;
         const b = document.getElementById('turn-indicator');
-        b.innerText = "TU TURNO";
-        b.className = "turn-badge my-turn";
-        document.getElementById('action-buttons').style.opacity = 1;
-        document.getElementById('action-buttons').style.pointerEvents = 'auto';
-        log(">> ES TU TURNO. SELECCIONA UNIDAD.");
-        updateHUD();
-    }
-
-    function startEnemyTurn() {
-        gameState = 'ENEMY_TURN';
-        const b = document.getElementById('turn-indicator');
-        b.innerText = "TURNO RIVAL";
-        b.className = "turn-badge enemy-turn";
-        document.getElementById('action-buttons').style.opacity = 0.5;
-        document.getElementById('action-buttons').style.pointerEvents = 'none';
-        updateHUD();
-    }
-
-    // --- ACCIONES ---
-    window.performAction = function() {
-        if(gameState !== 'MY_TURN') return;
-        
-        const me = myUnits[myIdx];
-        if(me.acted) return log("❌ UNIDAD YA ACTUÓ ESTA RONDA");
-        if(globalHP[me.uid].c <= 0) return log("❌ UNIDAD CAÍDA");
-
-        // Chequear modo
-        if(me.mode === 'hidden') {
-            // Acción de Sabotaje (Sin dados, éxito auto o simple)
-            log(`🕵️ ${me.name} REALIZA SABOTAJE/MISIÓN.`);
-            // Ganar puntos (simulado)
-            completeAction();
+        if(st === 'MY_TURN') {
+            b.innerText = "TU TURNO"; b.className = "turn-badge my-turn";
+            document.getElementById('btn-act').disabled = false;
         } else {
-            // Ataque normal
-            prepareDiceAttack();
+            b.innerText = "TURNO RIVAL"; b.className = "turn-badge enemy-turn";
+            document.getElementById('btn-act').disabled = true;
         }
     }
 
-    function prepareDiceAttack() {
+    // --- FASE 1: INICIO ATAQUE (YO ATACANTE) ---
+    window.startAttackPhase = function() {
+        if(gameState !== 'MY_TURN') return;
         const me = myUnits[myIdx];
-        let dice = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
-        window.hitTarget = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
+        if(globalHP[me.uid].c <= 0) return log("Unidad caída");
+
+        // Configurar dados
+        let count = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
+        diceTarget = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
+        activeDice = Array(count).fill(0).map(()=>Math.ceil(Math.random()*6));
+        dicePhase = 'ATTACK_ROLL';
+
+        // Mostrar mi overlay
+        showDiceOverlay(dicePhase, activeDice, diceTarget, true);
         
-        // Bonus Estratagema
-        if(me.stratagem === 'aim') window.hitTarget = Math.max(2, window.hitTarget - 1);
-
-        window.rolls = Array(dice).fill(0).map(()=>Math.ceil(Math.random()*6));
-        renderDice();
-        document.getElementById('dice-overlay').classList.add('show');
+        // AVISAR AL RIVAL (Para que él vea mis dados)
+        syncDiceToRival(me.name);
     }
 
-    window.renderDice = function() {
-        const p = document.getElementById('dice-pool'); p.innerHTML="";
-        window.rolls.forEach((v,i)=>{
-            const d=document.createElement('div'); d.className='die'; d.innerText=['?','⚀','⚁','⚂','⚃','⚄','⚅'][v];
-            if(v>=window.hitTarget) d.classList.add('hit'); else d.classList.add('miss');
-            d.onclick=()=>{ 
-                d.style.color='#fff'; 
-                setTimeout(()=>{ window.rolls[i]=Math.ceil(Math.random()*6); renderDice(); },200); 
-            };
-            p.appendChild(d);
-        });
-    }
-
-    window.confirmDice = function() {
-        const hits = window.rolls.filter(r=>r>=window.hitTarget).length;
-        const me = myUnits[myIdx];
-        const en = enemyUnits[enIdx];
-        const dmg = combatMode==='ranged' ? parseInt(me.stats.r_dmg) : parseInt(me.stats.m_dmg);
-
-        publish({
-            type:'ACTION', sub:'ATTACK', 
-            uName:me.name, tUid:en.uid, 
-            hits:hits, dmg:dmg, mode:combatMode
-        });
+    // --- FASE 2: INICIO DEFENSA (YO DEFENSOR) ---
+    function startDefensePhase() {
+        // Me toca tirar salvación
+        const me = myUnits[myIdx]; // Se asume que defiendo con la unidad seleccionada (simplificado)
+        // Lo ideal sería que el paquete trajera el targetUid, pero por ahora usamos la seleccionada local
         
-        log(`ATQ REALIZADO: ${hits} IMPACTOS.`);
-        document.getElementById('dice-overlay').classList.remove('show');
-        completeAction();
+        let sv = parseInt(me.stats.sv);
+        diceTarget = sv;
+        
+        // Tiro tantos dados como HITS recibí
+        activeDice = Array(pendingHits).fill(0).map(()=>Math.ceil(Math.random()*6));
+        dicePhase = 'DEFENSE_ROLL';
+
+        showDiceOverlay(dicePhase, activeDice, diceTarget, true);
+        syncDiceToRival("DEFENSA");
     }
 
-    function resolveEnemyAction(d) {
-        if(d.sub === 'ATTACK') {
-            const t = myUnits.find(u=>u.uid===d.tUid);
-            if(t) {
-                // Defensa: Si estoy oculto, +1 a Salvación (ej: de 4+ pasa a 3+ ... espera, +1 save en wargames suele ser bajar el numero target)
-                // Vamos a decir que Oculto mejora la salvación (ej: 4+ se vuelve 3+)
-                let sv = parseInt(t.stats.sv);
-                if(t.mode === 'hidden') sv = Math.max(2, sv - 1); 
-                
-                let saves=0;
-                for(let i=0; i<d.hits; i++) if(Math.ceil(Math.random()*6) >= sv) saves++;
-                
-                const dmgTotal = (d.hits - saves) * d.dmg;
-                if(dmgTotal > 0) {
-                    globalHP[t.uid].c = Math.max(0, globalHP[t.uid].c - dmgTotal);
-                    document.getElementById('flash-fx').classList.add('flash');
-                    setTimeout(()=>document.getElementById('flash-fx').classList.remove('flash'),500);
-                    publish({type:'SYNC', state:globalHP});
-                }
-                log(`RIVAL ATACA A ${t.name}: -${dmgTotal} HP (Sv ${sv}+)`);
+
+    // --- SISTEMA DE DADOS COMPARTIDO ---
+    function showDiceOverlay(phase, dice, target, isInteractive) {
+        const ov = document.getElementById('dice-overlay');
+        const pool = document.getElementById('dice-pool');
+        const tit = document.getElementById('dice-title');
+        const btn = document.getElementById('btn-dice-main');
+        
+        ov.classList.add('show');
+        pool.innerHTML = "";
+        
+        // Títulos
+        if(phase === 'ATTACK_ROLL') {
+            tit.innerText = "FASE DE ATAQUE";
+            tit.style.color = "var(--r)";
+            if(isInteractive) btn.innerText = "CONFIRMAR IMPACTOS";
+        } else {
+            tit.innerText = "FASE DE DEFENSA";
+            tit.style.color = "var(--c)";
+            if(isInteractive) btn.innerText = "CONFIRMAR DAÑO";
+        }
+
+        if(!isInteractive) {
+            btn.style.display = 'none'; // Solo el activo puede confirmar
+        } else {
+            btn.style.display = 'block';
+        }
+
+        // Renderizar dados
+        dice.forEach((val, i) => {
+            const d = document.createElement('div');
+            d.className = 'die';
+            d.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][val];
+            
+            // Colores
+            if(phase === 'ATTACK_ROLL') {
+                if(val >= target) d.classList.add('hit'); else d.classList.add('miss');
+            } else {
+                if(val >= target) d.classList.add('save-ok'); else d.classList.add('save-fail');
             }
-        }
-        // El rival terminó su acción, me toca
-        startMyTurn();
+
+            // Interacción (Reroll)
+            if(isInteractive) {
+                d.onclick = () => {
+                    d.className = 'die rolling';
+                    setTimeout(() => {
+                        activeDice[i] = Math.ceil(Math.random()*6);
+                        // IMPORTANTE: Al cambiar un dado, enviamos SYNC inmediato
+                        if(phase === 'ATTACK_ROLL') syncDiceToRival(myUnits[myIdx].name);
+                        else syncDiceToRival("DEFENSA");
+                        
+                        showDiceOverlay(phase, activeDice, target, true); // Re-render local
+                    }, 300);
+                };
+            } else {
+                d.classList.add('locked'); // El rival no puede tocar
+            }
+            pool.appendChild(d);
+        });
     }
 
-    function completeAction() {
-        // Marcar unidad como usada
-        myUnits[myIdx].acted = true;
-        // Enviar estado de mis unidades (para que el rival vea que actué) y pasar turno
-        publish({type:'READY', squad:myUnits}); // Reusamos READY para actualizar estado visual
-        publish({type:'PASS_TURN'});
-        startEnemyTurn();
+    // Envia el estado actual de los dados al otro jugador
+    function syncDiceToRival(uName) {
+        // Calcular hits actuales para info
+        let hits = 0;
+        if(dicePhase === 'ATTACK_ROLL') hits = activeDice.filter(x => x >= diceTarget).length;
+        
+        publish({
+            type: 'DICE_SYNC',
+            phase: dicePhase,
+            dice: activeDice,
+            target: diceTarget,
+            uName: uName,
+            hits: hits
+        });
+    }
+
+    // --- BOTÓN CONFIRMAR FASE ---
+    window.proceedPhase = function() {
+        if(dicePhase === 'ATTACK_ROLL') {
+            // Fin de ataque -> Solicitar defensa
+            const hits = activeDice.filter(x => x >= diceTarget).length;
+            log(`ATAQUE: ${hits} IMPACTOS ENVIADOS`);
+            publish({
+                type: 'REQ_DEFENSE',
+                hits: hits,
+                uName: myUnits[myIdx].name
+            });
+            // Mi UI espera
+            document.getElementById('dice-sub').innerText = "Esperando defensa rival...";
+            document.getElementById('btn-dice-main').style.display = 'none';
+        
+        } else if(dicePhase === 'DEFENSE_ROLL') {
+            // Fin de defensa -> Calcular daño final
+            const saves = activeDice.filter(x => x >= diceTarget).length;
+            const finalHits = Math.max(0, pendingHits - saves);
+            
+            // El defensor (yo) sabe cuanto daño recibe su propia unidad
+            // Simplificación: Asumimos daño 1 por defecto o tendríamos que haberlo pasado antes
+            // Para la demo, usaremos daño base del atacante (necesitaríamos guardarlo)
+            const dmgPerHit = 1; // Simplificado
+            const totalDmg = finalHits * dmgPerHit;
+            
+            log(`DEFENSA: ${saves} SALVADOS. RECIBO ${totalDmg} DAÑO.`);
+            
+            // Aplicar daño a MI unidad (la que defiende)
+            const me = myUnits[myIdx];
+            globalHP[me.uid].c = Math.max(0, globalHP[me.uid].c - totalDmg);
+            
+            // Enviar resultado final y devolver turno
+            publish({ type: 'DAMAGE_RESOLVE', dmg: totalDmg }); 
+            publish({ type: 'SYNC_HP', state: globalHP });
+            
+            closeDice();
+            flash();
+            setTurn('ENEMY_TURN'); // Paso turno
+        }
+    }
+
+    function applyDamage(amount) {
+        log(`RESULTADO: EL RIVAL RECIBIÓ ${amount} DAÑO.`);
+        flash();
     }
 
     // --- UTILS ---
     window.nextMyUnit = function() { myIdx=(myIdx+1)%myUnits.length; updateHUD(); }
     window.nextEnemyUnit = function() { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
-    window.closeDice = function() { document.getElementById('dice-overlay').classList.remove('show'); }
     window.switchMode = function() { combatMode = combatMode==='ranged'?'melee':'ranged'; updateHUD(); }
+    window.closeDice = function() { document.getElementById('dice-overlay').classList.remove('show'); }
 
     function updateHUD() {
         if(!myUnits.length) return;
         const me = myUnits[myIdx];
         const en = enemyUnits[enIdx];
-
-        // My Card
-        const hp = globalHP[me.uid];
-        document.getElementById('my-name').innerText = me.name + (me.acted ? " (AGOTADO)" : "");
-        document.getElementById('my-hp').style.width = (hp.c/hp.m*100)+"%";
         
-        const mc = document.getElementById('my-card');
-        if(me.acted) mc.classList.add('exhausted'); else mc.classList.remove('exhausted');
-        if(gameState==='PLANNING') {
-            document.getElementById('my-tactics').style.display = 'flex';
-            document.getElementById('btn-mode-open').className = me.mode==='open'?'mode-toggle selected':'mode-toggle';
-            document.getElementById('btn-mode-hidden').className = me.mode==='hidden'?'mode-toggle selected':'mode-toggle';
-            
-            // Botón acción cambia texto según modo
-            document.getElementById('btn-act').innerText = me.mode==='open' ? "ATACAR" : "SABOTAJE";
-            document.getElementById('btn-act').style.background = me.mode==='open' ? 'var(--r)' : 'var(--gold)';
-        } else {
-             document.getElementById('my-tactics').style.display = 'none';
-        }
-
-        // Enemy Card
+        document.getElementById('my-name').innerText = me.name;
+        document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
+        
         if(en) {
-            const ehp = globalHP[en.uid];
             document.getElementById('enemy-name').innerText = en.name;
-            document.getElementById('enemy-hp').style.width = (ehp.c/ehp.m*100)+"%";
-            document.getElementById('en-mode-icon').innerText = en.mode==='open' ? '⚔️' : '🛡️';
+            document.getElementById('enemy-hp').style.width = (globalHP[en.uid].c/globalHP[en.uid].m*100)+"%";
         }
     }
 
-    function publish(p) { if(client) { p.sender=MY_ID; client.send(TOPIC, JSON.stringify(p)); } }
+    function publish(p) { if(client){ p.sender=MY_ID; client.send(TOPIC, JSON.stringify(p)); } }
     function log(t) { document.getElementById('combat-log').innerHTML = `<div class="log-line">> ${t}</div>` + document.getElementById('combat-log').innerHTML; }
+    function flash() { const f = document.getElementById('flash-fx'); f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash'); }
 </script>
 </body>
 </html>
