@@ -3,54 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v10 WARZONE</title>
+    <title>SQUAD COMMAND: v12 TITAN</title>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+
     <style>
         :root { --c: #00f2ff; --r: #ff0055; --g: #00ff99; --gold: #ffcc00; --bg: #0d1117; }
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; color: var(--c); user-select: none; }
 
-        /* AR BACKGROUND */
-        #ar-feed { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; filter: contrast(1.2) brightness(0.7); }
+        /* AR & VISUALS */
+        #ar-feed { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; filter: contrast(1.2) brightness(0.6); }
         .scan-line { position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: rgba(0, 242, 255, 0.3); animation: scan 3s linear infinite; pointer-events: none; }
         @keyframes scan { 0% { top: 0%; opacity:0; } 100% { top: 100%; opacity:0; } }
 
-        /* SCREENS */
+        /* UI SCREENS */
         .screen { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; background: var(--bg); z-index: 10; transition: 0.3s; align-items: center; }
         .screen.hidden { display: none !important; }
         .screen.transparent { background: transparent; pointer-events: none; padding: 0; }
 
-        /* LOBBY UI */
-        .box { border: 1px solid var(--c); padding: 15px; width: 100%; max-width: 400px; background: rgba(0,0,0,0.9); margin-bottom: 10px; text-align: center; }
-        textarea { width: 100%; height: 50px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; box-sizing: border-box; }
+        /* LOBBY */
+        .box { border: 1px solid var(--c); padding: 15px; width: 100%; max-width: 400px; background: rgba(0,0,0,0.95); margin-bottom: 15px; text-align: center; }
+        textarea { width: 100%; height: 60px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; }
         
         .room-input { 
-            background: #111; border: 2px solid var(--gold); color: var(--gold); 
-            padding: 15px; font-family: monospace; width: 100%; text-align: center; 
-            font-size: 1.5rem; letter-spacing: 2px; box-sizing: border-box; margin: 10px 0; text-transform: uppercase;
+            background: #000; border: 2px solid var(--gold); color: var(--gold); 
+            padding: 10px; font-family: monospace; width: 100%; text-align: center; 
+            font-size: 1.5rem; letter-spacing: 2px; margin: 10px 0; text-transform: uppercase;
         }
         
         .btn { background: var(--c); color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; font-size: 1rem; clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%); margin-top: 5px; }
-        .btn.host { background: var(--gold); }
-        .btn:active { transform: scale(0.98); }
+        .btn:active { transform: scale(0.98); background: #fff; }
 
-        /* LOADING SPINNER */
-        .loader { border: 4px solid #333; border-top: 4px solid var(--c); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; display:none; }
+        /* STATUS LIGHTS */
+        .status-container { display:flex; align-items:center; gap:5px; margin-bottom: 5px;}
+        .status-light { width: 12px; height: 12px; border-radius: 50%; background: #333; border: 1px solid #555; }
+        .status-light.ok { background: var(--g); box-shadow: 0 0 8px var(--g); }
+        .status-light.bad { background: var(--r); box-shadow: 0 0 8px var(--r); }
+        .status-light.wait { background: var(--gold); animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
 
-        /* HUD UI */
-        .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; justify-content: space-between; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); pointer-events: auto; box-sizing: border-box; }
-        .badge { border: 1px solid #555; padding: 5px 10px; font-size: 0.7rem; background: rgba(0,0,0,0.6); color: #888; }
-        .badge.on { border-color: var(--g); color: var(--g); box-shadow: 0 0 5px var(--g); }
-
-        .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; box-sizing: border-box; }
+        /* HUD */
+        .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; justify-content: space-between; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); pointer-events: auto; }
         
+        .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; }
         .unit-selector { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
-        .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.7); cursor: pointer; transition: 0.2s; min-height: 80px; box-sizing: border-box; }
+        .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.8); cursor: pointer; min-height: 80px; transition: 0.2s; }
         .card.my { border-left: 4px solid var(--c); }
         .card.enemy { border-left: 4px solid var(--r); }
         
         .hp-bar { height: 4px; background: #333; margin-top: 5px; width: 100%; }
         .hp-fill { height: 100%; transition: width 0.3s; }
-
+        
         .log-area { position: absolute; top: 60px; left: 10px; font-size: 0.7rem; pointer-events: none; width: 70%; text-shadow: 1px 1px 0 #000; }
         .log-line { margin-bottom: 3px; opacity: 0.9; }
 
@@ -59,77 +62,64 @@
             position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
             background: rgba(0, 10, 20, 0.98); border-top: 2px solid var(--c);
             z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 20px; box-sizing: border-box; transform: translateY(100%); transition: transform 0.3s;
+            transform: translateY(100%); transition: transform 0.3s;
         }
         #dice-overlay.show { transform: translateY(0); }
-        .dice-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 20px; }
-        .die { font-size: 3.5rem; cursor: pointer; user-select: none; }
+        .die { font-size: 3.5rem; cursor: pointer; margin: 5px; display:inline-block; }
         .die.hit { color: var(--g); text-shadow: 0 0 15px var(--g); }
-        .die.miss { color: #444; opacity: 0.7; }
-        .die.rolling { animation: spin 0.5s linear infinite; color: var(--c); }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* ICONOS */
-        .ability-row { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
-        .hud-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: rgba(0, 242, 255, 0.1); border: 1px solid var(--c); border-radius: 4px; font-size: 12px; }
+        .die.miss { color: #444; }
+        .hud-icon { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; background: rgba(0,242,255,0.1); border: 1px solid var(--c); border-radius: 4px; font-size: 12px; margin: 2px; }
         
-        #tooltip-modal { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 10, 20, 0.95); border: 1px solid var(--c); padding: 15px; width: 80%; text-align: center; z-index: 200; display: none; pointer-events: auto; }
+        #flash-fx { pointer-events:none; position:fixed; top:0; left:0; width:100%; height:100%; }
         .flash { animation: flashRed 0.2s; }
-        @keyframes flashRed { 0%, 100% { background: transparent; } 50% { background: rgba(255, 0, 0, 0.3); } }
+        @keyframes flashRed { 50% { background: rgba(255, 0, 0, 0.4); } }
     </style>
 </head>
 <body>
 
-    <div id="flash-fx" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none;"></div>
+    <div id="flash-fx"></div>
     <video id="ar-feed" autoplay playsinline muted></video>
     <div class="scan-line"></div>
 
-    <div id="tooltip-modal" onclick="this.style.display='none'">
-        <h3 id="tip-title" style="margin:0; color:var(--c)">INFO</h3>
-        <p id="tip-desc" style="color:#ddd; font-size:0.8rem">...</p>
-        <div style="font-size:0.6rem; color:#666; margin-top:5px">[ TOCAR PARA CERRAR ]</div>
-    </div>
-
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v10 WARZONE</div>
-
-        <div id="protocol-alert" style="display:none; color:var(--r); background:rgba(255,0,0,0.1); padding:10px; border:1px solid var(--r); font-size:0.7rem; margin-bottom:10px;">
-            ⚠️ ESTÁS USANDO "FILE://". LA CONEXIÓN NO FUNCIONARÁ.<br>
-            USA UN SERVIDOR LOCAL O GITHUB PAGES.
-        </div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v12 TITAN PROTOCOL</div>
 
         <div class="box">
-            <div style="font-size:0.7rem; margin-bottom:5px;">1. TU ESCUADRA (JSON)</div>
+            <div style="font-size:0.7rem; margin-bottom:5px;">1. TROPA (JSON)</div>
             <textarea id="json-input" placeholder='{"squad":{...}}'></textarea>
         </div>
 
         <div class="box" style="border-color:var(--gold);">
-            <div style="font-size:0.7rem; margin-bottom:5px; color:#fff;">2. CÓDIGO DE ZONA</div>
-            <input type="text" id="room-id" class="room-input" placeholder="EJ: BATTLE-1">
+            <div style="font-size:0.7rem; margin-bottom:5px; color:#fff;">2. CLAVE DE MISIÓN</div>
+            <div style="font-size:0.6rem; color:#888;">(Usad la misma clave exacta)</div>
+            <input type="text" id="room-id" class="room-input" placeholder="EJ: ALFA-99">
             
-            <div style="display:flex; gap:10px; margin-top:10px;">
-                <button class="btn host" id="btn-host">CREAR (HOST)</button>
-                <button class="btn" id="btn-join">UNIRSE (JOIN)</button>
+            <button class="btn" id="btn-connect" onclick="startLink()">INICIAR ENLACE SATELITAL</button>
+            
+            <div id="conn-log" style="color:#aaa; font-size:0.6rem; margin-top:15px; text-align:left; font-family:monospace; height:80px; overflow-y:scroll; border:1px solid #333; padding:5px;">
+                > SISTEMA LISTO...
             </div>
         </div>
-        
-        <div class="loader" id="loader"></div>
-        <div id="status-msg" style="color:var(--c); font-size:0.8rem; margin-top:20px;"></div>
     </div>
 
     <div id="game-screen" class="screen transparent hidden">
         <div class="hud-top">
-            <div class="badge on">ENLACE ACTIVO</div>
-            <div class="badge" id="phase-display">RANGO</div>
+            <div class="status-container">
+                <div id="net-light" class="status-light bad"></div>
+                <div style="font-size:0.7rem; color:#fff;" id="net-text">OFFLINE</div>
+            </div>
+            <div style="font-size:0.7rem; border:1px solid #555; padding:2px 8px; background:rgba(0,0,0,0.5);" id="phase-display">RANGO</div>
         </div>
+        
         <div class="log-area" id="combat-log"></div>
+
         <div class="hud-bottom">
             <div class="unit-selector">
                 <div class="card my" onclick="nextMyUnit()">
-                    <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--c)"><span>YO</span> <span id="my-w">---</span></div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.6rem;"><span>YO</span> <span id="my-w">---</span></div>
                     <div id="my-name" style="font-weight:bold;">---</div>
-                    <div class="ability-row" id="my-abilities"></div> 
+                    <div id="my-abilities"></div> 
                     <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
                 </div>
                 <div class="card enemy" onclick="nextEnemyUnit()">
@@ -146,117 +136,156 @@
     </div>
 
     <div id="dice-overlay">
-        <div id="dice-info-text" style="color:#aaa; font-size:0.8rem; margin-bottom:10px;"></div>
-        <div class="dice-container" id="dice-pool"></div>
-        <div style="font-size:0.7rem; color:#666; margin-bottom:15px;">(TOCA PARA REPETIR)</div>
-        <div style="display:flex; gap:10px; width:100%;">
+        <div id="dice-info-text" style="color:#aaa; margin-bottom:10px;"></div>
+        <div id="dice-pool" style="margin-bottom:20px; text-align:center;"></div>
+        <div style="display:flex; gap:10px; width:90%;">
             <button class="btn" style="background:#333;" onclick="closeDice()">CANCELAR</button>
             <button class="btn" style="background:var(--g); color:#000;" onclick="confirmAttack()">CONFIRMAR</button>
         </div>
     </div>
 
-<script type="module">
-    import { joinRoom } from 'https://esm.sh/trystero/torrent';
+<script>
+    // --- CONFIGURACIÓN WSS (SEGURA) ---
+    // Usamos broker.hivemq.com en puerto 8884 (Secure Websocket)
+    // Esto es CRUCIAL para que funcione en GitHub Pages (HTTPS) y Android.
+    const BROKER = "broker.hivemq.com";
+    const PORT = 8884; 
+    const CLIENT_ID = "titan_" + Math.random().toString(16).substr(2, 8);
+    let client = null;
+    let TOPIC = "";
 
-    // Check Protocol
-    if (window.location.protocol === 'file:') {
-        document.getElementById('protocol-alert').style.display = 'block';
-        document.getElementById('btn-host').disabled = true;
-        document.getElementById('btn-join').disabled = true;
-    }
-
-    // --- VARIABLES ---
-    let config, room, sendMsg, getMsg;
+    // --- VARIABLES JUEGO ---
     let myRawSquad=[], myUnits=[], enemyUnits=[], globalHP={};
     let myIdx=0, enIdx=0, combatMode='ranged';
     const DICE_CHARS = ['?', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
     let currentRolls=[], currentHitTarget=0;
-    
-    // ID Único para saber quién es quien
-    const MY_SESSION_ID = Math.random().toString(36).substr(2, 9);
 
-    // --- FUNCIONES EXPORTADAS AL DOM ---
-    // (Necesario porque type="module" aisla el scope)
-    window.connectGame = async function(role) {
-        const jsonTxt = document.getElementById('json-input').value;
-        const roomId = document.getElementById('room-id').value.trim().toUpperCase();
-
-        if(!jsonTxt) return msg("⚠️ Falta JSON");
-        if(roomId.length < 3) return msg("⚠️ Código muy corto (mín 3 letras)");
-        
-        try { myRawSquad = Object.values(JSON.parse(jsonTxt).squad); } 
-        catch(e) { return msg("⚠️ JSON Inválido"); }
-
-        // UI Feedback
-        document.getElementById('btn-host').style.display='none';
-        document.getElementById('btn-join').style.display='none';
-        document.getElementById('loader').style.display='block';
-        
-        if(role === 'host') msg(`📡 CREANDO ZONA "${roomId}"... ESPERANDO RIVAL.`);
-        else msg(`🔍 BUSCANDO ZONA "${roomId}"...`);
-
-        // INICIAR TRYSTERO
-        config = { appId: 'squad-command-v10' };
-        room = joinRoom(config, roomId);
-        [sendMsg, getMsg] = room.makeAction('gameData');
-
-        // Eventos
-        room.onPeerJoin(peerId => {
-            msg("✅ RIVAL DETECTADO. ENVIANDO DATOS...");
-            // Pequeño delay para asegurar conexión estable antes de enviar
-            setTimeout(() => {
-                sendMsg({ type: 'HANDSHAKE', squad: myRawSquad, senderId: MY_SESSION_ID });
-            }, 500);
-        });
-
-        getMsg((data, peerId) => {
-            console.log("Dato recibido:", data.type);
-            if(data.type === 'HANDSHAKE') initGame(data.squad, data.senderId);
-            if(data.type === 'ATTACK') resolveRemoteAttack(data);
-            if(data.type === 'SYNC') { globalHP = data.state; updateHUD(); }
-        });
-    };
-
-    // --- BINDEAR BOTONES (Porque module no ve onclick en HTML a veces) ---
-    document.getElementById('btn-host').onclick = () => window.connectGame('host');
-    document.getElementById('btn-join').onclick = () => window.connectGame('guest');
-
-
-    function initGame(enemySquadRaw, enemyId) {
-        // Lógica para decidir quién es H- (Host) y G- (Guest) basada en ID alfabética
-        // Así ambos jugadores ven los mismos IDs internamente
-        const amIHost = MY_SESSION_ID > enemyId;
-        const myPrefix = amIHost ? 'H-' : 'G-';
-        const enPrefix = amIHost ? 'G-' : 'H-';
-
-        myUnits = myRawSquad.map(u => ({...u, uid: myPrefix+u.id}));
-        enemyUnits = enemySquadRaw.map(u => ({...u, uid: enPrefix+u.id}));
-
-        [...myUnits, ...enemyUnits].forEach(u => {
-            globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)};
-        });
-
-        // Lanzar Juego
-        document.getElementById('lobby-screen').classList.add('hidden');
-        document.getElementById('game-screen').classList.remove('hidden');
-        
-        // Cámara
-        navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
-            .then(s=>document.getElementById('ar-feed').srcObject=s).catch(()=>{});
-
-        updateHUD();
-        log(`ZONA DE GUERRA ACTIVA. ${myUnits.length} vs ${enemyUnits.length}`);
+    // --- LOGGING ---
+    function connLog(msg) {
+        const d = document.getElementById('conn-log');
+        d.innerHTML += `<div>> ${msg}</div>`;
+        d.scrollTop = d.scrollHeight;
     }
 
-    // --- LOGICA DADOS & COMBATE ---
+    // 1. INICIAR CONEXIÓN
+    function startLink() {
+        const jsonTxt = document.getElementById('json-input').value;
+        const roomCode = document.getElementById('room-id').value.trim().toUpperCase();
+
+        if(!jsonTxt) return connLog("⚠️ ERROR: Falta JSON");
+        if(roomCode.length < 3) return connLog("⚠️ ERROR: Clave muy corta");
+
+        try { myRawSquad = Object.values(JSON.parse(jsonTxt).squad); } 
+        catch(e) { return connLog("⚠️ ERROR: JSON corrupto"); }
+
+        TOPIC = "titan/v12/" + roomCode; 
+        
+        document.getElementById('btn-connect').disabled = true;
+        document.getElementById('btn-connect').innerText = "CONECTANDO...";
+        connLog(`📡 Conectando a ${BROKER}:${PORT} (WSS)...`);
+
+        // Cliente Paho con SSL activado
+        client = new Paho.MQTT.Client(BROKER, PORT, CLIENT_ID);
+        client.onConnectionLost = onConnectionLost;
+        client.onMessageArrived = onMessageArrived;
+
+        const options = {
+            useSSL: true, // ESTO ES LA CLAVE PARA ANDROID + GITHUB
+            onSuccess: onConnect,
+            onFailure: (e) => {
+                document.getElementById('btn-connect').disabled = false;
+                document.getElementById('btn-connect').innerText = "REINTENTAR";
+                connLog("❌ FALLO: " + e.errorMessage);
+            },
+            keepAliveInterval: 30
+        };
+        
+        client.connect(options);
+    }
+
+    function onConnect() {
+        connLog("✅ ¡CONEXIÓN WSS ESTABLECIDA!");
+        connLog(`📡 Suscribiendo a canal: ${TOPIC}`);
+        
+        client.subscribe(TOPIC);
+        
+        setTimeout(() => {
+            // Entrar al juego
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            
+            // Cámara
+            navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+                .then(s=>document.getElementById('ar-feed').srcObject=s)
+                .catch(e=>console.log("Cam error", e));
+
+            updateStatus(true);
+            publish({ type: 'HELLO', squad: myRawSquad, sender: CLIENT_ID });
+        }, 1000);
+    }
+
+    function onConnectionLost(responseObject) {
+        if (responseObject.errorCode !== 0) {
+            console.log("Conexión perdida:"+responseObject.errorMessage);
+            updateStatus(false);
+            // Reintento automático
+            setTimeout(() => {
+                if(client) client.connect({useSSL:true, onSuccess:onConnect});
+            }, 3000);
+        }
+    }
+
+    function onMessageArrived(message) {
+        const data = JSON.parse(message.payloadString);
+        
+        // Ignorar mis mensajes
+        if(data.sender === CLIENT_ID) return;
+
+        if(data.type === 'HELLO') {
+            log("🛰️ RIVAL DETECTADO");
+            initGame(data.squad);
+            // Si yo soy el primero que estaba, respondo para que él me vea
+            if(!enemyUnits.length) {
+                publish({ type: 'HELLO', squad: myRawSquad, sender: CLIENT_ID });
+            }
+        }
+        if(data.type === 'ATTACK') resolveRemoteAttack(data);
+        if(data.type === 'SYNC') { globalHP = data.state; updateHUD(); }
+    }
+
+    function publish(payload) {
+        if(!client || !client.isConnected()) return;
+        const message = new Paho.MQTT.Message(JSON.stringify(payload));
+        message.destinationName = TOPIC;
+        client.send(message);
+    }
+
+    // --- LÓGICA DE JUEGO ---
+    function initGame(enemySquadRaw) {
+        if(enemyUnits.length > 0) return; // Ya estamos listos
+
+        // Mis unidades M-, Rival E-
+        myUnits = myRawSquad.map(u => ({...u, uid: 'M-'+u.id}));
+        enemyUnits = enemySquadRaw.map(u => ({...u, uid: 'E-'+u.id}));
+
+        // Reset HP solo si no existe
+        [...myUnits, ...enemyUnits].forEach(u => {
+            if(!globalHP[u.uid]) globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)};
+        });
+
+        updateHUD();
+        log("SISTEMAS ONLINE. FUEGO A DISCRECIÓN.");
+    }
+
+    // --- ATAQUE Y DADOS ---
     window.prepareAttack = function() {
+        if(!enemyUnits.length) return log("⚠️ ESPERANDO RIVAL...");
         const me = myUnits[myIdx];
-        const en = enemyUnits[enIdx];
-        if(globalHP[me.uid].c <= 0 || globalHP[en.uid].c <= 0) return;
+        if(globalHP[me.uid].c <= 0) return log("❌ UNIDAD CAÍDA");
 
         let diceCount=0;
         if(combatMode === 'ranged') {
-            if(me.stats.r_atk==='-') return alert("Sin rango");
+            if(me.stats.r_atk==='-') return alert("Sin arma rango");
             diceCount = parseInt(me.stats.r_atk);
             currentHitTarget = parseInt(me.stats.r_hit.replace('+',''));
         } else {
@@ -266,7 +295,6 @@
 
         currentRolls = [];
         for(let i=0; i<diceCount; i++) currentRolls.push(Math.ceil(Math.random()*6));
-        
         renderDice();
         document.getElementById('dice-info-text').innerText = `IMPACTO ${currentHitTarget}+ (${combatMode})`;
         document.getElementById('dice-overlay').classList.add('show');
@@ -277,17 +305,12 @@
         currentRolls.forEach((val, idx) => {
             const el = document.createElement('div'); el.className = 'die'; el.innerText = DICE_CHARS[val];
             if(val >= currentHitTarget) el.classList.add('hit'); else el.classList.add('miss');
-            el.onclick = () => window.rerollDie(idx, el);
+            el.onclick = () => { 
+                el.classList.add('rolling');
+                setTimeout(() => { currentRolls[idx] = Math.ceil(Math.random()*6); renderDice(); }, 300);
+            };
             pool.appendChild(el);
         });
-    };
-
-    window.rerollDie = function(idx, el) {
-        el.className = 'die rolling';
-        setTimeout(() => {
-            currentRolls[idx] = Math.ceil(Math.random()*6);
-            window.renderDice();
-        }, 300);
     };
 
     window.confirmAttack = function() {
@@ -295,43 +318,34 @@
         currentRolls.forEach(val => { if(val >= currentHitTarget) hits++; });
         
         const me = myUnits[myIdx];
-        const en = enemyUnits[enIdx];
         let dmg = (combatMode==='ranged') ? parseInt(me.stats.r_dmg) : parseInt(me.stats.m_dmg);
 
         const icon = combatMode==='ranged'?'🔫':'⚔️';
         log(`YO ${icon}: [${currentRolls.join(' ')}] -> ${hits} HITS`);
         
-        sendMsg({
+        publish({
             type: 'ATTACK',
             uName: me.name,
-            tUid: en.uid,
+            targetIndex: enIdx,
             hits: hits,
             dmg: dmg,
-            mode: combatMode
+            mode: combatMode,
+            sender: CLIENT_ID
         });
-        window.closeDice();
+        closeDice();
     };
 
     window.closeDice = function() { document.getElementById('dice-overlay').classList.remove('show'); };
-    
-    // Bind buttons manuales para funciones window
-    document.querySelector("button[onclick='prepareAttack()']").onclick = window.prepareAttack;
-    document.querySelector("button[onclick='closeDice()']").onclick = window.closeDice;
-    document.querySelector("button[onclick='confirmAttack()']").onclick = window.confirmAttack;
-    document.querySelector("button[onclick='switchMode()']").onclick = window.switchMode;
-    document.querySelector(".card.my").onclick = window.nextMyUnit;
-    document.querySelector(".card.enemy").onclick = window.nextEnemyUnit;
 
-
+    // --- RECEPCIÓN ---
     function resolveRemoteAttack(data) {
-        const target = myUnits.find(u => u.uid === data.tUid);
+        const target = myUnits[data.targetIndex]; 
         if(!target) return;
 
-        let saves=0, rolls=[];
+        let saves=0;
         for(let i=0; i<data.hits; i++) {
             let r=Math.ceil(Math.random()*6);
-            rolls.push(r);
-            if(r>=parseInt(target.stats.sv)) saves++;
+            if(r >= parseInt(target.stats.sv)) saves++;
         }
         let total = (data.hits - saves) * data.dmg;
         
@@ -342,67 +356,54 @@
             globalHP[target.uid].c = Math.max(0, globalHP[target.uid].c - total);
             const f = document.getElementById('flash-fx');
             f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');
-            sendMsg({type:'SYNC', state:globalHP});
+            publish({type:'SYNC', state:globalHP, sender: CLIENT_ID});
             updateHUD();
         } else {
             log("🛡️ BLINDADO (0 Daño)");
         }
     }
 
-    // --- UI HELPERS ---
+    // --- UTILS ---
     window.nextMyUnit = function() { myIdx = (myIdx+1)%myUnits.length; updateHUD(); };
     window.nextEnemyUnit = function() { enIdx = (enIdx+1)%enemyUnits.length; updateHUD(); };
-    window.switchMode = function() { 
-        combatMode = combatMode==='ranged'?'melee':'ranged'; 
-        document.getElementById('phase-display').innerText = combatMode.toUpperCase();
-        updateHUD(); 
-    };
+    window.switchMode = function() { combatMode = combatMode==='ranged'?'melee':'ranged'; document.getElementById('phase-display').innerText = combatMode.toUpperCase(); updateHUD(); };
 
     function updateHUD() {
+        if(!myUnits.length) return;
         const me = myUnits[myIdx];
         const en = enemyUnits[enIdx];
-        const meS = globalHP[me.uid];
-        const enS = globalHP[en.uid];
-
-        document.getElementById('my-name').innerText = me.name;
-        let stats = combatMode==='ranged' ? (me.stats.r_atk!=='-' ? `🔫${me.stats.r_atk}/${me.stats.r_hit}` : "🚫") : `⚔️${me.stats.m_atk}/${me.stats.m_hit}`;
-        document.getElementById('my-w').innerText = stats;
-        document.getElementById('my-hp').style.width = (meS.c/meS.m*100)+"%";
         
-        // Iconos
-        const ic = document.getElementById('my-abilities'); ic.innerHTML="";
-        [me.ability, me.gear, me.weap].forEach(c => {
-            if(c && c!=='none' && TACTICAL_DB[c]) {
-                let d=document.createElement('div'); d.className='hud-icon'; d.innerText=TACTICAL_DB[c].icon;
-                d.onclick=(e)=>{e.stopPropagation();showTip(TACTICAL_DB[c]);}
-                ic.appendChild(d);
+        const meHp = globalHP[me.uid];
+        document.getElementById('my-name').innerText = me.name;
+        document.getElementById('my-w').innerText = combatMode==='ranged'? `🔫${me.stats.r_atk}` : `⚔️${me.stats.m_atk}`;
+        document.getElementById('my-hp').style.width = (meHp.c/meHp.m*100)+"%";
+        
+        const abDiv = document.getElementById('my-abilities'); abDiv.innerHTML='';
+        [me.ability, me.gear, me.weap].forEach(s => {
+            if(s && s!=='none') {
+               let d=document.createElement('div'); d.className='hud-icon'; d.innerText=s.substr(0,2).toUpperCase();
+               abDiv.appendChild(d);
             }
         });
 
-        document.getElementById('enemy-name').innerText = en.name;
-        document.getElementById('enemy-w').innerText = `🛡️ SV ${en.stats.sv}`;
-        document.getElementById('enemy-hp').style.width = (enS.c/enS.m*100)+"%";
-
-        document.querySelector('.card.my').style.opacity = meS.c<=0?0.5:1;
-        document.querySelector('.card.enemy').style.opacity = enS.c<=0?0.5:1;
+        if(en) {
+            const enHp = globalHP[en.uid];
+            document.getElementById('enemy-name').innerText = en.name;
+            document.getElementById('enemy-w').innerText = `🛡️SV ${en.stats.sv}`;
+            document.getElementById('enemy-hp').style.width = (enHp.c/enHp.m*100)+"%";
+            document.querySelector('.card.enemy').style.opacity = enHp.c<=0?0.5:1;
+        }
+        document.querySelector('.card.my').style.opacity = meHp.c<=0?0.5:1;
     }
 
-    function showTip(d) {
-        document.getElementById('tip-title').innerText=d.name;
-        document.getElementById('tip-desc').innerText=d.desc;
-        document.getElementById('tooltip-modal').style.display='block';
+    function updateStatus(ok) {
+        const l = document.getElementById('net-light');
+        const t = document.getElementById('net-text');
+        if(ok) { l.className='status-light ok'; t.innerText="ONLINE"; }
+        else { l.className='status-light bad'; t.innerText="OFFLINE"; }
     }
-
-    function msg(t) { document.getElementById('status-msg').innerText = t; }
+    
     function log(t) { const c=document.getElementById('combat-log'); c.innerHTML=`<div class="log-line">> ${t}</div>`+c.innerHTML; }
-
-    const TACTICAL_DB = {
-        'voice':{icon:'📣',name:'Voz',desc:'Reroll 1s'}, 'stealth':{icon:'🥷',name:'Sigilo',desc:'-1 Hit'},
-        'bionics':{icon:'🦾',name:'Biónica',desc:'+4 HP'}, 'stim':{icon:'💉',name:'Stim',desc:'+Move'},
-        'frenzy':{icon:'🤬',name:'Frenesí',desc:'+Atk -Sv'}, 'granada':{icon:'💣',name:'Granada',desc:'Area'},
-        'scope':{icon:'🔭',name:'Mira',desc:'+Rng'}, 'shield':{icon:'🛡️',name:'Escudo',desc:'+Sv'},
-        'sniper':{icon:'🎯',name:'Franco',desc:'Crit'}, 'minigun':{icon:'🌪️',name:'Minigun',desc:'Burst'}
-    };
 </script>
 </body>
 </html>
