@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v40 CONFIRM PASS</title>
+    <title>SQUAD COMMAND: v41 FULL CONFIRM</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -22,7 +22,7 @@
         textarea { width: 100%; height: 60px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; }
         input, select { background: #000; border: 2px solid var(--gold); color: var(--gold); padding: 10px; font-family: monospace; width: 100%; text-align: center; font-size: 1rem; letter-spacing: 2px; margin: 5px 0; text-transform: uppercase; }
         
-        /* Aseguramos que los botones no tengan comportamiento por defecto */
+        /* Botones seguros (type=button) */
         .btn { 
             background: var(--c); color: #000; border: none; padding: 15px; width: 100%; 
             font-weight: bold; cursor: pointer; font-size: 1rem; 
@@ -32,7 +32,7 @@
         .btn * { pointer-events: none; } 
         .btn.wait { background: #333; color: #888; border: 1px solid #555; animation: pulse 1s infinite; cursor: default; pointer-events: none; }
         
-        .btn-small { font-size: 0.7rem; padding: 5px; width: auto; display: inline-block; clip-path: none; border: 1px solid var(--gold); background: #000; color: var(--gold); cursor: pointer; }
+        .btn-small { font-size: 0.7rem; padding: 5px; width: auto; display: inline-block; clip-path: none; border: 1px solid var(--gold); background: #000; color: var(--gold); cursor: pointer; pointer-events: auto; }
 
         .ops-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; width: 100%; display: none; }
         .btn-op { font-size: 0.8rem; padding: 15px 5px; clip-path: none; border: 1px solid #000; color: #000; font-weight: bold; }
@@ -86,6 +86,7 @@
         .die.save-fail { color: var(--r); opacity: 0.8; }
         .die.incoming-crit { color: var(--gold); text-shadow: 0 0 15px var(--gold); pointer-events: none; }
         .die.incoming-hit { color: var(--c); text-shadow: 0 0 10px var(--c); pointer-events: none; }
+        .die.pending { color: var(--gold); animation: pulse 0.5s infinite; cursor: wait; pointer-events: none; opacity: 0.7; }
         
         #flash-fx { pointer-events:none; position:fixed; top:0; left:0; width:100%; height:100%; }
         .flash { animation: flashRed 0.3s; }
@@ -101,6 +102,22 @@
         .stat-box { display: flex; flex-direction: column; align-items: center; }
         .stat-val { font-size: 0.7rem; font-weight: bold; color: #eee; }
         .stat-label { font-size: 0.5rem; color: #888; }
+
+        /* MODAL DE CONFIRMACIÓN DE RIVAL */
+        #confirm-modal { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); z-index: 300; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            opacity: 0; pointer-events: none; transition: 0.3s; 
+        }
+        #confirm-modal.show { opacity: 1; pointer-events: auto; }
+        .modal-box { 
+            background: #111; border: 2px solid var(--gold); padding: 20px; width: 80%; max-width: 300px; text-align: center; 
+            box-shadow: 0 0 20px rgba(255,204,0,0.2);
+        }
+        .modal-text { color: var(--gold); font-size: 0.9rem; margin-bottom: 20px; font-weight: bold; }
+        .modal-btn-row { display: flex; gap: 10px; justify-content: center; }
+        .btn-modal-yes { background: var(--gold); color: #000; padding: 10px 20px; border: none; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -108,6 +125,15 @@
     <div id="flash-fx"></div>
     <video id="ar-feed" autoplay playsinline muted></video>
     <div class="scan-line"></div>
+
+    <div id="confirm-modal">
+        <div class="modal-box">
+            <div id="modal-msg" class="modal-text">SOLICITUD ENTRANTE...</div>
+            <div class="modal-btn-row">
+                <button type="button" class="btn-modal-yes" onclick="confirmRequest()">CONFIRMAR</button>
+            </div>
+        </div>
+    </div>
 
     <div id="game-over-screen">
         <div id="end-title" class="end-title">---</div>
@@ -117,7 +143,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v40 CONFIRM PASS</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v41 FULL CONFIRM</div>
         
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         
@@ -154,7 +180,7 @@
                 <div id="round-display" style="font-size:0.8rem; font-weight:bold;">RND 1/4</div>
                 <div class="score-detail" id="mission-info">DOMINACION</div>
             </div>
-            <button type="button" id="btn-claim-secret" class="btn-small" style="display:none;" onclick="claimSecret()">RECLAMAR SECRETA (+2)</button>
+            <button type="button" id="btn-claim-secret" class="btn-small" style="display:none;" onclick="tryClaimSecret()">RECLAMAR SECRETA (+2)</button>
         </div>
         
         <div class="log-area" id="combat-log"></div>
@@ -204,9 +230,7 @@
 
             <div id="combat-actions" style="display:flex; gap:10px;">
                 <button type="button" class="btn" id="btn-combat-mode" style="width:50px; background:#333; color:#fff;" onclick="resetPassButtons(); switchMode()"><span>🔫</span></button>
-                
                 <button type="button" class="btn" id="btn-pass-open" style="flex:1; background:#555; color:#fff;" onclick="tryPass('btn-pass-open')"><span>PASAR</span></button>
-                
                 <button type="button" class="btn" id="btn-act" style="flex:2; background:var(--r); color:#fff;" onclick="resetPassButtons(); startActionPhase()"><span>DISPARAR</span></button>
             </div>
 
@@ -258,7 +282,12 @@
     let iAmReady=false, enemyIsReady=false;
     let myInitRoll = null, enemyInitRoll = null;
     let consecutivePasses = 0; 
-    let passConfirm = null; // Variable para tracking de confirmación de pase
+    let passConfirm = null;
+
+    // --- VARIABLES DE SOLICITUDES ---
+    let pendingRequest = null; // Almacena la solicitud entrante actual (tipo, datos)
+    let waitingForAck = false; // Bloquea UI si esperamos respuesta del enemigo
+    let diceRerollIndex = -1;  // Índice del dado que estamos esperando re-tirar
 
     function returnToLobby() {
         if(client) { try{ client.disconnect(); } catch(e){} client=null; }
@@ -271,18 +300,19 @@
         myVP = 0; enemyVP = 0;
         currentRound = 1;
         iAmReady = false; enemyIsReady = false;
+        resetPassButtons();
+        waitingForAck = false;
+        diceRerollIndex = -1;
     }
 
-    // LOGICA DE CONFIRMACION DE PASE
+    // --- LÓGICA DE CONFIRMACIÓN DE PASAR (LOCAL) ---
     window.tryPass = function(btnId) {
         const btn = document.getElementById(btnId);
         if (passConfirm === btnId) {
-            // Segunda pulsación: EJECUTAR
             performOp('PASAR');
             resetPassButtons();
         } else {
-            // Primera pulsación: PEDIR CONFIRMACION
-            resetPassButtons(); // Resetear otros si los hubiera
+            resetPassButtons();
             passConfirm = btnId;
             btn.innerText = "¿CONFIRMAR?";
             btn.style.background = "var(--gold)";
@@ -292,19 +322,96 @@
 
     window.resetPassButtons = function() {
         passConfirm = null;
-        
-        // Reset Open Mode Button
         const b1 = document.getElementById('btn-pass-open');
-        b1.innerText = "PASAR";
-        b1.style.background = "#555";
-        b1.style.color = "#fff";
-
-        // Reset Ops Mode Button
+        b1.innerText = "PASAR"; b1.style.background = "#555"; b1.style.color = "#fff";
         const b2 = document.getElementById('btn-op-pass');
-        b2.innerText = "PASAR";
-        b2.style.background = "#888";
-        b2.style.color = "#000";
+        b2.innerText = "PASAR"; b2.style.background = "#888"; b2.style.color = "#000";
     }
+
+    // --- SISTEMA DE SOLICITUDES REMOTAS (SECRETA / DADOS) ---
+
+    // 1. RECLAMAR SECRETA
+    window.tryClaimSecret = function() {
+        if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return;
+        if(waitingForAck) return;
+
+        // UI Feedback: Esperando
+        const btn = document.getElementById('btn-claim-secret');
+        btn.innerText = "ESPERANDO CONFIRMACIÓN...";
+        btn.style.opacity = "0.5";
+        waitingForAck = true;
+
+        log("Solicitando validación de Secreta...");
+        publish({type: 'REQ_SECRET', missionName: secretMission});
+    }
+
+    function executeSecretClaim() {
+        secretClaimed = true;
+        myVP += 2;
+        log(`SECRETA ACEPTADA (+2 PV)`);
+        document.getElementById('btn-claim-secret').style.display = 'none';
+        waitingForAck = false;
+        publish({type: 'SCORE_UPDATE', vp: myVP});
+        updateHUD();
+    }
+
+    // 2. RE-TIRAR DADOS
+    function askReroll(index) {
+        if(waitingForAck) return;
+        diceRerollIndex = index;
+        waitingForAck = true;
+        
+        // Visualmente marcar el dado como pendiente
+        const pool = document.getElementById('dice-pool');
+        if(pool.children[index]) {
+            pool.children[index].className = 'die pending';
+            pool.children[index].innerText = "⏳";
+        }
+        
+        log("Solicitando re-tirada...");
+        publish({type: 'REQ_REROLL'});
+    }
+
+    function executeReroll() {
+        if(diceRerollIndex === -1) return;
+        
+        // Animación y lógica real
+        const pool = document.getElementById('dice-pool');
+        const dieEl = pool.children[diceRerollIndex];
+        
+        dieEl.className = 'die rolling';
+        setTimeout(() => { 
+            activeDice[diceRerollIndex] = Math.ceil(Math.random()*6); 
+            syncDiceToRival(dicePhase==='ATTACK_ROLL' ? myUnits[myIdx].name : "DEFENSA"); 
+            showDiceOverlay(dicePhase, activeDice, diceTarget, true); 
+            diceRerollIndex = -1;
+            waitingForAck = false;
+        }, 300);
+    }
+
+    // --- MANEJO DEL MODAL DE CONFIRMACIÓN ---
+    function showConfirmModal(text, reqData) {
+        pendingRequest = reqData;
+        const modal = document.getElementById('confirm-modal');
+        document.getElementById('modal-msg').innerText = text;
+        modal.classList.add('show');
+    }
+
+    window.confirmRequest = function() {
+        document.getElementById('confirm-modal').classList.remove('show');
+        if(!pendingRequest) return;
+
+        if(pendingRequest.type === 'REQ_SECRET') {
+            publish({type: 'ACK_SECRET'});
+            log(`Has aceptado la Misión Secreta del rival.`);
+        } else if(pendingRequest.type === 'REQ_REROLL') {
+            publish({type: 'ACK_REROLL'});
+            log(`Has aceptado re-tirada del rival.`);
+        }
+        pendingRequest = null;
+    }
+
+    // --- INIT & MQTT ---
 
     function initSystem() {
         MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
@@ -312,8 +419,7 @@
         const code = document.getElementById('room-id').value.trim().toUpperCase();
         maxRounds = parseInt(document.getElementById('round-select').value, 10);
         primaryMission = document.getElementById('primary-mission').value;
-        const secVal = document.getElementById('secondary-toggle').value;
-        secondaryActive = (secVal === "SI");
+        secondaryActive = (document.getElementById('secondary-toggle').value === "SI");
         
         try {
             const parsed = JSON.parse(json);
@@ -338,21 +444,14 @@
         if(secondaryActive) {
             secretMission = SECRET_POOL[Math.floor(Math.random() * SECRET_POOL.length)];
             log(`TU SECRETA: ${secretMission}`);
-        } else {
-            secretMission = null;
-        }
+        } else secretMission = null;
     }
-
     function updateMissionDisplay() {
-        if(secondaryActive && secretMission) {
-            document.getElementById('mission-info').innerText = `${primaryMission} + ${secretMission}`;
-        } else {
-            document.getElementById('mission-info').innerText = primaryMission;
-        }
+        document.getElementById('mission-info').innerText = secondaryActive && secretMission ? `${primaryMission} + ${secretMission}` : primaryMission;
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v39/${code}`; 
+        TOPIC = `sqcmd/v41/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -362,53 +461,38 @@
         }});
     }
 
-    function getKillPoints(totalEnemies) {
-        if(totalEnemies <= 4) return 4;
-        if(totalEnemies <= 7) return 3;
-        if(totalEnemies <= 10) return 2;
-        return 1;
-    }
-
-    function claimSecret() {
-        if(!secondaryActive || !secretMission) return;
-        if(secretClaimed || gameState === 'PLANNING') return;
-        secretClaimed = true;
-        myVP += 2;
-        log(`SECRETA COMPLETADA (+2 PV)`);
-        document.getElementById('btn-claim-secret').style.display = 'none';
-        publish({type: 'SCORE_UPDATE', vp: myVP});
-        updateHUD();
-    }
-
     function onMessage(msg) {
         if(isGameOver) return;
         const d = JSON.parse(msg.payloadString);
         if(d.sender === MY_ID) return;
 
-        if(d.type === 'JOIN_REQ') {
-            if(!enemyUnits.length) {
-                enemyUnits = d.squad;
-                initialEnemyCount = enemyUnits.length;
-                publish({type:'JOIN_ACK', squad:myUnits, rounds:maxRounds, pMission: primaryMission, secActive: secondaryActive}); 
-                enemyUnits.forEach(u => { if(!globalHP[u.uid]) globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
-                updateHUD();
-                log(`RIVAL: ${initialEnemyCount} OPS.`);
-            }
+        // --- HANDLERS DE CONFIRMACION ---
+        if(d.type === 'REQ_SECRET') {
+            showConfirmModal(`RIVAL RECLAMA SECRETA: ${d.missionName}\n¿CONFIRMAR?`, d);
         }
-        else if(d.type === 'JOIN_ACK') {
+        else if(d.type === 'ACK_SECRET') {
+            executeSecretClaim();
+        }
+        else if(d.type === 'REQ_REROLL') {
+            showConfirmModal(`RIVAL QUIERE RE-TIRAR UN DADO\n¿CONFIRMAR?`, d);
+        }
+        else if(d.type === 'ACK_REROLL') {
+            executeReroll();
+        }
+        // --- FIN HANDLERS CONFIRMACION ---
+
+        else if(d.type === 'JOIN_REQ' || d.type === 'JOIN_ACK') {
             if(!enemyUnits.length) {
                 enemyUnits = d.squad;
                 initialEnemyCount = enemyUnits.length;
-                if(d.rounds) maxRounds = d.rounds;
-                if(d.pMission) primaryMission = d.pMission;
-                
-                if(d.secActive !== undefined) {
+                if(d.type==='JOIN_REQ') publish({type:'JOIN_ACK', squad:myUnits, rounds:maxRounds, pMission: primaryMission, secActive: secondaryActive}); 
+                else {
+                    if(d.rounds) maxRounds = d.rounds;
+                    if(d.pMission) primaryMission = d.pMission;
                     secondaryActive = d.secActive;
-                    if(secondaryActive && !secretMission) assignSecretMission();
-                    else if(!secondaryActive) secretMission = null;
+                    if(secondaryActive && !secretMission) assignSecretMission(); else if(!secondaryActive) secretMission = null;
                     updateMissionDisplay();
                 }
-
                 enemyUnits.forEach(u => { if(!globalHP[u.uid]) globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
                 updateHUD();
                 log(`RIVAL CONECTADO: ${initialEnemyCount} OPS.`);
@@ -435,12 +519,8 @@
             publish({type:'SYNC_SQUAD', squad: myUnits});
             passTurn(0); 
         }
-        else if(d.type === 'OP_ACTION') {
-            if(gameState === 'PLANNING') return;
-            log(`RIVAL: ${d.opType}`); 
-            setTurn('MY_TURN', 0); 
-        }
-        else if(d.type === 'CHANGE_TURN') { if(gameState !== 'PLANNING') setTurn('MY_TURN', d.passes || 0); }
+        else if(d.type === 'OP_ACTION') { if(gameState!=='PLANNING'){ log(`RIVAL: ${d.opType}`); setTurn('MY_TURN', 0); } }
+        else if(d.type === 'CHANGE_TURN') { if(gameState!=='PLANNING') setTurn('MY_TURN', d.passes || 0); }
         else if(d.type === 'ROUND_OVER') resetRound();
         else if(d.type === 'SYNC_SQUAD') { enemyUnits = d.squad; updateHUD(); }
         else if(d.type === 'SYNC_HP') { 
@@ -448,8 +528,7 @@
             globalHP = {...globalHP, ...d.state}; 
             enemyUnits.forEach(u => {
                 const old = oldHP[u.uid] ? oldHP[u.uid].c : 0;
-                const cur = globalHP[u.uid].c;
-                if(old > 0 && cur <= 0) {
+                if(old > 0 && globalHP[u.uid].c <= 0) {
                     let pts = getKillPoints(initialEnemyCount);
                     myVP += pts;
                     log(`ENEMIGO ABATIDO (+${pts} PV)`);
@@ -460,26 +539,25 @@
         }
     }
 
+    function getKillPoints(total) {
+        if(total <= 4) return 4; if(total <= 7) return 3; if(total <= 10) return 2; return 1;
+    }
+
     function resetRound() {
         if(isGameOver) return;
         if(currentRound >= maxRounds) { checkWinCondition(); return; }
-        
-        currentRound++;
-        gameState = 'PLANNING'; iAmReady = false; enemyIsReady = false;
+        currentRound++; gameState = 'PLANNING'; iAmReady = false; enemyIsReady = false;
         myUnits.forEach(u => { u.acted = false; u.reacted = false; });
-        resetPassButtons(); // Reset por seguridad
-
+        resetPassButtons();
         document.getElementById('planning-controls').style.display = 'block';
         document.getElementById('combat-actions').style.display = 'flex';
         document.getElementById('ops-actions').style.display = 'none';
         document.getElementById('btn-claim-secret').style.display = 'none';
-
         document.getElementById('btn-ready').innerHTML = "<span>CONFIRMAR ÓRDENES</span>";
         document.getElementById('btn-ready').className = "btn";
         document.getElementById('turn-indicator').className = "turn-badge planning";
         document.getElementById('turn-indicator').innerText = "PLANIFICACIÓN";
         document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show'));
-        
         enableControls(false); updateHUD();
     }
     function commitPlanning() {
@@ -501,13 +579,11 @@
     function setTurn(st, p) {
         if(isGameOver) return;
         gameState = st; consecutivePasses = p;
-        resetPassButtons(); // Reset visual
+        resetPassButtons();
         
         if(secondaryActive && !secretClaimed) {
             document.getElementById('btn-claim-secret').style.display = (st === 'MY_TURN') ? 'block' : 'none';
-        } else {
-            document.getElementById('btn-claim-secret').style.display = 'none';
-        }
+        } else document.getElementById('btn-claim-secret').style.display = 'none';
 
         if(st === 'MY_TURN' && consecutivePasses >= 2) { publish({type:'ROUND_OVER'}); resetRound(); return; }
         const b = document.getElementById('turn-indicator');
@@ -532,6 +608,7 @@
         const me = myUnits[myIdx];
         log(`REALIZA ${type}.`);
         if(type === 'MISION') { myVP += 1; publish({type: 'SCORE_UPDATE', vp: myVP}); log("OBJETIVO TOMADO (+1 PV)"); }
+        if(type === 'PASAR') log("PASAS TURNO");
         if(!me.acted) me.acted = true; else me.reacted = true;
         publish({type:'OP_ACTION', opType: type});
         publish({type:'SYNC_SQUAD', squad: myUnits});
@@ -575,6 +652,7 @@
         const incomingPool = document.getElementById('incoming-pool');
         const activeLbl = document.getElementById('active-label');
         ov.classList.add('show'); pool.innerHTML = ""; incomingPool.innerHTML = "";
+        
         if(phase === 'DEFENSE_ROLL') {
             tit.innerText = "DEFENSA"; tit.style.color = "var(--c)";
             btn.innerHTML = "<span>CONFIRMAR DAÑO</span>";
@@ -589,12 +667,15 @@
             incomingSec.style.display = 'none'; 
         }
         btn.style.display = isInteractive ? 'block' : 'none';
+        
         dice.forEach((val, i) => {
             const d = document.createElement('div'); d.className = 'die';
             d.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][val];
             if(val === 6) d.classList.add('crit'); else if(val >= target) d.classList.add(phase==='ATTACK_ROLL'?'hit':'save-ok'); else d.classList.add(phase==='ATTACK_ROLL'?'miss':'save-fail');
+            
+            // RE-ROLL con Confirmación
             if(isInteractive) {
-                d.onclick = () => { d.className = 'die rolling'; setTimeout(() => { activeDice[i] = Math.ceil(Math.random()*6); syncDiceToRival(phase==='ATTACK_ROLL' ? myUnits[myIdx].name : "DEFENSA"); showDiceOverlay(phase, activeDice, target, true); }, 300); };
+                d.onclick = () => askReroll(i);
             } else d.classList.add('locked');
             pool.appendChild(d);
         });
@@ -607,6 +688,7 @@
     }
 
     window.proceedPhase = function() {
+        if(waitingForAck) return; // No permitir avanzar si hay una solicitud pendiente
         if(dicePhase === 'ATTACK_ROLL') {
             let hitsStruct = { normal: 0, crit: 0 };
             activeDice.forEach(val => { if(val === 6) hitsStruct.crit++; else if(val >= diceTarget) hitsStruct.normal++; });
@@ -636,64 +718,45 @@
     function checkWinCondition() {
         if(isGameOver) return;
         if (!enemyUnits || enemyUnits.length === 0) return; 
-
         const myAlive = myUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
         const enemyAlive = enemyUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
-
         if (myAlive === 0 || enemyAlive === 0 || currentRound > maxRounds) {
             let res = "EMPATE"; let type = "DRAW";
-            if(myVP > enemyVP) { res = "VICTORIA"; type = "WIN"; }
-            else if(myVP < enemyVP) { res = "DERROTA"; type = "LOSE"; }
+            if(myVP > enemyVP) { res = "VICTORIA"; type = "WIN"; } else if(myVP < enemyVP) { res = "DERROTA"; type = "LOSE"; }
             triggerGameOver(res, type);
         }
     }
-
     function triggerGameOver(text, type) {
-        if(isGameOver) return;
-        isGameOver = true;
+        if(isGameOver) return; isGameOver = true;
         const screen = document.getElementById('game-over-screen');
-        const title = document.getElementById('end-title');
         screen.classList.add('show');
-        title.innerText = text;
+        document.getElementById('end-title').innerText = text;
         document.getElementById('end-score').innerText = `YO: ${myVP} - RIV: ${enemyVP}`;
-        if(type === "WIN") title.className = "end-title win";
-        else if(type === "LOSE") title.className = "end-title lose";
-        else title.className = "end-title draw";
-        document.getElementById('combat-actions').style.display = 'none';
-        document.getElementById('ops-actions').style.display = 'none';
+        document.getElementById('end-title').className = type === "WIN" ? "end-title win" : (type === "LOSE" ? "end-title lose" : "end-title draw");
         closeDice();
     }
-
     window.setMode=(m,e)=>{e.stopPropagation(); if(gameState==='PLANNING'){myUnits[myIdx].mode=m; updateHUD();}};
     window.nextMyUnit=()=>{resetPassButtons(); myIdx=(myIdx+1)%myUnits.length; updateHUD();};
     window.nextEnemyUnit=()=>{if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD();};
     window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
     window.closeDice=()=>{document.getElementById('dice-overlay').classList.remove('show');};
-
     function updateHUD() {
         if(!myUnits.length) return;
-        
-        if (enemyUnits.length > 0) {
+        if (enemyUnits.length > 0 && !isGameOver) {
             const myAlive = myUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
             const enemyAlive = enemyUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
-            if ((myAlive === 0 || enemyAlive === 0) && !isGameOver) checkWinCondition();
+            if (myAlive === 0 || enemyAlive === 0) checkWinCondition();
         }
-
         document.getElementById('my-score').innerText = myVP;
         document.getElementById('enemy-score').innerText = enemyVP;
         document.getElementById('round-display').innerText = `RND ${currentRound}/${maxRounds}`;
-        
-        const me = myUnits[myIdx];
-        const en = enemyUnits[enIdx];
-
+        const me = myUnits[myIdx]; const en = enemyUnits[enIdx];
         document.getElementById('my-name').innerText = me.name;
         document.getElementById('my-r').innerText = `${me.stats.r_atk}d`;
         document.getElementById('my-m').innerText = `${me.stats.m_atk}d`;
         document.getElementById('my-sv').innerText = `${me.stats.sv}`;
         document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
-        
-        const mc = document.getElementById('my-card');
-        mc.className = "card my"; 
+        const mc = document.getElementById('my-card'); mc.className = "card my"; 
         if(me.reacted) mc.classList.add('finished'); else if(me.acted) mc.classList.add('exhausted');
 
         if(gameState === 'PLANNING') {
@@ -714,7 +777,6 @@
                 document.getElementById('ops-actions').style.display = 'grid';
             }
         }
-
         if(en) {
             document.getElementById('enemy-name').innerText = en.name;
             document.getElementById('en-r').innerText = `${en.stats.r_atk}d`;
@@ -722,9 +784,7 @@
             document.getElementById('en-sv').innerText = `${en.stats.sv}`;
             document.getElementById('enemy-hp').style.width = (globalHP[en.uid].c/globalHP[en.uid].m*100)+"%";
             document.getElementById('en-mode-icon').innerText = en.mode==='open' ? '⚔️' : '🛡️';
-            
-            const ec = document.getElementById('en-card');
-            ec.className = "card enemy";
+            const ec = document.getElementById('en-card'); ec.className = "card enemy";
             if(en.reacted) ec.classList.add('finished'); else if(en.acted) ec.classList.add('exhausted');
         }
     }
