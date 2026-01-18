@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v41 FULL CONFIRM</title>
+    <title>SQUAD COMMAND: v43 MANUAL COVER</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -22,7 +22,6 @@
         textarea { width: 100%; height: 60px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; }
         input, select { background: #000; border: 2px solid var(--gold); color: var(--gold); padding: 10px; font-family: monospace; width: 100%; text-align: center; font-size: 1rem; letter-spacing: 2px; margin: 5px 0; text-transform: uppercase; }
         
-        /* Botones seguros (type=button) */
         .btn { 
             background: var(--c); color: #000; border: none; padding: 15px; width: 100%; 
             font-weight: bold; cursor: pointer; font-size: 1rem; 
@@ -88,6 +87,18 @@
         .die.incoming-hit { color: var(--c); text-shadow: 0 0 10px var(--c); pointer-events: none; }
         .die.pending { color: var(--gold); animation: pulse 0.5s infinite; cursor: wait; pointer-events: none; opacity: 0.7; }
         
+        /* New Toggle Button for Cover */
+        #btn-cover-toggle {
+            background: #000; border: 2px solid #444; color: #666; 
+            padding: 8px 20px; font-family: monospace; font-weight: bold; 
+            cursor: pointer; margin-bottom: 10px; width: 80%; text-align: center;
+            transition: 0.2s;
+        }
+        #btn-cover-toggle.active {
+            background: rgba(0, 242, 255, 0.1); border-color: var(--c); color: var(--c);
+            text-shadow: 0 0 5px var(--c);
+        }
+
         #flash-fx { pointer-events:none; position:fixed; top:0; left:0; width:100%; height:100%; }
         .flash { animation: flashRed 0.3s; }
         @keyframes flashRed { 50% { background: rgba(255, 0, 0, 0.5); } }
@@ -103,7 +114,6 @@
         .stat-val { font-size: 0.7rem; font-weight: bold; color: #eee; }
         .stat-label { font-size: 0.5rem; color: #888; }
 
-        /* MODAL DE CONFIRMACIÓN DE RIVAL */
         #confirm-modal { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.85); z-index: 300; 
@@ -143,7 +153,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v41 FULL CONFIRM</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v43 MANUAL COVER</div>
         
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         
@@ -244,6 +254,9 @@
 
     <div id="dice-overlay">
         <div class="dice-header" id="dice-title">FASE DE COMBATE</div>
+        
+        <button id="btn-cover-toggle" style="display:none;" onclick="toggleCover()">COBERTURA: NO</button>
+
         <div id="incoming-section" class="dice-section" style="display:none;">
             <div class="dice-label"><span>AMENAZA ENTRANTE</span></div>
             <div class="dice-container" id="incoming-pool"></div>
@@ -254,7 +267,7 @@
             <div class="dice-container" id="dice-pool"></div>
         </div>
         <div style="display:flex; gap:10px; width:90%;">
-            <button type="button" class="btn" id="btn-dice-main" onclick="proceedPhase()"><span>CONFIRMAR</span></button>
+            <button type="button" class="btn" id="btn-dice-main" onclick="proceedPhase(event)"><span>CONFIRMAR</span></button>
         </div>
     </div>
 
@@ -284,10 +297,10 @@
     let consecutivePasses = 0; 
     let passConfirm = null;
 
-    // --- VARIABLES DE SOLICITUDES ---
-    let pendingRequest = null; // Almacena la solicitud entrante actual (tipo, datos)
-    let waitingForAck = false; // Bloquea UI si esperamos respuesta del enemigo
-    let diceRerollIndex = -1;  // Índice del dado que estamos esperando re-tirar
+    let pendingRequest = null;
+    let waitingForAck = false; 
+    let diceRerollIndex = -1;
+    let coverActive = false; 
 
     function returnToLobby() {
         if(client) { try{ client.disconnect(); } catch(e){} client=null; }
@@ -303,9 +316,9 @@
         resetPassButtons();
         waitingForAck = false;
         diceRerollIndex = -1;
+        coverActive = false;
     }
 
-    // --- LÓGICA DE CONFIRMACIÓN DE PASAR (LOCAL) ---
     window.tryPass = function(btnId) {
         const btn = document.getElementById(btnId);
         if (passConfirm === btnId) {
@@ -328,20 +341,13 @@
         b2.innerText = "PASAR"; b2.style.background = "#888"; b2.style.color = "#000";
     }
 
-    // --- SISTEMA DE SOLICITUDES REMOTAS (SECRETA / DADOS) ---
-
-    // 1. RECLAMAR SECRETA
     window.tryClaimSecret = function() {
         if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return;
         if(waitingForAck) return;
-
-        // UI Feedback: Esperando
         const btn = document.getElementById('btn-claim-secret');
         btn.innerText = "ESPERANDO CONFIRMACIÓN...";
         btn.style.opacity = "0.5";
         waitingForAck = true;
-
-        log("Solicitando validación de Secreta...");
         publish({type: 'REQ_SECRET', missionName: secretMission});
     }
 
@@ -355,30 +361,22 @@
         updateHUD();
     }
 
-    // 2. RE-TIRAR DADOS
     function askReroll(index) {
         if(waitingForAck) return;
         diceRerollIndex = index;
         waitingForAck = true;
-        
-        // Visualmente marcar el dado como pendiente
         const pool = document.getElementById('dice-pool');
         if(pool.children[index]) {
             pool.children[index].className = 'die pending';
             pool.children[index].innerText = "⏳";
         }
-        
-        log("Solicitando re-tirada...");
         publish({type: 'REQ_REROLL'});
     }
 
     function executeReroll() {
         if(diceRerollIndex === -1) return;
-        
-        // Animación y lógica real
         const pool = document.getElementById('dice-pool');
         const dieEl = pool.children[diceRerollIndex];
-        
         dieEl.className = 'die rolling';
         setTimeout(() => { 
             activeDice[diceRerollIndex] = Math.ceil(Math.random()*6); 
@@ -389,7 +387,6 @@
         }, 300);
     }
 
-    // --- MANEJO DEL MODAL DE CONFIRMACIÓN ---
     function showConfirmModal(text, reqData) {
         pendingRequest = reqData;
         const modal = document.getElementById('confirm-modal');
@@ -400,18 +397,23 @@
     window.confirmRequest = function() {
         document.getElementById('confirm-modal').classList.remove('show');
         if(!pendingRequest) return;
-
-        if(pendingRequest.type === 'REQ_SECRET') {
-            publish({type: 'ACK_SECRET'});
-            log(`Has aceptado la Misión Secreta del rival.`);
-        } else if(pendingRequest.type === 'REQ_REROLL') {
-            publish({type: 'ACK_REROLL'});
-            log(`Has aceptado re-tirada del rival.`);
-        }
+        if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); }
+        else if(pendingRequest.type === 'REQ_REROLL') { publish({type: 'ACK_REROLL'}); log(`Re-tirada rival aceptada.`); }
         pendingRequest = null;
     }
 
-    // --- INIT & MQTT ---
+    // --- MANUAL COVER TOGGLE ---
+    window.toggleCover = function() {
+        coverActive = !coverActive;
+        const btn = document.getElementById('btn-cover-toggle');
+        if(coverActive) {
+            btn.classList.add('active');
+            btn.innerHTML = "🛡️ COBERTURA: SI (+1 SV)";
+        } else {
+            btn.classList.remove('active');
+            btn.innerText = "COBERTURA: NO";
+        }
+    }
 
     function initSystem() {
         MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
@@ -437,7 +439,7 @@
             updateMissionDisplay();
             navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>{});
             updateHUD(); startNetwork(code);
-        } catch(e) { alert("ERROR EN JSON: Verifica el formato."); console.error(e); }
+        } catch(e) { alert("ERROR EN JSON"); console.error(e); }
     }
 
     function assignSecretMission() {
@@ -451,7 +453,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v41/${code}`; 
+        TOPIC = `sqcmd/v42/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -466,20 +468,10 @@
         const d = JSON.parse(msg.payloadString);
         if(d.sender === MY_ID) return;
 
-        // --- HANDLERS DE CONFIRMACION ---
-        if(d.type === 'REQ_SECRET') {
-            showConfirmModal(`RIVAL RECLAMA SECRETA: ${d.missionName}\n¿CONFIRMAR?`, d);
-        }
-        else if(d.type === 'ACK_SECRET') {
-            executeSecretClaim();
-        }
-        else if(d.type === 'REQ_REROLL') {
-            showConfirmModal(`RIVAL QUIERE RE-TIRAR UN DADO\n¿CONFIRMAR?`, d);
-        }
-        else if(d.type === 'ACK_REROLL') {
-            executeReroll();
-        }
-        // --- FIN HANDLERS CONFIRMACION ---
+        if(d.type === 'REQ_SECRET') showConfirmModal(`RIVAL RECLAMA SECRETA: ${d.missionName}\n¿CONFIRMAR?`, d);
+        else if(d.type === 'ACK_SECRET') executeSecretClaim();
+        else if(d.type === 'REQ_REROLL') showConfirmModal(`RIVAL PIDE RE-TIRAR\n¿CONFIRMAR?`, d);
+        else if(d.type === 'ACK_REROLL') executeReroll();
 
         else if(d.type === 'JOIN_REQ' || d.type === 'JOIN_ACK') {
             if(!enemyUnits.length) {
@@ -632,11 +624,17 @@
 
     function startDefensePhase() {
         const me = myUnits[myIdx];
-        let sv = parseInt(me.stats.sv);
-        if(me.mode === 'hidden') sv = Math.max(2, sv - 1); 
-        diceTarget = sv;
-        const totalIncoming = pendingHits.normal + pendingHits.crit;
-        const defCount = Math.min(3, totalIncoming);
+        diceTarget = parseInt(me.stats.sv);
+        
+        // REINICIAMOS COBERTURA A FALSO AL INICIO DE CADA DEFENSA
+        coverActive = false;
+        // ACTUALIZAMOS EL BOTÓN VISUALMENTE
+        const btn = document.getElementById('btn-cover-toggle');
+        btn.classList.remove('active');
+        btn.innerText = "COBERTURA: NO";
+
+        const defCount = 3; 
+        
         activeDice = Array(defCount).fill(0).map(()=>Math.ceil(Math.random()*6));
         dicePhase = 'DEFENSE_ROLL';
         showDiceOverlay(dicePhase, activeDice, diceTarget, true);
@@ -651,6 +649,8 @@
         const incomingSec = document.getElementById('incoming-section');
         const incomingPool = document.getElementById('incoming-pool');
         const activeLbl = document.getElementById('active-label');
+        const coverBtn = document.getElementById('btn-cover-toggle'); // EL BOTON NUEVO
+
         ov.classList.add('show'); pool.innerHTML = ""; incomingPool.innerHTML = "";
         
         if(phase === 'DEFENSE_ROLL') {
@@ -658,9 +658,11 @@
             btn.innerHTML = "<span>CONFIRMAR DAÑO</span>";
             activeLbl.querySelector('span').innerText = "TUS DADOS";
             incomingSec.style.display = 'flex'; 
+            coverBtn.style.display = 'block'; // MOSTRAR BOTON EN DEFENSA
             for(let i=0; i<pendingHits.crit; i++) incomingPool.innerHTML += '<div class="die incoming-crit">★</div>';
             for(let i=0; i<pendingHits.normal; i++) incomingPool.innerHTML += '<div class="die incoming-hit">★</div>';
         } else {
+            coverBtn.style.display = 'none'; // OCULTAR EN ATAQUE
             tit.innerText = "ATAQUE"; tit.style.color = "var(--r)";
             btn.innerHTML = "<span>CONFIRMAR IMPACTOS</span>";
             activeLbl.querySelector('span').innerText = "TIRADA ACTUAL";
@@ -672,11 +674,7 @@
             const d = document.createElement('div'); d.className = 'die';
             d.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][val];
             if(val === 6) d.classList.add('crit'); else if(val >= target) d.classList.add(phase==='ATTACK_ROLL'?'hit':'save-ok'); else d.classList.add(phase==='ATTACK_ROLL'?'miss':'save-fail');
-            
-            // RE-ROLL con Confirmación
-            if(isInteractive) {
-                d.onclick = () => askReroll(i);
-            } else d.classList.add('locked');
+            if(isInteractive) { d.onclick = () => askReroll(i); } else d.classList.add('locked');
             pool.appendChild(d);
         });
     }
@@ -687,23 +685,38 @@
         publish({ type: 'DICE_SYNC', phase: dicePhase, dice: activeDice, target: diceTarget, uName: uName, hitsStruct: hitsStruct });
     }
 
-    window.proceedPhase = function() {
-        if(waitingForAck) return; // No permitir avanzar si hay una solicitud pendiente
+    // --- LOGICA DE RESOLUCION (Actualizada con cobertura manual) ---
+    window.proceedPhase = function(e) {
+        if(e) { e.preventDefault(); e.stopPropagation(); } 
+        
+        if(waitingForAck) return;
+        
         if(dicePhase === 'ATTACK_ROLL') {
             let hitsStruct = { normal: 0, crit: 0 };
             activeDice.forEach(val => { if(val === 6) hitsStruct.crit++; else if(val >= diceTarget) hitsStruct.normal++; });
             publish({ type: 'REQ_DEFENSE', hitsStruct: hitsStruct, uName: myUnits[myIdx].name });
             document.getElementById('dice-sub').innerHTML = `Impactos: ${hitsStruct.normal} <span class="crit-text">+ ${hitsStruct.crit} CRIT</span>`;
             document.getElementById('btn-dice-main').style.display = 'none';
-        } else if(dicePhase === 'DEFENSE_ROLL') {
+        } 
+        else if(dicePhase === 'DEFENSE_ROLL') {
             let defCrits = activeDice.filter(x => x === 6).length;
             let defNormals = activeDice.filter(x => x >= diceTarget && x < 6).length;
+            
+            // AQUI USAMOS EL ESTADO MANUAL DE COBERTURA
+            if(coverActive) {
+                defNormals += 1; 
+                log("¡Cobertura aplicada manual! (+1 Save)");
+            }
+
             let incCrits = pendingHits.crit;
             let incNormals = pendingHits.normal;
+            
+            // Resolución
             let critsBlocked = Math.min(incCrits, defCrits); incCrits -= critsBlocked;
             let remainingDefCrits = defCrits - critsBlocked;
             let normalsBlockedByCrit = Math.min(incNormals, remainingDefCrits); incNormals -= normalsBlockedByCrit;
             let normalsBlockedByNormal = Math.min(incNormals, defNormals); incNormals -= normalsBlockedByNormal;
+            
             const totalDmg = incCrits + incNormals;
             const me = myUnits[myIdx];
             globalHP[me.uid].c = Math.max(0, globalHP[me.uid].c - totalDmg);
