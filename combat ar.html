@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v29 VISUAL THREAT</title>
+    <title>SQUAD COMMAND: v30 STABILITY FIX</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -63,7 +63,7 @@
 
         /* DICE & FX */
         #dice-overlay { 
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 70%; 
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 75%; 
             background: rgba(0, 15, 30, 0.98); border-top: 4px solid var(--gold); 
             z-index: 100; display: flex; flex-direction: column; align-items: center; 
             transform: translateY(100%); transition: transform 0.3s; pointer-events: auto; padding-top: 20px;
@@ -87,7 +87,7 @@
         .die.save-ok { color: var(--c); text-shadow: 0 0 20px var(--c); }
         .die.save-fail { color: var(--r); opacity: 0.8; }
         .die.rolling { animation: spin 0.3s linear infinite; color: #fff; }
-        .die.locked { pointer-events: none; opacity: 0.8; } /* Mas visible para ver la amenaza */
+        .die.locked { pointer-events: none; opacity: 0.8; }
         .die.incoming-crit { color: var(--gold); text-shadow: 0 0 15px var(--gold); pointer-events: none; }
         .die.incoming-hit { color: var(--r); text-shadow: 0 0 10px var(--r); pointer-events: none; }
 
@@ -125,12 +125,12 @@
     <div id="game-over-screen">
         <div id="end-title" class="end-title">---</div>
         <div id="end-sub" class="end-sub">FIN DE TRANSMISIÓN</div>
-        <button class="btn" style="max-width:200px;" onclick="location.reload()">REINICIAR</button>
+        <button type="button" class="btn" style="max-width:200px;" onclick="location.reload()">REINICIAR</button>
     </div>
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v29 VISUAL THREAT</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v30 STABLE</div>
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem;">CONFIGURACIÓN</div>
@@ -139,8 +139,8 @@
                 <option value="5">5 RONDAS</option>
                 <option value="6">6 RONDAS</option>
             </select>
-            <input type="text" id="room-id" value="WARZONE-9">
-            <button class="btn" onclick="initSystem()">DESPLEGAR</button>
+            <input type="text" id="room-id" value="WARZONE-10">
+            <button type="button" class="btn" onclick="initSystem()">DESPLEGAR</button>
         </div>
     </div>
 
@@ -157,7 +157,7 @@
 
         <div class="hud-bottom">
             <div id="planning-controls" style="text-align:center; margin-bottom:10px;">
-                <button class="btn" id="btn-ready" onclick="commitPlanning()">CONFIRMAR ÓRDENES</button>
+                <button type="button" class="btn" id="btn-ready" onclick="commitPlanning()">CONFIRMAR ÓRDENES</button>
             </div>
 
             <div class="unit-selector">
@@ -206,8 +206,8 @@
             </div>
 
             <div style="display:flex; gap:10px;" id="action-buttons">
-                <button class="btn" id="btn-combat-mode" style="flex:1; background:#333; color:#fff;" onclick="switchMode()">🔫</button>
-                <button class="btn" id="btn-act" style="flex:3; background:var(--r); color:#fff;" onclick="startActionPhase()">DISPARAR</button>
+                <button type="button" class="btn" id="btn-combat-mode" style="flex:1; background:#333; color:#fff;" onclick="switchMode()">🔫</button>
+                <button type="button" class="btn" id="btn-act" style="flex:3; background:var(--r); color:#fff;" onclick="startActionPhase()">DISPARAR</button>
             </div>
         </div>
     </div>
@@ -227,7 +227,7 @@
         </div>
 
         <div style="display:flex; gap:10px; width:90%;">
-            <button class="btn" id="btn-dice-main" onclick="proceedPhase()">CONFIRMAR</button>
+            <button type="button" class="btn" id="btn-dice-main" onclick="proceedPhase()">CONFIRMAR</button>
         </div>
     </div>
 
@@ -253,7 +253,9 @@
     function initSystem() {
         const json = document.getElementById('json-input').value;
         const code = document.getElementById('room-id').value.trim().toUpperCase();
-        maxRounds = parseInt(document.getElementById('round-select').value);
+        // Aseguramos que sea entero
+        maxRounds = parseInt(document.getElementById('round-select').value, 10) || 4;
+        
         try {
             const raw = Object.values(JSON.parse(json).squad);
             myUnits = raw.map(u => ({ ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', stratagem: 'none', acted: false, reacted: false }));
@@ -265,7 +267,7 @@
         } catch(e) { log("Error JSON"); }
     }
     function startNetwork(code) {
-        TOPIC = `sqcmd/v29/${code}`; 
+        TOPIC = `sqcmd/v30/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -295,10 +297,7 @@
             checkStartRound();
         }
         else if(d.type === 'DICE_SYNC') {
-            // Solo mostramos si no es mi turno de tirar defensa aún, o es actualización
             pendingHits = d.hitsStruct || { normal: 0, crit: 0 };
-            
-            // Si el rival está tirando ataque, mostramos sus dados
             if(d.phase === 'ATTACK_ROLL') {
                 showDiceOverlay(d.phase, d.dice, d.target, false); 
                 document.getElementById('dice-sub').innerText = `${d.uName} apuntando...`;
@@ -431,42 +430,34 @@
         pool.innerHTML = "";
         incomingPool.innerHTML = "";
 
-        // LOGICA DE VISUALIZACIÓN
         if(phase === 'DEFENSE_ROLL') {
             tit.innerText = "DEFENSA";
             tit.style.color = "var(--c)";
             btn.innerText = "CONFIRMAR DAÑO";
             activeLbl.querySelector('span').innerText = "TUS DADOS";
-            incomingSec.style.display = 'flex'; // MOSTRAR AMENAZA
+            incomingSec.style.display = 'flex'; 
 
-            // RENDER AMENAZA (CRITS)
             for(let i=0; i<pendingHits.crit; i++) {
-                const d = document.createElement('div'); 
-                d.className = 'die incoming-crit'; d.innerText = '6';
+                const d = document.createElement('div'); d.className = 'die incoming-crit'; d.innerText = '6';
                 incomingPool.appendChild(d);
             }
-            // RENDER AMENAZA (NORMALS)
             for(let i=0; i<pendingHits.normal; i++) {
-                const d = document.createElement('div'); 
-                d.className = 'die incoming-hit'; d.innerText = '★'; // Estrella o simbolo
+                const d = document.createElement('div'); d.className = 'die incoming-hit'; d.innerText = '★'; 
                 incomingPool.appendChild(d);
             }
-
         } else {
             tit.innerText = "ATAQUE";
             tit.style.color = "var(--r)";
             btn.innerText = "CONFIRMAR IMPACTOS";
             activeLbl.querySelector('span').innerText = "TIRADA ACTUAL";
-            incomingSec.style.display = 'none'; // OCULTAR AMENAZA
+            incomingSec.style.display = 'none'; 
         }
 
         btn.style.display = isInteractive ? 'block' : 'none';
         
-        // RENDER ACTIVE DICE
         dice.forEach((val, i) => {
             const d = document.createElement('div'); d.className = 'die';
             d.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][val];
-            
             if(val === 6) d.classList.add('crit');
             else if(val >= target) d.classList.add(phase==='ATTACK_ROLL'?'hit':'save-ok');
             else d.classList.add(phase==='ATTACK_ROLL'?'miss':'save-fail');
@@ -515,10 +506,8 @@
             let critsBlocked = Math.min(incCrits, defCrits);
             incCrits -= critsBlocked;
             let remainingDefCrits = defCrits - critsBlocked;
-
             let normalsBlockedByCrit = Math.min(incNormals, remainingDefCrits);
             incNormals -= normalsBlockedByCrit;
-
             let normalsBlockedByNormal = Math.min(incNormals, defNormals);
             incNormals -= normalsBlockedByNormal;
 
