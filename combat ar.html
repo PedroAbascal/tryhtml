@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v19 INFINITE WAR</title>
+    <title>SQUAD COMMAND: v20 SYNCED RESET</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -87,7 +87,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v19 INFINITE WAR</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v20 SYNCED RESET</div>
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem;">CLAVE DE MISIÓN</div>
@@ -165,7 +165,7 @@
     
     let dicePhase='IDLE', activeDice=[], diceTarget=0, pendingHits=0;
     let iAmReady=false, enemyIsReady=false;
-    let consecutivePasses = 0; // Para detectar fin de ronda
+    let consecutivePasses = 0; 
     
     // --- INIT ---
     function initSystem() {
@@ -189,7 +189,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v19/${code}`;
+        TOPIC = `sqcmd/v20/${code}`;
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -235,16 +235,19 @@
             else me.reacted = true;        
             
             publish({type:'SYNC_SQUAD', squad: myUnits});
-            passTurn(0); // Reiniciamos pases porque hubo acción
+            passTurn(0); 
         }
         else if(d.type === 'SABOTAJE') {
             log(`RIVAL SABOTAJE.`);
-            setTurn('MY_TURN', 0); // Reiniciamos pases
+            setTurn('MY_TURN', 0); 
         }
         else if(d.type === 'CHANGE_TURN') {
-            // VERIFICAR FIN DE RONDA POR AGOTAMIENTO MUTUO
             const incomingPasses = d.passes || 0;
             setTurn('MY_TURN', incomingPasses);
+        }
+        else if(d.type === 'ROUND_OVER') {
+            // EL OTRO JUGADOR DETECTÓ EL FIN, ME MANDA LA ORDEN
+            resetRound();
         }
         else if(d.type === 'SYNC_SQUAD') {
             enemyUnits = d.squad; 
@@ -259,10 +262,11 @@
     // --- TURNOS Y LÓGICA DE RONDA ---
     
     function resetRound() {
-        log("--- FIN DE RONDA ---");
+        log("--- NUEVA RONDA ---");
         gameState = 'PLANNING';
         iAmReady = false;
         enemyIsReady = false;
+        consecutivePasses = 0; // Resetear contador local
         
         // Reset local units
         myUnits.forEach(u => { u.acted = false; u.reacted = false; });
@@ -273,29 +277,32 @@
         document.getElementById('btn-ready').innerText = "CONFIRMAR ÓRDENES";
         document.getElementById('btn-ready').classList.remove('wait');
         
-        // Quitar indicador de turno activo
         document.getElementById('turn-indicator').innerText = "PLANIFICACIÓN";
         document.getElementById('turn-indicator').className = "turn-badge planning";
         
-        enableControls(false); // Esperar a 'ready'
+        enableControls(false); 
         updateHUD();
     }
 
     function passTurn(currentPasses) {
-        // Incrementamos contador de pases
         const newPasses = currentPasses + 1;
-        setTurn('ENEMY_TURN', newPasses); // Estado visual local
+        setTurn('ENEMY_TURN', newPasses); 
         publish({type: 'CHANGE_TURN', passes: newPasses});
     }
 
     function setTurn(st, passesVal) {
+        // SI ESTOY EN PLANNING, IGNORAR CAMBIOS DE TURNO RETARDADOS
+        if(gameState === 'PLANNING') return;
+
         gameState = st;
         consecutivePasses = passesVal;
         
-        // CRITERIO DE RESET: Si el turno llega a mí con 2 o más pases consecutivos,
-        // significa: Yo pasé -> Rival pasó -> Me toca (Nadie hizo nada).
+        // --- DETECCIÓN DE FIN DE RONDA ---
+        // Si me llega el turno con 2 pases acumulados, significa que nadie puede mover.
         if(st === 'MY_TURN' && consecutivePasses >= 2) {
-            resetRound();
+            log("FIN DE RONDA DETECTADO.");
+            publish({type: 'ROUND_OVER'}); // AVISAR A TODOS
+            resetRound(); // RESETEARME
             return;
         }
 
@@ -320,9 +327,8 @@
                 log("⚠️ MODO REACCIÓN");
             }
             else {
-                // Si no tengo nada, paso el turno, incrementando el contador de pases recibidos
                 log("SIN ACCIONES. PASANDO...");
-                passTurn(consecutivePasses); 
+                passTurn(consecutivePasses); // Pasar la "patata caliente"
                 enableControls(false);
             }
 
@@ -361,7 +367,7 @@
             if(hasFresh) me.reacted = true; 
             publish({type:'SABOTAJE'});
             publish({type:'SYNC_SQUAD', squad: myUnits});
-            passTurn(0); // Acción realizada, reset passes
+            passTurn(0); 
             return;
         }
 
@@ -382,7 +388,7 @@
         syncDiceToRival(me.name);
     }
 
-    // --- DEFENSA Y DADOS (Standard) ---
+    // --- DEFENSA Y DADOS ---
     function startDefensePhase() {
         const me = myUnits[myIdx];
         let sv = parseInt(me.stats.sv);
