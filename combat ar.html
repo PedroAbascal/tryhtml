@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v36 VICTORY POINTS</title>
+    <title>SQUAD COMMAND: v37 FIX</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -22,7 +22,6 @@
         textarea { width: 100%; height: 60px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; }
         input, select { background: #000; border: 2px solid var(--gold); color: var(--gold); padding: 10px; font-family: monospace; width: 100%; text-align: center; font-size: 1rem; letter-spacing: 2px; margin: 5px 0; text-transform: uppercase; }
         
-        /* BOTONES */
         .btn { 
             background: var(--c); color: #000; border: none; padding: 15px; width: 100%; 
             font-weight: bold; cursor: pointer; font-size: 1rem; 
@@ -33,7 +32,6 @@
         .btn.wait { background: #333; color: #888; border: 1px solid #555; animation: pulse 1s infinite; cursor: default; pointer-events: none; }
         .btn-small { font-size: 0.7rem; padding: 5px; width: auto; display: inline-block; clip-path: none; border: 1px solid var(--gold); background: #000; color: var(--gold); }
 
-        /* OPS GRID */
         .ops-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; width: 100%; display: none; }
         .btn-op { font-size: 0.8rem; padding: 15px 5px; clip-path: none; border: 1px solid #000; color: #000; font-weight: bold; }
         .op-dash { background: var(--c); }
@@ -42,7 +40,6 @@
 
         @keyframes pulse { 50% { opacity: 0.5; } }
 
-        /* HUD */
         .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; flex-direction: column; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); pointer-events: auto; width: 100%; box-sizing: border-box;}
         .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px; }
         .score-board { font-size: 1.2rem; font-weight: bold; color: #fff; text-shadow: 0 0 10px var(--c); letter-spacing: 2px; }
@@ -71,7 +68,6 @@
         .mode-toggle { cursor: pointer; padding: 2px 5px; border: 1px solid #555; color: #888; }
         .mode-toggle.selected { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.1); }
 
-        /* DICE & FX */
         #dice-overlay { 
             position: absolute; bottom: 0; left: 0; width: 100%; height: 75%; 
             background: rgba(0, 15, 30, 0.98); border-top: 4px solid var(--gold); 
@@ -95,7 +91,6 @@
         .log-area { position: absolute; top: 100px; left: 10px; font-size: 0.6rem; pointer-events: none; width: 60%; text-shadow: 1px 1px 0 #000; opacity: 0.8; }
         .log-line { margin-bottom: 2px; }
 
-        /* GAME OVER */
         #game-over-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 1s; }
         #game-over-screen.show { opacity: 1; pointer-events: auto; }
         .end-title { font-size: 3rem; font-weight: bold; margin-bottom: 20px; letter-spacing: 5px; }
@@ -120,23 +115,23 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v36 VICTORY POINTS</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v37 STABLE</div>
         
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         
         <div class="box" style="border-color:var(--gold);">
-            <div style="font-size:0.6rem; color:#888;">MISIÓN PRINCIPAL (AMBOS)</div>
+            <div style="font-size:0.6rem; color:#888;">MISIÓN PRINCIPAL</div>
             <select id="primary-mission">
-                <option value="DOMINACION">DOMINACIÓN (Captura)</option>
-                <option value="SABOTAJE">SABOTAJE (Destruir)</option>
-                <option value="RELIC">RECUPERAR RELIQUIA</option>
+                <option value="DOMINACION">DOMINACIÓN</option>
+                <option value="SABOTAJE">SABOTAJE</option>
+                <option value="RELIC">RELIQUIA</option>
             </select>
 
             <div style="font-size:0.6rem; color:#888;">TU MISIÓN SECRETA</div>
             <select id="secret-mission">
-                <option value="ASESINATO">ASESINATO (Matar Lider)</option>
-                <option value="INFILTRACION">INFILTRACIÓN (Zona Enemiga)</option>
-                <option value="SEGURIDAD">SEGURIDAD (Sin bajas)</option>
+                <option value="ASESINATO">ASESINATO</option>
+                <option value="INFILTRACION">INFILTRACIÓN</option>
+                <option value="SEGURIDAD">SEGURIDAD</option>
             </select>
 
             <select id="round-select">
@@ -241,20 +236,17 @@
     const MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
     let client=null, TOPIC="";
     
-    // SQUAD DATA
     let myUnits=[], enemyUnits=[], globalHP={};
-    let initialEnemyCount = 0; // For VP calculation
+    let initialEnemyCount = 0;
     let myIdx=0, enIdx=0, combatMode='ranged'; 
     let gameState = 'PLANNING';
     let isGameOver = false;
     
-    // SCORING
     let myVP = 0; let enemyVP = 0;
     let secretMission = "";
     let secretClaimed = false;
     let primaryMission = "DOMINACION";
 
-    // ROUNDS
     let maxRounds = 4; let currentRound = 1;
     let dicePhase='IDLE', activeDice=[], diceTarget=0;
     let pendingHits = { normal: 0, crit: 0 }; 
@@ -262,7 +254,6 @@
     let myInitRoll = null, enemyInitRoll = null;
     let consecutivePasses = 0; 
 
-    // --- INIT ---
     function initSystem() {
         const json = document.getElementById('json-input').value;
         const code = document.getElementById('room-id').value.trim().toUpperCase();
@@ -285,7 +276,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v36/${code}`; 
+        TOPIC = `sqcmd/v37/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -295,7 +286,6 @@
         }});
     }
 
-    // --- SCORING LOGIC ---
     function getKillPoints(totalEnemies) {
         if(totalEnemies <= 4) return 4;
         if(totalEnemies <= 7) return 3;
@@ -340,10 +330,7 @@
                 log(`RIVAL: ${initialEnemyCount} OPS. VALOR BAJA: ${getKillPoints(initialEnemyCount)} PV`);
             }
         }
-        else if(d.type === 'SCORE_UPDATE') {
-            enemyVP = d.vp;
-            updateHUD();
-        }
+        else if(d.type === 'SCORE_UPDATE') { enemyVP = d.vp; updateHUD(); }
         else if(d.type === 'READY') {
             enemyUnits = d.squad; enemyIsReady = true; enemyInitRoll = d.roll;
             document.getElementById('en-ready-mark').classList.add('show');
@@ -356,10 +343,7 @@
                 document.getElementById('dice-sub').innerText = `${d.uName} apuntando...`;
             }
         }
-        else if(d.type === 'REQ_DEFENSE') {
-            pendingHits = d.hitsStruct;
-            startDefensePhase();
-        }
+        else if(d.type === 'REQ_DEFENSE') { pendingHits = d.hitsStruct; startDefensePhase(); }
         else if(d.type === 'DAMAGE_RESOLVE') {
             applyDamage(d.dmg); closeDice();
             const me = myUnits[myIdx];
@@ -372,19 +356,12 @@
             log(`RIVAL: ${d.opType}`); 
             setTurn('MY_TURN', 0); 
         }
-        else if(d.type === 'CHANGE_TURN') {
-            if(gameState === 'PLANNING') return;
-            setTurn('MY_TURN', d.passes || 0);
-        }
+        else if(d.type === 'CHANGE_TURN') { if(gameState !== 'PLANNING') setTurn('MY_TURN', d.passes || 0); }
         else if(d.type === 'ROUND_OVER') resetRound();
         else if(d.type === 'SYNC_SQUAD') { enemyUnits = d.squad; updateHUD(); }
         else if(d.type === 'SYNC_HP') { 
-            // Check for deaths to award kill points locally? 
-            // Better: trust the state. If an enemy went to 0, I get points.
             const oldHP = {...globalHP};
             globalHP = {...globalHP, ...d.state}; 
-            
-            // Calculate Kill Points
             enemyUnits.forEach(u => {
                 const old = oldHP[u.uid] ? oldHP[u.uid].c : 0;
                 const cur = globalHP[u.uid].c;
@@ -399,7 +376,6 @@
         }
     }
 
-    // --- GAMEPLAY & TURNS ---
     function resetRound() {
         if(isGameOver) return;
         if(currentRound >= maxRounds) { checkWinCondition(); return; }
@@ -440,9 +416,7 @@
     function setTurn(st, p) {
         if(isGameOver) return;
         gameState = st; consecutivePasses = p;
-        
         if(!secretClaimed) document.getElementById('btn-claim-secret').style.display = (st === 'MY_TURN') ? 'block' : 'none';
-
         if(st === 'MY_TURN' && consecutivePasses >= 2) { publish({type:'ROUND_OVER'}); resetRound(); return; }
         const b = document.getElementById('turn-indicator');
         if(st === 'MY_TURN') {
@@ -461,39 +435,26 @@
     }
     function selectUnit(u) { myIdx = myUnits.indexOf(u); updateHUD(); }
 
-    // --- OPS LOGIC ---
     window.performOp = function(type) {
         if(gameState !== 'MY_TURN') return;
         const me = myUnits[myIdx];
-        
         log(`REALIZA ${type}.`);
-        
-        if(type === 'MISION') {
-            myVP += 1; 
-            publish({type: 'SCORE_UPDATE', vp: myVP});
-            log("OBJETIVO TOMADO (+1 PV)");
-        }
-
+        if(type === 'MISION') { myVP += 1; publish({type: 'SCORE_UPDATE', vp: myVP}); log("OBJETIVO TOMADO (+1 PV)"); }
         if(!me.acted) me.acted = true; else me.reacted = true;
-
         publish({type:'OP_ACTION', opType: type});
         publish({type:'SYNC_SQUAD', squad: myUnits});
         passTurn(0);
     }
 
-    // --- DICE LOGIC ---
     window.startActionPhase = function() {
         if(gameState !== 'MY_TURN') return;
         const me = myUnits[myIdx];
         if(me.reacted || globalHP[me.uid].c <= 0) return log("Unidad no disponible");
-        
         if(me.mode==='hidden') return;
-
         let count = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
         diceTarget = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
         if(me.stratagem==='aim') diceTarget = Math.max(2, diceTarget-1);
         if(me.acted) { count=Math.ceil(count/3); diceTarget++; }
-
         activeDice = Array(count).fill(0).map(()=>Math.ceil(Math.random()*6));
         dicePhase = 'ATTACK_ROLL';
         showDiceOverlay(dicePhase, activeDice, diceTarget, true);
@@ -518,56 +479,30 @@
         const pool = document.getElementById('dice-pool');
         const tit = document.getElementById('dice-title');
         const btn = document.getElementById('btn-dice-main');
-        
         const incomingSec = document.getElementById('incoming-section');
         const incomingPool = document.getElementById('incoming-pool');
         const activeLbl = document.getElementById('active-label');
-
-        ov.classList.add('show'); 
-        pool.innerHTML = "";
-        incomingPool.innerHTML = "";
-
+        ov.classList.add('show'); pool.innerHTML = ""; incomingPool.innerHTML = "";
         if(phase === 'DEFENSE_ROLL') {
-            tit.innerText = "DEFENSA";
-            tit.style.color = "var(--c)";
+            tit.innerText = "DEFENSA"; tit.style.color = "var(--c)";
             btn.innerHTML = "<span>CONFIRMAR DAÑO</span>";
             activeLbl.querySelector('span').innerText = "TUS DADOS";
             incomingSec.style.display = 'flex'; 
-
-            for(let i=0; i<pendingHits.crit; i++) {
-                const d = document.createElement('div'); d.className = 'die incoming-crit'; d.innerText = '★';
-                incomingPool.appendChild(d);
-            }
-            for(let i=0; i<pendingHits.normal; i++) {
-                const d = document.createElement('div'); d.className = 'die incoming-hit'; d.innerText = '★'; 
-                incomingPool.appendChild(d);
-            }
+            for(let i=0; i<pendingHits.crit; i++) incomingPool.innerHTML += '<div class="die incoming-crit">★</div>';
+            for(let i=0; i<pendingHits.normal; i++) incomingPool.innerHTML += '<div class="die incoming-hit">★</div>';
         } else {
-            tit.innerText = "ATAQUE";
-            tit.style.color = "var(--r)";
+            tit.innerText = "ATAQUE"; tit.style.color = "var(--r)";
             btn.innerHTML = "<span>CONFIRMAR IMPACTOS</span>";
             activeLbl.querySelector('span').innerText = "TIRADA ACTUAL";
             incomingSec.style.display = 'none'; 
         }
-
         btn.style.display = isInteractive ? 'block' : 'none';
-        
         dice.forEach((val, i) => {
             const d = document.createElement('div'); d.className = 'die';
             d.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][val];
-            if(val === 6) d.classList.add('crit');
-            else if(val >= target) d.classList.add(phase==='ATTACK_ROLL'?'hit':'save-ok');
-            else d.classList.add(phase==='ATTACK_ROLL'?'miss':'save-fail');
-            
+            if(val === 6) d.classList.add('crit'); else if(val >= target) d.classList.add(phase==='ATTACK_ROLL'?'hit':'save-ok'); else d.classList.add(phase==='ATTACK_ROLL'?'miss':'save-fail');
             if(isInteractive) {
-                d.onclick = () => {
-                    d.className = 'die rolling';
-                    setTimeout(() => {
-                        activeDice[i] = Math.ceil(Math.random()*6);
-                        syncDiceToRival(phase==='ATTACK_ROLL' ? myUnits[myIdx].name : "DEFENSA");
-                        showDiceOverlay(phase, activeDice, target, true);
-                    }, 300);
-                };
+                d.onclick = () => { d.className = 'die rolling'; setTimeout(() => { activeDice[i] = Math.ceil(Math.random()*6); syncDiceToRival(phase==='ATTACK_ROLL' ? myUnits[myIdx].name : "DEFENSA"); showDiceOverlay(phase, activeDice, target, true); }, 300); };
             } else d.classList.add('locked');
             pool.appendChild(d);
         });
@@ -575,22 +510,14 @@
 
     function syncDiceToRival(uName) {
         let hitsStruct = { normal: 0, crit: 0 };
-        if(dicePhase === 'ATTACK_ROLL') {
-            activeDice.forEach(val => {
-                if(val === 6) hitsStruct.crit++;
-                else if(val >= diceTarget) hitsStruct.normal++;
-            });
-        }
+        if(dicePhase === 'ATTACK_ROLL') activeDice.forEach(val => { if(val === 6) hitsStruct.crit++; else if(val >= diceTarget) hitsStruct.normal++; });
         publish({ type: 'DICE_SYNC', phase: dicePhase, dice: activeDice, target: diceTarget, uName: uName, hitsStruct: hitsStruct });
     }
 
     window.proceedPhase = function() {
         if(dicePhase === 'ATTACK_ROLL') {
             let hitsStruct = { normal: 0, crit: 0 };
-            activeDice.forEach(val => {
-                if(val === 6) hitsStruct.crit++;
-                else if(val >= diceTarget) hitsStruct.normal++;
-            });
+            activeDice.forEach(val => { if(val === 6) hitsStruct.crit++; else if(val >= diceTarget) hitsStruct.normal++; });
             publish({ type: 'REQ_DEFENSE', hitsStruct: hitsStruct, uName: myUnits[myIdx].name });
             document.getElementById('dice-sub').innerHTML = `Impactos: ${hitsStruct.normal} <span class="crit-text">+ ${hitsStruct.crit} CRIT</span>`;
             document.getElementById('btn-dice-main').style.display = 'none';
@@ -599,19 +526,13 @@
             let defNormals = activeDice.filter(x => x >= diceTarget && x < 6).length;
             let incCrits = pendingHits.crit;
             let incNormals = pendingHits.normal;
-
-            let critsBlocked = Math.min(incCrits, defCrits);
-            incCrits -= critsBlocked;
+            let critsBlocked = Math.min(incCrits, defCrits); incCrits -= critsBlocked;
             let remainingDefCrits = defCrits - critsBlocked;
-            let normalsBlockedByCrit = Math.min(incNormals, remainingDefCrits);
-            incNormals -= normalsBlockedByCrit;
-            let normalsBlockedByNormal = Math.min(incNormals, defNormals);
-            incNormals -= normalsBlockedByNormal;
-
+            let normalsBlockedByCrit = Math.min(incNormals, remainingDefCrits); incNormals -= normalsBlockedByCrit;
+            let normalsBlockedByNormal = Math.min(incNormals, defNormals); incNormals -= normalsBlockedByNormal;
             const totalDmg = incCrits + incNormals;
             const me = myUnits[myIdx];
             globalHP[me.uid].c = Math.max(0, globalHP[me.uid].c - totalDmg);
-            
             publish({ type: 'DAMAGE_RESOLVE', dmg: totalDmg }); 
             publish({ type: 'SYNC_HP', state: globalHP });
             closeDice(); applyDamage(totalDmg);
@@ -622,15 +543,16 @@
     
     function checkWinCondition() {
         if(isGameOver) return;
+        // FIX: Si no hay enemigos aun, no es win
+        if(myUnits.length === 0 || enemyUnits.length === 0) return;
+
         const myAlive = myUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
         const enemyAlive = enemyUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
 
         if (myAlive === 0 || enemyAlive === 0 || currentRound >= maxRounds) {
-            let res = "EMPATE";
-            let type = "DRAW";
+            let res = "EMPATE"; let type = "DRAW";
             if(myVP > enemyVP) { res = "VICTORIA"; type = "WIN"; }
             else if(myVP < enemyVP) { res = "DERROTA"; type = "LOSE"; }
-            
             triggerGameOver(res, type);
         }
     }
@@ -642,17 +564,14 @@
         screen.classList.add('show');
         title.innerText = text;
         document.getElementById('end-score').innerText = `YO: ${myVP} - RIV: ${enemyVP}`;
-        
         if(type === "WIN") title.className = "end-title win";
         else if(type === "LOSE") title.className = "end-title lose";
         else title.className = "end-title draw";
-        
         document.getElementById('combat-actions').style.display = 'none';
         document.getElementById('ops-actions').style.display = 'none';
         closeDice();
     }
 
-    // --- UI ---
     window.setMode=(m,e)=>{e.stopPropagation(); if(gameState==='PLANNING'){myUnits[myIdx].mode=m; updateHUD();}};
     window.nextMyUnit=()=>{myIdx=(myIdx+1)%myUnits.length; updateHUD();};
     window.nextEnemyUnit=()=>{if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD();};
@@ -661,10 +580,12 @@
 
     function updateHUD() {
         if(!myUnits.length) return;
-        // Check immediate wipeout win
         const myAlive = myUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
-        const enemyAlive = enemyUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
-        if ((myAlive === 0 || enemyAlive === 0) && !isGameOver) checkWinCondition();
+        // FIX: Solo chequeamos win si ya hay enemigos en la lista
+        if (enemyUnits.length > 0) {
+            const enemyAlive = enemyUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
+            if ((myAlive === 0 || enemyAlive === 0) && !isGameOver) checkWinCondition();
+        }
 
         document.getElementById('my-score').innerText = myVP;
         document.getElementById('enemy-score').innerText = enemyVP;
