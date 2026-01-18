@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v7 TACTICAL DICE</title>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <title>SQUAD COMMAND: v8 INFINITY</title>
+    
     <style>
         :root { --c: #00f2ff; --r: #ff0055; --g: #00ff99; --gold: #ffcc00; --bg: rgba(0, 10, 20, 0.95); }
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; color: var(--c); user-select: none; }
 
-        /* AR & FX */
+        /* AR FEED */
         #ar-feed { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; filter: contrast(1.2) brightness(0.7); }
         .scan-line { position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: rgba(0, 242, 255, 0.3); animation: scan 3s linear infinite; pointer-events: none; }
         @keyframes scan { 0% { top: 0%; opacity:0; } 100% { top: 100%; opacity:0; } }
@@ -21,19 +21,29 @@
 
         /* LOBBY UI */
         .box { border: 1px solid var(--c); padding: 15px; width: 100%; max-width: 400px; background: rgba(0,0,0,0.9); margin-bottom: 10px; text-align: center; }
-        textarea { width: 100%; height: 50px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; }
-        input { background: #111; border: 1px solid var(--c); color: white; padding: 10px; font-family: monospace; width: 100%; text-align: center; font-size: 1.2rem; margin: 10px 0; }
-        .btn { background: var(--c); color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; font-size: 1rem; clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%); }
+        textarea { width: 100%; height: 50px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; box-sizing: border-box; }
+        
+        /* INPUT DE SALA MEJORADO */
+        .room-input { 
+            background: #111; border: 2px solid var(--gold); color: var(--gold); 
+            padding: 15px; font-family: monospace; width: 100%; text-align: center; 
+            font-size: 1.5rem; letter-spacing: 3px; box-sizing: border-box; margin: 10px 0; text-transform: uppercase;
+        }
+        
+        .btn { background: var(--c); color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; font-size: 1rem; clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%); transition: 0.2s;}
+        .btn:active { transform: scale(0.98); background: #fff; }
 
         /* HUD UI */
-        .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; justify-content: space-between; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); pointer-events: auto; }
+        .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; justify-content: space-between; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); pointer-events: auto; box-sizing: border-box; }
         .badge { border: 1px solid #555; padding: 5px 10px; font-size: 0.7rem; background: rgba(0,0,0,0.6); color: #888; }
         .badge.on { border-color: var(--g); color: var(--g); box-shadow: 0 0 5px var(--g); }
+        .badge.searching { border-color: var(--gold); color: var(--gold); animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
 
-        .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; }
+        .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; box-sizing: border-box; }
         
         .unit-selector { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
-        .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.7); cursor: pointer; transition: 0.2s; min-height: 80px; }
+        .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.7); cursor: pointer; transition: 0.2s; min-height: 80px; box-sizing: border-box; }
         .card:active { transform: scale(0.98); }
         .card.my { border-left: 4px solid var(--c); }
         .card.enemy { border-left: 4px solid var(--r); }
@@ -44,7 +54,7 @@
         .log-area { position: absolute; top: 60px; left: 10px; font-size: 0.7rem; pointer-events: none; width: 70%; text-shadow: 1px 1px 0 #000; }
         .log-line { margin-bottom: 3px; opacity: 0.9; }
 
-        /* --- NUEVO: SISTEMA DE DADOS --- */
+        /* DADOS & FX */
         #dice-overlay {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
             background: rgba(0, 10, 20, 0.98); border-top: 2px solid var(--c);
@@ -52,26 +62,17 @@
             padding: 20px; box-sizing: border-box; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         #dice-overlay.show { transform: translateY(0); }
-
-        .dice-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 20px; max-width: 100%; }
-        
-        .die {
-            font-size: 3.5rem; cursor: pointer; transition: transform 0.2s;
-            text-shadow: 0 0 10px rgba(255,255,255,0.2); user-select: none;
-        }
-        .die:active { transform: scale(0.8) rotate(15deg); }
+        .dice-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 20px; }
+        .die { font-size: 3.5rem; cursor: pointer; transition: transform 0.2s; user-select: none; }
         .die.hit { color: var(--g); text-shadow: 0 0 15px var(--g); }
-        .die.miss { color: #444; text-shadow: none; opacity: 0.7; }
+        .die.miss { color: #444; opacity: 0.7; }
         .die.rolling { animation: spin 0.5s linear infinite; color: var(--c); }
-        
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .dice-info { font-size: 0.8rem; color: #aaa; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-
-        /* ICONOS & FX */
         .ability-row { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
         .hud-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: rgba(0, 242, 255, 0.1); border: 1px solid var(--c); border-radius: 4px; font-size: 12px; }
-        .hud-icon.gear { border-color: var(--gold); color: var(--gold); }
+        
+        #tooltip-modal { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 10, 20, 0.95); border: 1px solid var(--c); padding: 15px; width: 80%; text-align: center; z-index: 200; display: none; pointer-events: auto; }
         .flash { animation: flashRed 0.2s; }
         @keyframes flashRed { 0%, 100% { background: transparent; } 50% { background: rgba(255, 0, 0, 0.3); } }
     </style>
@@ -82,28 +83,35 @@
     <video id="ar-feed" autoplay playsinline muted></video>
     <div class="scan-line"></div>
 
+    <div id="tooltip-modal" onclick="this.style.display='none'">
+        <h3 id="tip-title" style="margin:0; color:var(--c)">INFO</h3>
+        <p id="tip-desc" style="color:#ddd; font-size:0.8rem">...</p>
+        <div style="font-size:0.6rem; color:#666; margin-top:5px">[ TOCAR PARA CERRAR ]</div>
+    </div>
+
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:#666; margin-bottom:15px;">v7 TACTICAL DICE</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v8 INFINITY LINK</div>
+
         <div class="box">
-            <div style="font-size:0.7rem; margin-bottom:5px;">1. PEGA JSON</div>
-            <textarea id="json-input"></textarea>
+            <div style="font-size:0.7rem; margin-bottom:5px;">1. PEGA TU JSON DE TROPA</div>
+            <textarea id="json-input" placeholder='{"squad":{...}}'></textarea>
         </div>
-        <div class="box">
-            <div style="font-size:0.7rem; margin-bottom:5px;">2. TU CÓDIGO</div>
-            <div id="my-id" style="font-size:1.8rem; font-weight:bold; color:var(--g); letter-spacing:2px;">...</div>
+
+        <div class="box" style="border-color:var(--gold);">
+            <div style="font-size:0.7rem; margin-bottom:5px; color:#fff;">2. CÓDIGO DE SALA COMPARTIDO</div>
+            <input type="text" id="room-id" class="room-input" placeholder="EJ: WARZONE-1">
+            <div style="font-size:0.6rem; color:#888;">Ambos jugadores deben escribir LO MISMO</div>
+            <br>
+            <button class="btn" id="btn-connect">ENTRAR AL COMBATE</button>
         </div>
-        <div class="box">
-            <div style="font-size:0.7rem; margin-bottom:5px;">3. RIVAL</div>
-            <input type="text" id="target-id" placeholder="CÓDIGO">
-            <button class="btn" onclick="connectAndPlay()">CONECTAR</button>
-            <div id="status-msg" style="color:var(--r); font-size:0.8rem; margin-top:10px;"></div>
-        </div>
+        
+        <div id="status-msg" style="color:var(--c); font-size:0.8rem; margin-top:20px; max-width: 300px;"></div>
     </div>
 
     <div id="game-screen" class="screen transparent hidden">
         <div class="hud-top">
-            <div class="badge on">LINKED</div>
+            <div class="badge searching" id="conn-status">BUSCANDO RIVAL...</div>
             <div class="badge" id="phase-display">RANGO</div>
         </div>
 
@@ -112,17 +120,23 @@
         <div class="hud-bottom">
             <div class="unit-selector">
                 <div class="card my" onclick="nextMyUnit()">
-                    <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--c)"><span>YO</span> <span id="my-w">---</span></div>
-                    <div id="my-name" style="font-weight:bold;">---</div>
-                    <div class="ability-row" id="my-abilities"></div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--c)">
+                        <span>YO</span> <span id="my-w">---</span>
+                    </div>
+                    <div id="my-name" style="font-weight:bold; font-size:0.9rem; overflow:hidden; white-space:nowrap;">---</div>
+                    <div class="ability-row" id="my-abilities"></div> 
                     <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
                 </div>
+
                 <div class="card enemy" onclick="nextEnemyUnit()">
-                    <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)"><span>RIVAL</span> <span id="enemy-w">---</span></div>
-                    <div id="enemy-name" style="font-weight:bold;">---</div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)">
+                        <span>RIVAL</span> <span id="enemy-w">---</span>
+                    </div>
+                    <div id="enemy-name" style="font-weight:bold; font-size:0.9rem; overflow:hidden; white-space:nowrap;">---</div>
                     <div class="hp-bar"><div id="enemy-hp" class="hp-fill" style="background:var(--r)"></div></div>
                 </div>
             </div>
+
             <div style="display:flex; gap:10px;">
                 <button class="btn" style="flex:1; background:#333; color:#fff;" onclick="switchMode()">🔫/⚔️</button>
                 <button class="btn" style="flex:3; background:var(--r); color:#fff;" onclick="prepareAttack()">ATACAR</button>
@@ -131,86 +145,107 @@
     </div>
 
     <div id="dice-overlay">
-        <div class="dice-info" id="dice-info-text">IMPACTO A 4+</div>
+        <div id="dice-info-text" style="color:#aaa; font-size:0.8rem; margin-bottom:10px;"></div>
         <div class="dice-container" id="dice-pool"></div>
-        <div style="font-size:0.7rem; color:#666; margin-bottom:15px;">(TOCA UN DADO PARA REPETIR)</div>
+        <div style="font-size:0.7rem; color:#666; margin-bottom:15px;">(TOCA PARA REPETIR)</div>
         <div style="display:flex; gap:10px; width:100%;">
             <button class="btn" style="background:#333;" onclick="closeDice()">CANCELAR</button>
-            <button class="btn" style="background:var(--g); color:#000;" onclick="confirmAttack()">CONFIRMAR DAÑO</button>
+            <button class="btn" style="background:var(--g); color:#000;" onclick="confirmAttack()">CONFIRMAR</button>
         </div>
     </div>
 
-<script>
+<script type="module">
+    import { joinRoom } from 'https://esm.sh/trystero/torrent';
+
     // --- VARIABLES ---
-    let peer=null, conn=null, myIdStr="SQ-"+Math.floor(Math.random()*8999+1000);
+    let room, sendMsg, getMsg; // Trystero vars
     let myRawSquad=[], myUnits=[], enemyUnits=[], globalHP={};
     let myIdx=0, enIdx=0, combatMode='ranged';
-    
-    // VARIABLES DADOS
     const DICE_CHARS = ['?', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-    let currentRolls = []; // Array de valores [1, 5, 6...]
-    let currentHitTarget = 0;
+    let currentRolls=[], currentHitTarget=0;
+    
+    // Generar ID único temporal para distinguir máquinas
+    const MY_SESSION_ID = Math.random().toString(36).substr(2, 9);
 
-    // --- SETUP ---
-    window.onload = function() {
-        try {
-            document.getElementById('my-id').innerText = "INIT...";
-            peer = new Peer(myIdStr);
-            peer.on('open', (id) => document.getElementById('my-id').innerText = id);
-            peer.on('connection', (c) => { conn = c; setupConnection('host'); });
-        } catch(e) {}
+    // --- FUNCIONES GLOBALES (ACCESIBLES DESDE HTML) ---
+    window.connectAndPlay = async function() {
+        const jsonTxt = document.getElementById('json-input').value;
+        const roomId = document.getElementById('room-id').value.trim().toUpperCase();
+
+        if(!jsonTxt) return msg("⚠️ Falta JSON");
+        if(roomId.length < 3) return msg("⚠️ Código de sala muy corto");
+        
+        try { myRawSquad = Object.values(JSON.parse(jsonTxt).squad); } 
+        catch(e) { return msg("⚠️ JSON Inválido"); }
+
+        msg("🛰️ CONECTANDO A LA RED GLOBAL...");
+        
+        // 1. INICIAR TRYSTERO (Red Torrent)
+        const config = { appId: 'squad-command-v8' };
+        room = joinRoom(config, roomId);
+        [sendMsg, getMsg] = room.makeAction('gameData');
+
+        // 2. EVENTOS DE RED
+        room.onPeerJoin(peerId => {
+            msg("✅ RIVAL ENCONTRADO. SINCRONIZANDO...");
+            // Enviar handshake. Usamos un delay aleatorio para evitar colisión
+            setTimeout(() => {
+                sendMsg({ type: 'HANDSHAKE', squad: myRawSquad, senderId: MY_SESSION_ID });
+            }, Math.random() * 1000 + 500);
+        });
+
+        getMsg((data, peerId) => {
+            if(data.type === 'HANDSHAKE') initGame(data.squad, data.senderId);
+            if(data.type === 'ATTACK') resolveRemoteAttack(data);
+            if(data.type === 'SYNC') { globalHP = data.state; updateHUD(); }
+        });
+
+        // UI Change
+        document.getElementById('btn-connect').style.display = 'none';
+        msg("📡 ESCANEANDO SEÑAL... (Esto puede tardar unos segundos)");
     };
 
-    function connectAndPlay() {
-        const json = document.getElementById('json-input').value;
-        if(!json) return alert("Falta JSON");
-        myRawSquad = Object.values(JSON.parse(json).squad);
-        const target = document.getElementById('target-id').value;
-        conn = peer.connect(target);
-        setupConnection('guest');
-    }
+    function initGame(enemySquadRaw, enemyId) {
+        // Determinar quién es Host/Guest por orden alfabético de ID sesión
+        // Esto asegura que ambos tengan prefijos consistentes
+        const amIHost = MY_SESSION_ID > enemyId;
+        const myPrefix = amIHost ? 'H-' : 'G-';
+        const enPrefix = amIHost ? 'G-' : 'H-';
 
-    function setupConnection(role) {
-        conn.on('open', () => {
-            if(role === 'host') {
-                const json = document.getElementById('json-input').value;
-                myRawSquad = Object.values(JSON.parse(json).squad);
-            }
-            conn.send({ type: 'HANDSHAKE', squad: myRawSquad, role: role });
+        myUnits = myRawSquad.map(u => ({...u, uid: myPrefix+u.id}));
+        enemyUnits = enemySquadRaw.map(u => ({...u, uid: enPrefix+u.id}));
+
+        [...myUnits, ...enemyUnits].forEach(u => {
+            globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)};
         });
-        conn.on('data', (d) => {
-            if(d.type === 'HANDSHAKE') startGame(d.squad, d.role);
-            if(d.type === 'ATTACK') resolveRemoteAttack(d);
-            if(d.type === 'SYNC') { globalHP = d.state; updateHUD(); }
-        });
-    }
 
-    function startGame(enSquad, enRole) {
-        let myRole = (enRole === 'guest') ? 'host' : 'guest';
-        let p1 = (myRole === 'host') ? 'H-' : 'G-';
-        let p2 = (myRole === 'host') ? 'G-' : 'H-';
-        
-        myUnits = myRawSquad.map(u => ({...u, uid: p1+u.id}));
-        enemyUnits = enSquad.map(u => ({...u, uid: p2+u.id}));
-        
-        [...myUnits, ...enemyUnits].forEach(u => globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)});
-
+        // Arrancar
         document.getElementById('lobby-screen').classList.add('hidden');
         document.getElementById('game-screen').classList.remove('hidden');
-        navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s);
+        
+        // Status Badge
+        const sb = document.getElementById('conn-status');
+        sb.innerText = "ENLACE ESTABLE";
+        sb.classList.remove('searching');
+        sb.classList.add('on');
+
+        // Cámara
+        navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+            .then(s=>document.getElementById('ar-feed').srcObject=s).catch(()=>{});
+
         updateHUD();
+        log(`BATALLA INICIADA: ${myUnits.length} vs ${enemyUnits.length}`);
     }
 
-    // --- LOGICA DE DADOS (VISUAL) ---
-    function prepareAttack() {
+    // --- GAMEPLAY Y DADOS ---
+    window.prepareAttack = function() {
         const me = myUnits[myIdx];
         const en = enemyUnits[enIdx];
         if(globalHP[me.uid].c <= 0 || globalHP[en.uid].c <= 0) return;
 
-        let diceCount = 0;
-
+        let diceCount=0;
         if(combatMode === 'ranged') {
-            if(me.stats.r_atk === '-') return alert("Sin arma rango");
+            if(me.stats.r_atk==='-') return alert("Sin arma rango");
             diceCount = parseInt(me.stats.r_atk);
             currentHitTarget = parseInt(me.stats.r_hit.replace('+',''));
         } else {
@@ -218,54 +253,33 @@
             currentHitTarget = parseInt(me.stats.m_hit.replace('+',''));
         }
 
-        // Generar tirada inicial
         currentRolls = [];
         for(let i=0; i<diceCount; i++) currentRolls.push(Math.ceil(Math.random()*6));
         
-        // Mostrar Overlay
         renderDice();
-        document.getElementById('dice-info-text').innerText = `IMPACTO A ${currentHitTarget}+ (MODO ${combatMode})`;
+        document.getElementById('dice-info-text').innerText = `IMPACTO ${currentHitTarget}+ (${combatMode.toUpperCase()})`;
         document.getElementById('dice-overlay').classList.add('show');
-    }
+    };
 
-    function renderDice() {
-        const pool = document.getElementById('dice-pool');
-        pool.innerHTML = "";
-        
+    window.renderDice = function() {
+        const pool = document.getElementById('dice-pool'); pool.innerHTML = "";
         currentRolls.forEach((val, idx) => {
-            const el = document.createElement('div');
-            el.className = 'die';
-            el.innerText = DICE_CHARS[val];
-            
-            // Colorear
-            if(val >= currentHitTarget) el.classList.add('hit');
-            else el.classList.add('miss');
-            
-            // Click to Reroll
-            el.onclick = () => rerollDie(idx, el);
+            const el = document.createElement('div'); el.className = 'die'; el.innerText = DICE_CHARS[val];
+            if(val >= currentHitTarget) el.classList.add('hit'); else el.classList.add('miss');
+            el.onclick = () => window.rerollDie(idx, el);
             pool.appendChild(el);
         });
-    }
+    };
 
-    function rerollDie(idx, el) {
-        // Animación visual
-        el.classList.remove('hit', 'miss');
-        el.classList.add('rolling');
-        
-        // Lógica (pequeño delay para sentir el peso)
+    window.rerollDie = function(idx, el) {
+        el.className = 'die rolling';
         setTimeout(() => {
-            const newVal = Math.ceil(Math.random()*6);
-            currentRolls[idx] = newVal;
-            renderDice(); // Redibujar todo
+            currentRolls[idx] = Math.ceil(Math.random()*6);
+            window.renderDice();
         }, 300);
-    }
+    };
 
-    function closeDice() {
-        document.getElementById('dice-overlay').classList.remove('show');
-    }
-
-    function confirmAttack() {
-        // Calcular impactos finales
+    window.confirmAttack = function() {
         let hits = 0;
         currentRolls.forEach(val => { if(val >= currentHitTarget) hits++; });
         
@@ -273,47 +287,61 @@
         const en = enemyUnits[enIdx];
         let dmg = (combatMode==='ranged') ? parseInt(me.stats.r_dmg) : parseInt(me.stats.m_dmg);
 
-        log(`YO: [${currentRolls.join(' ')}] -> ${hits} HITS`);
+        const icon = combatMode==='ranged'?'🔫':'⚔️';
+        log(`YO ${icon}: [${currentRolls.join(' ')}] -> ${hits} HITS`);
         
-        // Enviar
-        conn.send({
+        sendMsg({
             type: 'ATTACK',
             uName: me.name,
             tUid: en.uid,
             hits: hits,
             dmg: dmg,
-            sv: parseInt(en.stats.sv)
+            mode: combatMode
         });
+        window.closeDice();
+    };
 
-        closeDice();
-    }
+    window.closeDice = function() { document.getElementById('dice-overlay').classList.remove('show'); };
 
-    // --- GAMEPLAY CORE ---
+    // --- RECEPCIÓN DE ATAQUE ---
     function resolveRemoteAttack(data) {
         const target = myUnits.find(u => u.uid === data.tUid);
         if(!target) return;
-        
+
         let saves=0, rolls=[];
         for(let i=0; i<data.hits; i++) {
             let r=Math.ceil(Math.random()*6);
             rolls.push(r);
             if(r>=parseInt(target.stats.sv)) saves++;
         }
-
         let total = (data.hits - saves) * data.dmg;
-        log(`RIVAL vs ${target.name}: -${total} HP`);
+        
+        const icon = data.mode==='ranged'?'🔫':'⚔️';
+        log(`RIVAL ${icon} vs ${target.name}: -${total} HP`);
 
-        if(total>0) {
+        if(total > 0) {
             globalHP[target.uid].c = Math.max(0, globalHP[target.uid].c - total);
-            document.getElementById('flash-fx').classList.remove('flash');
-            void document.getElementById('flash-fx').offsetWidth;
-            document.getElementById('flash-fx').classList.add('flash');
-            conn.send({type:'SYNC', state:globalHP});
+            
+            // FX Flash
+            const f = document.getElementById('flash-fx');
+            f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');
+            
+            sendMsg({type:'SYNC', state:globalHP});
             updateHUD();
+        } else {
+            log("🛡️ BLINDADO (0 Daño)");
         }
     }
 
     // --- UI HELPERS ---
+    window.nextMyUnit = function() { myIdx = (myIdx+1)%myUnits.length; updateHUD(); };
+    window.nextEnemyUnit = function() { enIdx = (enIdx+1)%enemyUnits.length; updateHUD(); };
+    window.switchMode = function() { 
+        combatMode = combatMode==='ranged'?'melee':'ranged'; 
+        document.getElementById('phase-display').innerText = combatMode.toUpperCase();
+        updateHUD(); 
+    };
+
     function updateHUD() {
         const me = myUnits[myIdx];
         const en = enemyUnits[enIdx];
@@ -321,22 +349,16 @@
         const enS = globalHP[en.uid];
 
         document.getElementById('my-name').innerText = me.name;
+        let stats = combatMode==='ranged' ? (me.stats.r_atk!=='-' ? `🔫${me.stats.r_atk}/${me.stats.r_hit}` : "🚫") : `⚔️${me.stats.m_atk}/${me.stats.m_hit}`;
+        document.getElementById('my-w').innerText = stats;
         document.getElementById('my-hp').style.width = (meS.c/meS.m*100)+"%";
         
-        // Stats dinámicas
-        let stats = combatMode==='ranged' ? 
-            (me.stats.r_atk!=='-' ? `🔫 ${me.stats.r_atk}/${me.stats.r_hit}` : "🚫") : 
-            `⚔️ ${me.stats.m_atk}/${me.stats.m_hit}`;
-        document.getElementById('my-w').innerText = stats;
-
         // Iconos
         const ic = document.getElementById('my-abilities'); ic.innerHTML="";
         [me.ability, me.gear, me.weap].forEach(c => {
             if(c && c!=='none' && TACTICAL_DB[c]) {
-                let d = document.createElement('div');
-                d.className = 'hud-icon';
-                d.innerText = TACTICAL_DB[c].icon;
-                d.onclick=(e)=>{ e.stopPropagation(); showTip(TACTICAL_DB[c]); }
+                let d=document.createElement('div'); d.className='hud-icon'; d.innerText=TACTICAL_DB[c].icon;
+                d.onclick=(e)=>{e.stopPropagation();showTip(TACTICAL_DB[c]);}
                 ic.appendChild(d);
             }
         });
@@ -350,18 +372,12 @@
     }
 
     function showTip(d) {
-        document.getElementById('tip-title').innerText = d.name;
-        document.getElementById('tip-desc').innerText = d.desc;
+        document.getElementById('tip-title').innerText=d.name;
+        document.getElementById('tip-desc').innerText=d.desc;
         document.getElementById('tooltip-modal').style.display='block';
     }
 
-    function nextMyUnit() { myIdx=(myIdx+1)%myUnits.length; updateHUD(); }
-    function nextEnemyUnit() { enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
-    function switchMode() { 
-        combatMode = combatMode==='ranged'?'melee':'ranged'; 
-        document.getElementById('phase-display').innerText = combatMode.toUpperCase();
-        updateHUD(); 
-    }
+    function msg(t) { document.getElementById('status-msg').innerText = t; }
     function log(t) { const c=document.getElementById('combat-log'); c.innerHTML=`<div class="log-line">> ${t}</div>`+c.innerHTML; }
 
     const TACTICAL_DB = {
@@ -371,7 +387,6 @@
         'scope':{icon:'🔭',name:'Mira',desc:'+Rng'}, 'shield':{icon:'🛡️',name:'Escudo',desc:'+Sv'},
         'sniper':{icon:'🎯',name:'Franco',desc:'Crit'}, 'minigun':{icon:'🌪️',name:'Minigun',desc:'Burst'}
     };
-
 </script>
 </body>
 </html>
