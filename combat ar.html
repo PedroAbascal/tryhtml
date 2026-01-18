@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v37 FIX</title>
+    <title>SQUAD COMMAND: v38 SECRET OPS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -115,7 +115,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v37 STABLE</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v38 SECRET OPS</div>
         
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         
@@ -127,11 +127,10 @@
                 <option value="RELIC">RELIQUIA</option>
             </select>
 
-            <div style="font-size:0.6rem; color:#888;">TU MISIÓN SECRETA</div>
-            <select id="secret-mission">
-                <option value="ASESINATO">ASESINATO</option>
-                <option value="INFILTRACION">INFILTRACIÓN</option>
-                <option value="SEGURIDAD">SEGURIDAD</option>
+            <div style="font-size:0.6rem; color:#888;">MISIONES SECUNDARIAS (SECRETAS)</div>
+            <select id="secondary-toggle">
+                <option value="NO">SIN SECUNDARIAS</option>
+                <option value="SI">CON SECUNDARIAS (ALEATORIO)</option>
             </select>
 
             <select id="round-select">
@@ -236,16 +235,21 @@
     const MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
     let client=null, TOPIC="";
     
+    // POOL DE MISIONES SECRETAS
+    const SECRET_POOL = ["ASESINATO", "INFILTRACION", "SEGURIDAD", "RECONOCIMIENTO"];
+    
     let myUnits=[], enemyUnits=[], globalHP={};
     let initialEnemyCount = 0;
     let myIdx=0, enIdx=0, combatMode='ranged'; 
     let gameState = 'PLANNING';
     let isGameOver = false;
     
+    // SCORING
     let myVP = 0; let enemyVP = 0;
-    let secretMission = "";
+    let secretMission = null; // null significa desactivado
     let secretClaimed = false;
     let primaryMission = "DOMINACION";
+    let secondaryActive = false;
 
     let maxRounds = 4; let currentRound = 1;
     let dicePhase='IDLE', activeDice=[], diceTarget=0;
@@ -259,7 +263,10 @@
         const code = document.getElementById('room-id').value.trim().toUpperCase();
         maxRounds = parseInt(document.getElementById('round-select').value, 10);
         primaryMission = document.getElementById('primary-mission').value;
-        secretMission = document.getElementById('secret-mission').value;
+        
+        // Configuración de secundarias
+        const secVal = document.getElementById('secondary-toggle').value;
+        secondaryActive = (secVal === "SI");
         
         try {
             const raw = Object.values(JSON.parse(json).squad);
@@ -268,21 +275,42 @@
             
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
-            document.getElementById('mission-info').innerText = `${primaryMission} + ${secretMission}`;
             
+            // Asignar misión secreta si aplica
+            assignSecretMission();
+            updateMissionDisplay();
+
             navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>{});
             updateHUD(); startNetwork(code);
         } catch(e) { log("Error JSON"); }
     }
 
+    function assignSecretMission() {
+        if(secondaryActive) {
+            secretMission = SECRET_POOL[Math.floor(Math.random() * SECRET_POOL.length)];
+            log(`TU SECRETA: ${secretMission}`);
+        } else {
+            secretMission = null;
+        }
+    }
+
+    function updateMissionDisplay() {
+        if(secondaryActive && secretMission) {
+            document.getElementById('mission-info').innerText = `${primaryMission} + ${secretMission}`;
+        } else {
+            document.getElementById('mission-info').innerText = primaryMission;
+        }
+    }
+
     function startNetwork(code) {
-        TOPIC = `sqcmd/v37/${code}`; 
+        TOPIC = `sqcmd/v38/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
         client.connect({useSSL:true, onSuccess:()=>{ 
             client.subscribe(TOPIC); 
-            publish({type:'JOIN_REQ', squad:myUnits, pMission: primaryMission}); 
+            // Enviar config inicial
+            publish({type:'JOIN_REQ', squad:myUnits, pMission: primaryMission, secActive: secondaryActive}); 
         }});
     }
 
@@ -294,6 +322,7 @@
     }
 
     function claimSecret() {
+        if(!secondaryActive || !secretMission) return;
         if(secretClaimed || gameState === 'PLANNING') return;
         secretClaimed = true;
         myVP += 2;
@@ -312,11 +341,15 @@
             if(!enemyUnits.length) {
                 enemyUnits = d.squad;
                 initialEnemyCount = enemyUnits.length;
-                if(d.pMission) { primaryMission = d.pMission; document.getElementById('mission-info').innerText = `${primaryMission} + ${secretMission}`; }
+                
+                // Si el host tiene configuración diferente, la mantiene, 
+                // pero si el que entra trae info, sync básico.
+                // Prioridad: Host manda.
+                publish({type:'JOIN_ACK', squad:myUnits, rounds:maxRounds, pMission: primaryMission, secActive: secondaryActive}); 
+                
                 enemyUnits.forEach(u => { if(!globalHP[u.uid]) globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
-                publish({type:'JOIN_ACK', squad:myUnits, rounds:maxRounds, pMission: primaryMission}); 
                 updateHUD();
-                log(`RIVAL: ${initialEnemyCount} OPS. VALOR BAJA: ${getKillPoints(initialEnemyCount)} PV`);
+                log(`RIVAL: ${initialEnemyCount} OPS. BAJA: ${getKillPoints(initialEnemyCount)} PV`);
             }
         }
         else if(d.type === 'JOIN_ACK') {
@@ -324,10 +357,19 @@
                 enemyUnits = d.squad;
                 initialEnemyCount = enemyUnits.length;
                 if(d.rounds) maxRounds = d.rounds;
-                if(d.pMission) { primaryMission = d.pMission; document.getElementById('mission-info').innerText = `${primaryMission} + ${secretMission}`; }
+                if(d.pMission) primaryMission = d.pMission;
+                
+                // Sincronizar estado de misiones secundarias con el host
+                if(d.secActive !== undefined) {
+                    secondaryActive = d.secActive;
+                    if(secondaryActive && !secretMission) assignSecretMission();
+                    else if(!secondaryActive) secretMission = null;
+                    updateMissionDisplay();
+                }
+
                 enemyUnits.forEach(u => { if(!globalHP[u.uid]) globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
                 updateHUD();
-                log(`RIVAL: ${initialEnemyCount} OPS. VALOR BAJA: ${getKillPoints(initialEnemyCount)} PV`);
+                log(`RIVAL: ${initialEnemyCount} OPS. BAJA: ${getKillPoints(initialEnemyCount)} PV`);
             }
         }
         else if(d.type === 'SCORE_UPDATE') { enemyVP = d.vp; updateHUD(); }
@@ -416,7 +458,14 @@
     function setTurn(st, p) {
         if(isGameOver) return;
         gameState = st; consecutivePasses = p;
-        if(!secretClaimed) document.getElementById('btn-claim-secret').style.display = (st === 'MY_TURN') ? 'block' : 'none';
+        
+        // Mostrar boton solo si misiones secundarias activas y no reclamada
+        if(secondaryActive && !secretClaimed) {
+            document.getElementById('btn-claim-secret').style.display = (st === 'MY_TURN') ? 'block' : 'none';
+        } else {
+            document.getElementById('btn-claim-secret').style.display = 'none';
+        }
+
         if(st === 'MY_TURN' && consecutivePasses >= 2) { publish({type:'ROUND_OVER'}); resetRound(); return; }
         const b = document.getElementById('turn-indicator');
         if(st === 'MY_TURN') {
@@ -543,7 +592,6 @@
     
     function checkWinCondition() {
         if(isGameOver) return;
-        // FIX: Si no hay enemigos aun, no es win
         if(myUnits.length === 0 || enemyUnits.length === 0) return;
 
         const myAlive = myUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
@@ -580,9 +628,8 @@
 
     function updateHUD() {
         if(!myUnits.length) return;
-        const myAlive = myUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
-        // FIX: Solo chequeamos win si ya hay enemigos en la lista
         if (enemyUnits.length > 0) {
+            const myAlive = myUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
             const enemyAlive = enemyUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
             if ((myAlive === 0 || enemyAlive === 0) && !isGameOver) checkWinCondition();
         }
