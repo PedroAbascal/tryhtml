@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v23 UNBLOCKED</title>
+    <title>SQUAD COMMAND: v24 TACTICAL HUD</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -34,23 +34,28 @@
         
         .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; }
         .unit-selector { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
-        .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.8); cursor: pointer; min-height: 80px; transition: 0.2s; position: relative; }
-        .card.active { border-color: #fff; transform: scale(1.02); }
+        .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.85); cursor: pointer; min-height: 100px; transition: 0.2s; position: relative; display: flex; flex-direction: column; justify-content: space-between; }
+        .card.active { border-color: #fff; transform: scale(1.02); z-index: 5; }
         
         .card.exhausted { border-color: var(--gold); opacity: 0.9; } 
         .card.exhausted::after { content: "REACCIÓN"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-10deg); color: var(--gold); font-weight: bold; border: 2px solid var(--gold); padding: 2px 5px; font-size: 0.7rem; background: rgba(0,0,0,0.9); }
-        
-        .card.finished { opacity: 0.3; filter: grayscale(1); pointer-events: none; border-color: #222; }
-        .card.finished::after { content: "FIN"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 0.8rem; }
+        .card.finished { opacity: 0.4; filter: grayscale(1); pointer-events: none; border-color: #222; }
 
         .ready-marker { position:absolute; top:-10px; right:-5px; background:var(--g); color:#000; font-size:0.6rem; padding:2px 5px; font-weight:bold; display:none; animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .ready-marker.show { display:block; }
-        @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
 
         .card.my { border-left: 4px solid var(--c); }
         .card.enemy { border-left: 4px solid var(--r); }
         .hp-bar { height: 4px; background: #333; margin-top: 5px; width: 100%; }
         .hp-fill { height: 100%; transition: width 0.3s; }
+
+        /* NUEVOS ESTILOS PARA STATS */
+        .weapon-name { font-size: 0.6rem; color: #fff; opacity: 0.8; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; margin: 5px 0; background: rgba(255,255,255,0.05); padding: 3px; border-radius: 2px; }
+        .stat-box { display: flex; flex-direction: column; align-items: center; }
+        .stat-label { font-size: 0.5rem; color: #888; margin-bottom: 1px; }
+        .stat-val { font-size: 0.7rem; font-weight: bold; color: #eee; }
+        .stat-val.hl { color: var(--c); }
 
         .tactic-row { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.7rem; border-top: 1px solid #333; padding-top: 5px; }
         .mode-toggle { cursor: pointer; padding: 2px 5px; border: 1px solid #555; color: #888; }
@@ -91,11 +96,11 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v23 UNBLOCKED</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v24 TACTICAL HUD</div>
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem;">CLAVE DE MISIÓN</div>
-            <input type="text" id="room-id" value="WARZONE-3">
+            <input type="text" id="room-id" value="WARZONE-4">
             <button class="btn" onclick="initSystem()">DESPLEGAR</button>
             <div id="conn-log" style="color:#aaa; font-size:0.6rem; margin-top:10px;"></div>
         </div>
@@ -117,26 +122,48 @@
 
             <div class="unit-selector">
                 <div class="card my" onclick="nextMyUnit()" id="my-card">
-                    <div style="display:flex; justify-content:space-between; font-size:0.6rem;"><span>YO</span> <span id="my-w">---</span></div>
-                    <div id="my-name">---</div>
-                    <div class="tactic-row" id="my-tactics">
-                        <span id="btn-mode-open" class="mode-toggle selected" onclick="setMode('open', event)">⚔️ ABT</span>
-                        <span id="btn-mode-hidden" class="mode-toggle" onclick="setMode('hidden', event)">🛡️ OCU</span>
-                        <select class="strat-select" id="strat-select" onchange="setStrat(this.value, event)">
-                            <option value="none">--</option>
-                            <option value="aim">Mira</option>
-                            <option value="med">Med</option>
-                        </select>
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.6rem;"><span>YO</span></div>
+                        <div id="my-name" style="font-weight:bold; margin-bottom:2px;">---</div>
+                        <div id="my-weapon" class="weapon-name">---</div>
+                        
+                        <div class="stat-grid">
+                            <div class="stat-box"><span class="stat-label">RNG</span><span class="stat-val hl" id="my-r">--</span></div>
+                            <div class="stat-box"><span class="stat-label">MEL</span><span class="stat-val" id="my-m">--</span></div>
+                            <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="my-sv">--</span></div>
+                        </div>
                     </div>
-                    <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
+
+                    <div>
+                        <div class="tactic-row" id="my-tactics">
+                            <span id="btn-mode-open" class="mode-toggle selected" onclick="setMode('open', event)">⚔️</span>
+                            <span id="btn-mode-hidden" class="mode-toggle" onclick="setMode('hidden', event)">🛡️</span>
+                            <select class="strat-select" id="strat-select" onchange="setStrat(this.value, event)">
+                                <option value="none">--</option>
+                                <option value="aim">Mira</option>
+                                <option value="med">Med</option>
+                            </select>
+                        </div>
+                        <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
+                    </div>
                     <div id="my-ready-mark" class="ready-marker">LISTO</div>
                 </div>
                 
                 <div class="card enemy" onclick="nextEnemyUnit()" id="en-card">
-                    <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)">
-                        <span>RIVAL</span> <span id="en-mode-icon">❓</span>
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)">
+                            <span>RIVAL</span> <span id="en-mode-icon">❓</span>
+                        </div>
+                        <div id="enemy-name" style="font-weight:bold; margin-bottom:2px;">ESPERANDO...</div>
+                        <div id="en-weapon" class="weapon-name">---</div>
+                        
+                        <div class="stat-grid">
+                            <div class="stat-box"><span class="stat-label">RNG</span><span class="stat-val" id="en-r">--</span></div>
+                            <div class="stat-box"><span class="stat-label">MEL</span><span class="stat-val" id="en-m">--</span></div>
+                            <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="en-sv">--</span></div>
+                        </div>
                     </div>
-                    <div id="enemy-name">ESPERANDO...</div>
+
                     <div class="hp-bar"><div id="enemy-hp" class="hp-fill" style="background:var(--r)"></div></div>
                     <div id="en-ready-mark" class="ready-marker">¡LISTO!</div>
                 </div>
@@ -169,7 +196,7 @@
     
     let dicePhase='IDLE', activeDice=[], diceTarget=0, pendingHits=0;
     
-    // VARIABLES DE SINCRONIZACIÓN
+    // SYNC VARS
     let iAmReady=false, enemyIsReady=false;
     let myInitRoll = null, enemyInitRoll = null;
     let consecutivePasses = 0; 
@@ -196,7 +223,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v23/${code}`; 
+        TOPIC = `sqcmd/v24/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -247,13 +274,11 @@
             passTurn(0); 
         }
         else if(d.type === 'SABOTAJE') {
-            // PROTECCIÓN: Si estoy planificando, ignorar órdenes antiguas de sabotaje
             if(gameState === 'PLANNING') return;
             log(`RIVAL SABOTAJE.`);
             setTurn('MY_TURN', 0); 
         }
         else if(d.type === 'CHANGE_TURN') {
-            // PROTECCIÓN: Si estoy planificando, ignorar órdenes antiguas de turno
             if(gameState === 'PLANNING') return;
             const incomingPasses = d.passes || 0;
             setTurn('MY_TURN', incomingPasses);
@@ -271,16 +296,13 @@
         }
     }
 
-    // --- TURNOS Y LÓGICA DE RONDA ---
+    // --- LOGICA ---
     
     function resetRound() {
         log("--- NUEVA RONDA ---");
         gameState = 'PLANNING';
-        
-        iAmReady = false;
-        enemyIsReady = false;
-        myInitRoll = null;
-        enemyInitRoll = null;
+        iAmReady = false; enemyIsReady = false;
+        myInitRoll = null; enemyInitRoll = null;
         consecutivePasses = 0; 
         
         myUnits.forEach(u => { u.acted = false; u.reacted = false; });
@@ -303,7 +325,6 @@
 
     function commitPlanning() {
         if(gameState !== 'PLANNING') return;
-        
         iAmReady = true;
         myInitRoll = Math.ceil(Math.random()*100);
         
@@ -314,27 +335,18 @@
         
         log(`ORDENES ENVIADAS (Iniciativa: ${myInitRoll})`);
         publish({type:'READY', squad:myUnits, roll:myInitRoll});
-        
         checkStartRound();
     }
 
     function checkStartRound() {
         if(iAmReady && enemyIsReady) {
             log("¡AMBOS LISTOS! COMBATE INICIADO.");
-            
             document.getElementById('planning-controls').style.display = 'none';
             document.getElementById('action-buttons').style.display = 'flex';
-            
-            if((myInitRoll || 0) >= (enemyInitRoll || 0)) {
-                setTurn('MY_TURN', 0);
-            } else {
-                setTurn('ENEMY_TURN', 0);
-            }
-        } else if (iAmReady && !enemyIsReady) {
-            log("Esperando confirmación del rival...");
-        } else if (!iAmReady && enemyIsReady) {
-            log("¡Rival listo! Confirma tus órdenes.");
-        }
+            if((myInitRoll || 0) >= (enemyInitRoll || 0)) setTurn('MY_TURN', 0);
+            else setTurn('ENEMY_TURN', 0);
+        } else if (iAmReady && !enemyIsReady) log("Esperando confirmación...");
+        else if (!iAmReady && enemyIsReady) log("¡Rival listo! Confirma.");
     }
 
     function passTurn(currentPasses) {
@@ -344,45 +356,34 @@
     }
 
     function setTurn(st, passesVal) {
-        // CORRECCIÓN CRÍTICA: Eliminado el 'if(gameState === PLANNING) return;'
-        // Ahora se obedece la orden. La protección está en onMessage.
-
         gameState = st;
         consecutivePasses = passesVal;
         
         if(st === 'MY_TURN' && consecutivePasses >= 2) {
-            log("FIN DE RONDA DETECTADO.");
+            log("FIN DE RONDA.");
             publish({type: 'ROUND_OVER'}); 
-            resetRound(); 
-            return;
+            resetRound(); return;
         }
 
         const b = document.getElementById('turn-indicator');
         if(st === 'MY_TURN') {
-            
             const freshUnits = myUnits.filter(u => !u.acted && globalHP[u.uid].c > 0);
             const reactUnits = myUnits.filter(u => u.acted && !u.reacted && globalHP[u.uid].c > 0);
             const enemyHasFresh = enemyUnits.some(u => !u.acted && globalHP[u.uid].c > 0);
 
             if(freshUnits.length > 0) {
-                b.innerText = "TU TURNO"; 
-                b.className = "turn-badge my-turn";
-                enableControls(true);
-                selectUnit(freshUnits[0]);
+                b.innerText = "TU TURNO"; b.className = "turn-badge my-turn";
+                enableControls(true); selectUnit(freshUnits[0]);
             } 
             else if(freshUnits.length === 0 && enemyHasFresh && reactUnits.length > 0) {
-                b.innerText = "REACCIÓN / OVERWATCH";
-                b.className = "turn-badge planning";
-                enableControls(true);
-                selectUnit(reactUnits[0]);
+                b.innerText = "REACCIÓN"; b.className = "turn-badge planning";
+                enableControls(true); selectUnit(reactUnits[0]);
                 log("⚠️ MODO REACCIÓN");
             }
             else {
                 log("SIN ACCIONES. PASANDO...");
-                passTurn(consecutivePasses);
-                enableControls(false);
+                passTurn(consecutivePasses); enableControls(false);
             }
-
         } else {
             b.innerText = "TURNO RIVAL"; b.className = "turn-badge enemy-turn";
             enableControls(false);
@@ -410,23 +411,21 @@
         if(globalHP[me.uid].c <= 0) return log("Caído");
         
         const hasFresh = myUnits.some(u => !u.acted && globalHP[u.uid].c > 0);
-        if(me.acted && hasFresh) return log("❌ DEBES USAR UNIDADES FRESCAS PRIMERO");
+        if(me.acted && hasFresh) return log("❌ USA UNIDADES FRESCAS PRIMERO");
 
         if(me.mode === 'hidden') {
-            log(`${me.name} REALIZA SABOTAJE.`);
+            log(`${me.name} SABOTAJE.`);
             me.acted = true;
             if(hasFresh) me.reacted = true; 
             publish({type:'SABOTAJE'});
             publish({type:'SYNC_SQUAD', squad: myUnits});
-            passTurn(0); 
-            return;
+            passTurn(0); return;
         }
 
         let count = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
         diceTarget = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
         
         if(me.stratagem === 'aim') diceTarget = Math.max(2, diceTarget - 1);
-
         if(me.acted) {
             count = Math.ceil(count / 3); 
             diceTarget = diceTarget + 1; 
@@ -439,7 +438,6 @@
         syncDiceToRival(me.name);
     }
 
-    // --- DEFENSA Y DADOS ---
     function startDefensePhase() {
         const me = myUnits[myIdx];
         let sv = parseInt(me.stats.sv);
@@ -458,10 +456,8 @@
         const btn = document.getElementById('btn-dice-main');
         
         ov.classList.add('show'); pool.innerHTML = "";
-        
         tit.innerText = phase === 'ATTACK_ROLL' ? "ATAQUE" : "DEFENSA";
         tit.style.color = phase === 'ATTACK_ROLL' ? "var(--r)" : "var(--c)";
-        
         btn.style.display = isInteractive ? 'block' : 'none';
         btn.innerText = phase === 'ATTACK_ROLL' ? "CONFIRMAR IMPACTOS" : "CONFIRMAR DAÑO";
 
@@ -516,11 +512,9 @@
         f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');
     }
 
-    // --- PLANIFICACIÓN ---
+    // --- UI HELPERS ---
     window.setMode = function(m, e) { e.stopPropagation(); if(gameState !== 'PLANNING') return; myUnits[myIdx].mode = m; updateHUD(); }
     window.setStrat = function(v, e) { e.stopPropagation(); if(gameState !== 'PLANNING') return; myUnits[myIdx].stratagem = v; }
-    
-    // --- UTILS ---
     window.nextMyUnit = function() { myIdx=(myIdx+1)%myUnits.length; updateHUD(); }
     window.nextEnemyUnit = function() { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
     window.switchMode = function() { combatMode = combatMode==='ranged'?'melee':'ranged'; updateHUD(); }
@@ -531,8 +525,14 @@
         const me = myUnits[myIdx];
         const en = enemyUnits[enIdx];
 
+        // MY CARD
         document.getElementById('my-name').innerText = me.name;
+        document.getElementById('my-weapon').innerText = me.equipment?.main || "RIFLE ESTÁNDAR";
+        document.getElementById('my-r').innerText = `${me.stats.r_atk}d / ${me.stats.r_hit}`;
+        document.getElementById('my-m').innerText = `${me.stats.m_atk}d / ${me.stats.m_hit}`;
+        document.getElementById('my-sv').innerText = `${me.stats.sv}`;
         document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
+        
         const mc = document.getElementById('my-card');
         mc.className = "card my"; 
         if(me.reacted) mc.classList.add('finished');
@@ -543,16 +543,15 @@
         const btnAct = document.getElementById('btn-act');
         
         if(combatMode === 'ranged') {
-            btnMode.innerText = "🔫";
-            btnMode.style.background = "#333";
+            btnMode.innerText = "🔫"; btnMode.style.background = "#333";
             btnAct.innerText = "DISPARAR";
         } else {
-            btnMode.innerText = "⚔️";
-            btnMode.style.background = "#552200"; 
+            btnMode.innerText = "⚔️"; btnMode.style.background = "#552200"; 
             btnAct.innerText = "GOLPEAR";
         }
         document.getElementById('phase-display').innerText = combatMode === 'ranged' ? "RANGO" : "MELEE";
 
+        // TACTICS ROW
         if(gameState === 'PLANNING') {
             document.getElementById('my-tactics').style.display = 'flex';
             document.getElementById('btn-mode-open').className = me.mode==='open'?'mode-toggle selected':'mode-toggle';
@@ -564,10 +563,17 @@
             document.getElementById('my-tactics').style.display = 'none';
         }
 
+        // ENEMY CARD
         if(en) {
             document.getElementById('enemy-name').innerText = en.name;
+            document.getElementById('en-weapon').innerText = en.equipment?.main || "DESC.";
+            document.getElementById('en-r').innerText = `${en.stats.r_atk}d / ${en.stats.r_hit}`;
+            document.getElementById('en-m').innerText = `${en.stats.m_atk}d / ${en.stats.m_hit}`;
+            document.getElementById('en-sv').innerText = `${en.stats.sv}`;
+            
             document.getElementById('enemy-hp').style.width = (globalHP[en.uid].c/globalHP[en.uid].m*100)+"%";
             document.getElementById('en-mode-icon').innerText = en.mode==='open' ? '⚔️' : '🛡️';
+            
             const ec = document.getElementById('en-card');
             ec.className = "card enemy";
             if(en.reacted) ec.classList.add('finished');
