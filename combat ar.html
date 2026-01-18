@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v24 TACTICAL HUD</title>
+    <title>SQUAD COMMAND: v25 UNLOCKED</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -34,12 +34,16 @@
         
         .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; }
         .unit-selector { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
-        .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.85); cursor: pointer; min-height: 100px; transition: 0.2s; position: relative; display: flex; flex-direction: column; justify-content: space-between; }
+        
+        /* CORRECCIÓN PRINCIPAL AQUÍ: pointer-events auto en cards finished */
+        .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.85); cursor: pointer; min-height: 100px; transition: 0.2s; position: relative; display: flex; flex-direction: column; justify-content: space-between; pointer-events: auto !important; }
         .card.active { border-color: #fff; transform: scale(1.02); z-index: 5; }
         
         .card.exhausted { border-color: var(--gold); opacity: 0.9; } 
         .card.exhausted::after { content: "REACCIÓN"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-10deg); color: var(--gold); font-weight: bold; border: 2px solid var(--gold); padding: 2px 5px; font-size: 0.7rem; background: rgba(0,0,0,0.9); }
-        .card.finished { opacity: 0.4; filter: grayscale(1); pointer-events: none; border-color: #222; }
+        
+        .card.finished { opacity: 0.5; filter: grayscale(1); border-color: #222; }
+        .card.finished::after { content: "FINALIZADO"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 0.8rem; text-shadow: 0 0 5px #000; }
 
         .ready-marker { position:absolute; top:-10px; right:-5px; background:var(--g); color:#000; font-size:0.6rem; padding:2px 5px; font-weight:bold; display:none; animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .ready-marker.show { display:block; }
@@ -49,7 +53,6 @@
         .hp-bar { height: 4px; background: #333; margin-top: 5px; width: 100%; }
         .hp-fill { height: 100%; transition: width 0.3s; }
 
-        /* NUEVOS ESTILOS PARA STATS */
         .weapon-name { font-size: 0.6rem; color: #fff; opacity: 0.8; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; margin: 5px 0; background: rgba(255,255,255,0.05); padding: 3px; border-radius: 2px; }
         .stat-box { display: flex; flex-direction: column; align-items: center; }
@@ -96,11 +99,11 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v24 TACTICAL HUD</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v25 UNLOCKED CYCLE</div>
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem;">CLAVE DE MISIÓN</div>
-            <input type="text" id="room-id" value="WARZONE-4">
+            <input type="text" id="room-id" value="WARZONE-5">
             <button class="btn" onclick="initSystem()">DESPLEGAR</button>
             <div id="conn-log" style="color:#aaa; font-size:0.6rem; margin-top:10px;"></div>
         </div>
@@ -223,7 +226,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v24/${code}`; 
+        TOPIC = `sqcmd/v25/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
