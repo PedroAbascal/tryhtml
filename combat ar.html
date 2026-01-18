@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v30 STABILITY FIX</title>
+    <title>SQUAD COMMAND: v31 HOST FIX</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -73,11 +73,9 @@
         .dice-header { font-size: 1.2rem; margin-bottom: 5px; color: var(--gold); font-weight: bold; width: 100%; text-align: center; }
         .dice-sub { font-size: 0.8rem; color: #888; margin-bottom: 15px; }
         
-        /* CONTENEDORES DE DADOS */
         .dice-section { width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 15px; }
         .dice-label { font-size: 0.6rem; text-transform: uppercase; color: #555; margin-bottom: 5px; letter-spacing: 2px; width: 100%; text-align: center; border-bottom: 1px solid #333; line-height: 0.1em; margin: 10px 0 20px; } 
         .dice-label span { background: rgba(0, 15, 30, 0.98); padding: 0 10px; }
-
         .dice-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
         
         .die { font-size: 3.5rem; cursor: pointer; transition: transform 0.2s; position:relative; }
@@ -130,7 +128,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v30 STABLE</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v31 HOST FIX</div>
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem;">CONFIGURACIÓN</div>
@@ -253,7 +251,6 @@
     function initSystem() {
         const json = document.getElementById('json-input').value;
         const code = document.getElementById('room-id').value.trim().toUpperCase();
-        // Aseguramos que sea entero
         maxRounds = parseInt(document.getElementById('round-select').value, 10) || 4;
         
         try {
@@ -267,13 +264,14 @@
         } catch(e) { log("Error JSON"); }
     }
     function startNetwork(code) {
-        TOPIC = `sqcmd/v30/${code}`; 
+        TOPIC = `sqcmd/v31/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
         client.connect({useSSL:true, onSuccess:()=>{ 
             client.subscribe(TOPIC); 
-            publish({type:'HELLO', squad:myUnits, rounds:maxRounds}); 
+            // CAMBIO V31: Enviamos JOIN_REQ (Solicitud) en lugar de HELLO genérico
+            publish({type:'JOIN_REQ', squad:myUnits}); 
         }});
     }
 
@@ -282,15 +280,35 @@
         const d = JSON.parse(msg.payloadString);
         if(d.sender === MY_ID) return;
 
-        if(d.type === 'HELLO') {
+        // V31: Handshake Asimétrico
+        if(d.type === 'JOIN_REQ') {
+            // Si recibo REQ, soy el ANFITRIÓN (o estaba primero)
             if(!enemyUnits.length) {
                 enemyUnits = d.squad;
                 enemyUnits.forEach(u => { if(!globalHP[u.uid]) globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
-                if(d.rounds) maxRounds = d.rounds;
-                publish({type:'HELLO', squad:myUnits, rounds:maxRounds}); 
+                
+                // Respondo con ACK e IMPONGO mis rondas
+                publish({type:'JOIN_ACK', squad:myUnits, rounds:maxRounds}); 
+                updateHUD();
+                log("Enemigo detectado. Enviando config.");
+            }
+        }
+        else if(d.type === 'JOIN_ACK') {
+            // Si recibo ACK, soy el CLIENTE (llegué después)
+            if(!enemyUnits.length) {
+                enemyUnits = d.squad;
+                enemyUnits.forEach(u => { if(!globalHP[u.uid]) globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
+                
+                // ACEPTO las rondas del anfitrión
+                if(d.rounds) {
+                    maxRounds = d.rounds;
+                    log(`Sincronizado: ${maxRounds} rondas.`);
+                }
                 updateHUD();
             }
         }
+        // Fin V31 lógica handshake
+
         else if(d.type === 'READY') {
             enemyUnits = d.squad; enemyIsReady = true; enemyInitRoll = d.roll;
             document.getElementById('en-ready-mark').classList.add('show');
