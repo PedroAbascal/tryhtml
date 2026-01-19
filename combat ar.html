@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v43 MANUAL COVER</title>
+    <title>SQUAD COMMAND: v44 IMMERSIVE LOG</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -87,7 +87,6 @@
         .die.incoming-hit { color: var(--c); text-shadow: 0 0 10px var(--c); pointer-events: none; }
         .die.pending { color: var(--gold); animation: pulse 0.5s infinite; cursor: wait; pointer-events: none; opacity: 0.7; }
         
-        /* New Toggle Button for Cover */
         #btn-cover-toggle {
             background: #000; border: 2px solid #444; color: #666; 
             padding: 8px 20px; font-family: monospace; font-weight: bold; 
@@ -102,8 +101,35 @@
         #flash-fx { pointer-events:none; position:fixed; top:0; left:0; width:100%; height:100%; }
         .flash { animation: flashRed 0.3s; }
         @keyframes flashRed { 50% { background: rgba(255, 0, 0, 0.5); } }
-        .log-area { position: absolute; top: 100px; left: 10px; font-size: 0.6rem; pointer-events: none; width: 60%; text-shadow: 1px 1px 0 #000; opacity: 0.8; }
-        .log-line { margin-bottom: 2px; }
+        
+        /* --- NUEVO SISTEMA DE LOG INMERSIVO --- */
+        .log-area { 
+            position: absolute; top: 120px; left: 10px; width: 70%; 
+            display: flex; flex-direction: column-reverse; pointer-events: none; 
+            z-index: 50; 
+        }
+        .log-entry {
+            background: rgba(0, 10, 20, 0.8);
+            border-left: 3px solid var(--c);
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 6px 10px;
+            margin-bottom: 6px;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 2px var(--c);
+            backdrop-filter: blur(2px);
+            animation: slideIn 0.3s ease-out;
+            opacity: 1;
+            transform: translateX(0);
+            transition: all 0.5s ease;
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+        }
+        .log-entry.danger { border-color: var(--r); color: #ffcccc; text-shadow: 0 0 5px var(--r); }
+        .log-entry.success { border-color: var(--gold); color: #fffee0; text-shadow: 0 0 5px var(--gold); }
+        .log-entry.fade-out { opacity: 0; transform: translateX(-20px); filter: blur(5px); }
+
+        @keyframes slideIn { from { opacity:0; transform: translateX(-50px); } to { opacity:1; transform: translateX(0); } }
+        /* -------------------------------------- */
 
         #game-over-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
         #game-over-screen.show { opacity: 1; pointer-events: auto; }
@@ -153,7 +179,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v43 MANUAL COVER</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v44 IMMERSIVE LOG</div>
         
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         
@@ -402,7 +428,6 @@
         pendingRequest = null;
     }
 
-    // --- MANUAL COVER TOGGLE ---
     window.toggleCover = function() {
         coverActive = !coverActive;
         const btn = document.getElementById('btn-cover-toggle');
@@ -626,9 +651,7 @@
         const me = myUnits[myIdx];
         diceTarget = parseInt(me.stats.sv);
         
-        // REINICIAMOS COBERTURA A FALSO AL INICIO DE CADA DEFENSA
         coverActive = false;
-        // ACTUALIZAMOS EL BOTÓN VISUALMENTE
         const btn = document.getElementById('btn-cover-toggle');
         btn.classList.remove('active');
         btn.innerText = "COBERTURA: NO";
@@ -649,7 +672,7 @@
         const incomingSec = document.getElementById('incoming-section');
         const incomingPool = document.getElementById('incoming-pool');
         const activeLbl = document.getElementById('active-label');
-        const coverBtn = document.getElementById('btn-cover-toggle'); // EL BOTON NUEVO
+        const coverBtn = document.getElementById('btn-cover-toggle');
 
         ov.classList.add('show'); pool.innerHTML = ""; incomingPool.innerHTML = "";
         
@@ -658,11 +681,11 @@
             btn.innerHTML = "<span>CONFIRMAR DAÑO</span>";
             activeLbl.querySelector('span').innerText = "TUS DADOS";
             incomingSec.style.display = 'flex'; 
-            coverBtn.style.display = 'block'; // MOSTRAR BOTON EN DEFENSA
+            coverBtn.style.display = 'block'; 
             for(let i=0; i<pendingHits.crit; i++) incomingPool.innerHTML += '<div class="die incoming-crit">★</div>';
             for(let i=0; i<pendingHits.normal; i++) incomingPool.innerHTML += '<div class="die incoming-hit">★</div>';
         } else {
-            coverBtn.style.display = 'none'; // OCULTAR EN ATAQUE
+            coverBtn.style.display = 'none'; 
             tit.innerText = "ATAQUE"; tit.style.color = "var(--r)";
             btn.innerHTML = "<span>CONFIRMAR IMPACTOS</span>";
             activeLbl.querySelector('span').innerText = "TIRADA ACTUAL";
@@ -685,7 +708,6 @@
         publish({ type: 'DICE_SYNC', phase: dicePhase, dice: activeDice, target: diceTarget, uName: uName, hitsStruct: hitsStruct });
     }
 
-    // --- LOGICA DE RESOLUCION (Actualizada con cobertura manual) ---
     window.proceedPhase = function(e) {
         if(e) { e.preventDefault(); e.stopPropagation(); } 
         
@@ -702,7 +724,6 @@
             let defCrits = activeDice.filter(x => x === 6).length;
             let defNormals = activeDice.filter(x => x >= diceTarget && x < 6).length;
             
-            // AQUI USAMOS EL ESTADO MANUAL DE COBERTURA
             if(coverActive) {
                 defNormals += 1; 
                 log("¡Cobertura aplicada manual! (+1 Save)");
@@ -711,7 +732,6 @@
             let incCrits = pendingHits.crit;
             let incNormals = pendingHits.normal;
             
-            // Resolución
             let critsBlocked = Math.min(incCrits, defCrits); incCrits -= critsBlocked;
             let remainingDefCrits = defCrits - critsBlocked;
             let normalsBlockedByCrit = Math.min(incNormals, remainingDefCrits); incNormals -= normalsBlockedByCrit;
@@ -802,7 +822,29 @@
         }
     }
     function publish(p) { if(client){ p.sender=MY_ID; client.send(TOPIC, JSON.stringify(p)); } }
-    function log(t) { document.getElementById('combat-log').innerHTML = `<div class="log-line">> ${t}</div>` + document.getElementById('combat-log').innerHTML; }
+    
+    // --- UPDATED LOG FUNCTION ---
+    function log(t) { 
+        const container = document.getElementById('combat-log');
+        const el = document.createElement('div');
+        el.innerText = `> ${t}`;
+        
+        // Auto-Coloring based on keywords
+        let type = 'info';
+        if(t.includes('DAÑO') || t.includes('RIVAL') || t.includes('ABATIDO')) type = 'danger';
+        else if(t.includes('PV') || t.includes('EXITO') || t.includes('ACEPTADA')) type = 'success';
+        
+        el.className = `log-entry ${type}`;
+        
+        // Add to top
+        container.appendChild(el); 
+
+        // Auto remove
+        setTimeout(() => {
+            el.classList.add('fade-out');
+            setTimeout(() => el.remove(), 500); // Wait for animation
+        }, 4000);
+    }
 </script>
 </body>
 </html>
