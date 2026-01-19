@@ -118,7 +118,7 @@
 
         <div style="display:flex; gap:10px; margin-top:5px;">
             <div style="flex:1"><label>Peana</label><select id="u-base" onchange="calc()"></select></div>
-            <div style="flex:1"><label>Equipo</label><select id="u-gear" onchange="calc()"><option value="none">Nada</option><option value="granada">Granada (+2)</option><option value="scope">Mira (+2)</option><option value="shield">Escudo (+4)</option></select></div>
+            <div style="flex:1"><label>Equipo</label><select id="u-gear" onchange="calc()"></select></div>
         </div>
 
         <div class="stats-matrix">
@@ -263,30 +263,24 @@
             32: { name: "32mm", hpMod: 3, svMod: 0, dmgMod: 0, cost: 2 },
             40: { name: "40mm", hpMod: 6, svMod: -1, dmgMod: 1, cost: 5 }
         },
+      
         gear: {
-    // --- Básico (Coste 0) ---
-    none: 0,
-
-    // --- Supervivencia y Defensa ---
-    camo: 1,      // Camuflaje: Pequeña mejora a la evasión (modSV)
-    smoke: 2,     // Granana de Humo: Cobertura temporal
-    armor: 3,     // Placas Extra: +1 HP o salvación
-    shield: 4,    // Escudo de Energía: Tu original (alto coste, alta defensa)
-    medkit: 3,    // Botiquín: Curar o revivir una vez
-
-    // --- Ofensivo y Utilidad ---
-    knife: 1,     // Cuchillo secundario: Evita penalizador en cuerpo a cuerpo si usas rifles
-    granada: 2,   // Tu original: Daño en área un solo uso
-    ammo: 2,      // Munición Extra: Permite repetir 1 dado de ataque fallido
-    scope: 2,     // Mira: Tu original (mejora modHit)
-    scanner: 3,   // Escáner: Detecta unidades en sigilo o invisibles
-
-    // --- Movilidad y Especiales ---
-    stim: 1,      // Estimulante: +Movimiento o +Ataque un turno, luego daño
-    goggles: 2,   // Visor Nocturno: Ignora penalizadores por oscuridad
-    jetpack: 5,   // Mochila Cohete: Permite volar o "Saltar" terreno
-    drone: 4      // Dron de apoyo: Un "token" extra que dispara o absorbe un golpe
-}
+            none:    { name: "Nada",            cost: 0 },
+            camo:    { name: "Camuflaje",       cost: 1 },
+            knife:   { name: "Cuchillo Sec.",   cost: 1 },
+            stim:    { name: "Estimulante",     cost: 1 },
+            granada: { name: "Granada Frag",    cost: 2 },
+            smoke:   { name: "Granada Humo",    cost: 2 },
+            ammo:    { name: "Munición Extra",  cost: 2 },
+            scope:   { name: "Mira Táctica",    cost: 2 },
+            goggles: { name: "Visor Nocturno",  cost: 2 },
+            armor:   { name: "Placas Extra",    cost: 3 },
+            scanner: { name: "Escáner",         cost: 3 },
+            medkit:  { name: "Botiquín",        cost: 3 },
+            drone:   { name: "Dron Apoyo",      cost: 4 },
+            shield:  { name: "Escudo Energía",  cost: 4 },
+            jetpack: { name: "Propulsores",     cost: 5 }
+        }
     };
 
     let state = { squad: {}, pts: 0 };
@@ -360,7 +354,7 @@
         if(sv<2) sv=2; if(sv>6) sv=6;
 
         // 4. COSTO
-        let cost = S.cost + R.cost + AB.cost + W.cost + B.cost + G;
+        let cost = S.cost + R.cost + AB.cost + W.cost + B.cost + G.cost;
 
         // RENDER
         document.getElementById('r-atk').innerText = r_atk;
@@ -489,4 +483,5 @@
 </body>
 
 </html>
+
 
