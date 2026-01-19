@@ -265,22 +265,25 @@
         },
       
         gear: {
-            none:    { name: "Nada",            cost: 0 },
-            camo:    { name: "Camuflaje",       cost: 1 },
-            knife:   { name: "Cuchillo Sec.",   cost: 1 },
-            stim:    { name: "Estimulante",     cost: 1 },
-            granada: { name: "Granada Frag",    cost: 2 },
-            smoke:   { name: "Granada Humo",    cost: 2 },
-            ammo:    { name: "Munición Extra",  cost: 2 },
-            scope:   { name: "Mira Táctica",    cost: 2 },
-            goggles: { name: "Visor Nocturno",  cost: 2 },
-            armor:   { name: "Placas Extra",    cost: 3 },
-            scanner: { name: "Escáner",         cost: 3 },
-            medkit:  { name: "Botiquín",        cost: 3 },
-            drone:   { name: "Dron Apoyo",      cost: 4 },
-            shield:  { name: "Escudo",  cost: 4 },
-            jetpack: { name: "Propulsores",     cost: 5 }
-        }
+            // --- Básicos ---
+            none:    { name: "-",            cost: 0 },
+            
+            // --- Modificadores de Combate ---
+            scope:   { name: "Mira Láser",     cost: 2, modHit: -1 }, // Mejora Puntería
+            stim:    { name: "Estimulante",    cost: 1, modA: 1, modHP: -1 }, // +Ataque, -Vida (ejemplo)
+            knife:   { name: "Cuchillo Sec.",  cost: 1, modA: 0 },    // Solo cosmético o regla especial
+            
+            // --- Defensivos ---
+            armor:   { name: "Placas Extra",   cost: 3, modHP: 1 },   // Suma Vida
+            shield:  { name: "Escudo Energía", cost: 4, modSV: -1 },  // Mejora Salvación
+            camo:    { name: "Capa Camuflaje", cost: 2, modSV: -1 },  // Mejora Salvación (ejemplo)
+            
+            // --- Utilidad (Solo Coste) ---
+            granada: { name: "Granada Frag",   cost: 2 },
+            medkit:  { name: "Botiquín",       cost: 3 },
+            scanner: { name: "Escáner",        cost: 3 },
+            jetpack: { name: "Propulsores",    cost: 5 }
+        },
     };
 
     let state = { squad: {}, pts: 0 };
@@ -306,15 +309,16 @@
         const AB = DB.abilities[document.getElementById('u-ability').value];
         const W = DB.armas[document.getElementById('u-weapon').value];
         const B = DB.peanas[document.getElementById('u-base').value];
-        const G = DB.gear[document.getElementById('u-gear').value];
+        //const G = DB.gear[document.getElementById('u-gear').value];
 
         // 1. PERFIL RANGO (Solo si el arma es Ranged)
         let r_atk="-", r_hit="-", r_dmg="-";
         let hasGun = (W.type === 'Ranged');
+        let G = DB.gear[document.getElementById('u-gear').value];
         
         if (hasGun) {
             let gearHit = (document.getElementById('u-gear').value === 'scope') ? -1 : 0;
-            let hitVal = S.bs + R.modHit + (AB.modHit||0) + gearHit; 
+            let hitVal = S.bs + R.modHit + (AB.modHit||0) + (G.modHit||0);
             if(hitVal<2) hitVal=2; if(hitVal>6) hitVal=6;
             
             r_atk = W.A + R.modA; // El rol puede dar mas disparos? Asumamos que rol Assault da melee, Heavy no esta definido modA. Lo simplificamos: modA afecta a todo? Generalmente si.
@@ -340,7 +344,7 @@
         let m_base_D = isMeleeWeapon ? W.D : baseM.D;
         
         // Modificadores Globales (Rol, Habilidad, Peana)
-        let final_m_A = m_base_A + R.modA + (AB.modA||0);
+        let final_m_A = m_base_A + R.modA + (AB.modA||0) + (G.modA||0);
         let final_m_D = m_base_D + B.dmgMod + (AB.modDmg||0);
         if(document.getElementById('u-species').value === 'ork') final_m_D += 1; // Orko bonus
 
@@ -349,8 +353,8 @@
         if(hitM<2) hitM=2; if(hitM>6) hitM=6;
 
         // 3. DEFENSA
-        let hp = S.hp + R.modHP + B.hpMod + (AB.modHP||0);
-        let sv = S.sv + B.svMod + (AB.modSV||0);
+        let hp = S.hp + R.modHP + B.hpMod + (AB.modHP||0) + (G.modHP||0);
+        let sv = S.sv + B.svMod + (AB.modSV||0) + (G.modSV||0);
         if(document.getElementById('u-gear').value === 'shield') sv -= 1;
         if(sv<2) sv=2; if(sv>6) sv=6;
 
@@ -484,6 +488,7 @@
 </body>
 
 </html>
+
 
 
 
