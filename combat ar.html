@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v46 GEAR & OPS</title>
+    <title>SQUAD COMMAND: v48 MECHANICS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -31,14 +31,14 @@
         .btn * { pointer-events: none; } 
         .btn.wait { background: #333; color: #888; border: 1px solid #555; animation: pulse 1s infinite; cursor: default; pointer-events: none; }
         
-        /* ESTILO NUEVO PARA BOTÓN DE EQUIPO (GEAR) */
+        .btn-small { font-size: 0.7rem; padding: 5px; width: auto; display: inline-block; clip-path: none; border: 1px solid var(--gold); background: #000; color: var(--gold); cursor: pointer; pointer-events: auto; }
+
+        /* BOTÓN ESPECIAL PARA GEAR ACTIVO */
         .btn-gear { 
             background: #fff !important; color: #000 !important; border: 2px solid var(--gold) !important; 
             box-shadow: 0 0 10px var(--gold); animation: pulseGold 2s infinite; 
         }
         @keyframes pulseGold { 0% { box-shadow: 0 0 5px var(--gold); } 50% { box-shadow: 0 0 15px var(--gold); } 100% { box-shadow: 0 0 5px var(--gold); } }
-
-        .btn-small { font-size: 0.7rem; padding: 5px; width: auto; display: inline-block; clip-path: none; border: 1px solid var(--gold); background: #000; color: var(--gold); cursor: pointer; pointer-events: auto; }
 
         .ops-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; width: 100%; display: none; }
         .btn-op { font-size: 0.8rem; padding: 15px 5px; clip-path: none; border: 1px solid #000; color: #000; font-weight: bold; }
@@ -72,7 +72,7 @@
         .hp-bar { height: 4px; background: #333; margin-top: 5px; width: 100%; }
         .hp-fill { height: 100%; transition: width 0.3s; }
         
-        /* TAGS PARA GEAR/SKILLS */
+        /* TAGS PARA EQUIPO/HABILIDADES */
         .tags-container { display:flex; flex-wrap:wrap; gap:2px; margin-top:4px; }
         .tag { font-size: 0.55rem; padding: 2px 4px; border-radius: 2px; text-transform: uppercase; font-weight: bold; border: 1px solid #444; }
         .tag.active-gear { background: var(--gold); color: #000; border-color: #fff; }
@@ -138,6 +138,7 @@
         }
         .log-entry.danger { border-color: var(--r); color: #ffcccc; text-shadow: 0 0 5px var(--r); }
         .log-entry.success { border-color: var(--gold); color: #fffee0; text-shadow: 0 0 5px var(--gold); }
+        .log-entry.fade-out { opacity: 0; transform: translateX(-20px); filter: blur(5px); }
         
         @keyframes slideIn { from { opacity:0; transform: translateX(-50px); } to { opacity:1; transform: translateX(0); } }
 
@@ -189,7 +190,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v46 GEAR & OPS</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v48 GEAR MECHANICS</div>
         
         <div class="box"><textarea id="json-input" placeholder='{"squad": [{"id":"1","name":"Trooper","stats":{"hp":"10"...},"gear":"grenade"}]}'></textarea></div>
         
@@ -265,7 +266,8 @@
                             <span>RIVAL</span> <span id="en-mode-icon">❓</span>
                         </div>
                         <div id="enemy-name" style="font-weight:bold;">ESPERANDO...</div>
-                        <div class="tags-container" id="en-tags"></div> <div class="stat-grid">
+                        <div class="tags-container" id="en-tags"></div>
+                        <div class="stat-grid">
                             <div class="stat-box"><span class="stat-label">RNG</span><span class="stat-val" id="en-r">--</span></div>
                             <div class="stat-box"><span class="stat-label">MEL</span><span class="stat-val" id="en-m">--</span></div>
                             <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="en-sv">--</span></div>
@@ -312,14 +314,15 @@
     </div>
 
 <script>
-    // --- NUEVO: DICCIONARIO DE MECÁNICAS ---
+    // --- DATABASE DE MECÁNICAS (SOLO DEFINICIONES) ---
     const MECHANICS_DB = {
         "grenade": { name: "GRANADA", icon: "💣", type: "ACTIVE", func: "THROW_GRENADE", oneUse: true },
         "medkit":  { name: "MEDKIT",  icon: "💊", type: "ACTIVE", func: "USE_MEDKIT", oneUse: true },
         "regen":   { name: "REGEN",   icon: "🩸", type: "AUTO",   func: "AUTO_REGEN" },
         "stim":    { name: "ESTIM",   icon: "💉", type: "ACTIVE", func: "USE_STIM", oneUse: true },
         "scope":   { name: "MIRA",    icon: "🎯", type: "PASSIVE" },
-        "stealth": { name: "SIGILO",  icon: "👻", type: "PASSIVE" }
+        "stealth": { name: "SIGILO",  icon: "👻", type: "PASSIVE" },
+        "shield":  { name: "ESCUDO",  icon: "🔵", type: "PASSIVE" }
     };
 
     const BROKER = "broker.hivemq.com"; const PORT = 8884; 
@@ -477,14 +480,14 @@
             if(!parsed.squad) throw new Error("JSON Inválido");
             const raw = Object.values(parsed.squad);
             
-            // --- NUEVO: PARSEAR MECÁNICAS ---
+            // --- PARSEAR SIN MODIFICAR STATS ---
             myUnits = raw.map(u => {
                 const unit = { ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', acted: false, reacted: false, mechanics: [] };
                 // Mapear Gear
                 if(u.gear && MECHANICS_DB[u.gear]) unit.mechanics.push(MECHANICS_DB[u.gear]);
                 // Mapear Ability
                 if(u.ability && MECHANICS_DB[u.ability]) unit.mechanics.push(MECHANICS_DB[u.ability]);
-                // Estado de uso de items
+                // Estado de uso
                 unit.gearUsed = false;
                 return unit;
             });
@@ -507,6 +510,7 @@
     function assignSecretMission() {
         if(secondaryActive) {
             secretMission = SECRET_POOL[Math.floor(Math.random() * SECRET_POOL.length)];
+            log(`TU SECRETA: ${secretMission}`);
         } else secretMission = null;
     }
     function updateMissionDisplay() {
@@ -514,7 +518,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v46/${code}`; 
+        TOPIC = `sqcmd/v48/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -534,14 +538,13 @@
         else if(d.type === 'REQ_REROLL') showConfirmModal(`RIVAL PIDE RE-TIRAR\n¿CONFIRMAR?`, d);
         else if(d.type === 'ACK_REROLL') executeReroll();
         
-        // --- NUEVO: EVENTOS DE MECÁNICAS RIVALES ---
+        // EVENTOS DE GEAR RIVAL
         else if(d.type === 'GEAR_EFFECT') {
             log(`RIVAL USA ${d.gearName}: ${d.desc}`);
             if(d.dmg) {
-                // Daño directo (Granada)
-                const target = myUnits[myIdx];
+                const target = myUnits[myIdx]; // Asume que ataca al activo (simplificado)
                 applyDamage(d.dmg);
-                alert(`¡IMPACTO DE ${d.gearName}!\nDaño recibido: ${d.dmg}`);
+                log(`RECIBES ${d.dmg} DAÑO DE ${d.gearName}`, 'danger');
             }
         }
 
@@ -651,7 +654,7 @@
         const ind = document.getElementById('turn-indicator');
         const actions = document.getElementById('combat-actions');
         
-        // --- NUEVO: REGEN AUTOMÁTICA AL INICIAR TURNO ---
+        // REGEN AL INICIO
         if(gameState === 'MY_TURN') checkAutoMechanics();
 
         if(gameState === 'MY_TURN') {
@@ -659,7 +662,7 @@
             actions.style.opacity = "1"; actions.style.pointerEvents = "auto";
             document.getElementById('ops-actions').style.pointerEvents = "auto";
             enableControls(true);
-            updateHUD(); // Actualizar botones de Gear
+            updateHUD(); 
             if(secondaryActive && !secretClaimed) document.getElementById('btn-claim-secret').style.display = 'block';
         } else {
             ind.className = "turn-badge enemy-turn"; ind.innerText = "TURNO RIVAL";
@@ -670,7 +673,6 @@
         updateHUD();
     }
 
-    // --- NUEVO: LÓGICA DE MECÁNICAS AUTOMÁTICAS ---
     function checkAutoMechanics() {
         const me = myUnits[myIdx];
         if(!me || globalHP[me.uid].c <= 0) return;
@@ -687,25 +689,21 @@
         });
     }
 
-    // --- NUEVO: USAR ITEM ACTIVO ---
+    // --- ACTIVACIÓN DE ITEM ---
     window.useSpecialGear = function() {
         if(gameState !== 'MY_TURN') return;
         const me = myUnits[myIdx];
-        // Buscar item activo disponible
         const item = me.mechanics.find(m => m.type === 'ACTIVE' && !me.gearUsed);
         
         if(!item) return;
 
         if(item.func === 'THROW_GRENADE') {
-            // Granada: Daño automático de 3 (simplificado)
-            const dmg = 3;
+            const dmg = 3; // Valor fijo o tirar dados en el futuro
             log(`LANZANDO GRANADA...`);
             publish({type: 'GEAR_EFFECT', gearName: 'GRANADA', desc: `BOOM! ${dmg} Daño`, dmg: dmg});
-            alert("GRANADA LANZADA: 3 DAÑO AL RIVAL");
             passTurn(0);
         } 
         else if (item.func === 'USE_MEDKIT') {
-            // Medkit: Cura 3
             globalHP[me.uid].c = Math.min(globalHP[me.uid].m, globalHP[me.uid].c + 3);
             publish({type: 'SYNC_HP', state: globalHP});
             log(`${me.name} USA MEDKIT (+3 HP)`);
@@ -713,17 +711,14 @@
             passTurn(0);
         }
         else if (item.func === 'USE_STIM') {
-             // Estimulante: Sacrifica 1 HP para ganar accion extra (narrativo)
              globalHP[me.uid].c = Math.max(0, globalHP[me.uid].c - 1);
              publish({type: 'SYNC_HP', state: globalHP});
              log(`${me.name} USA ESTIMULANTE (-1 HP, +BUFF)`);
-             // No pasa turno, permite actuar
              me.gearUsed = true;
              updateHUD();
              return; 
         }
 
-        // Marcar como usado
         if(item.oneUse) {
             me.gearUsed = true;
             updateHUD();
@@ -732,29 +727,23 @@
 
     window.performOp = function(op) {
         if(gameState !== 'MY_TURN') return;
-        if(op === 'DASH') {
-            log("DASH: Movimiento rápido.");
-            publish({type: 'OP_ACTION', opType: 'DASH'});
-            passTurn(0);
-        } else if(op === 'MISION') {
-            myVP += 1;
-            log("MISION: Objetivo asegurado (+1 PV).");
-            publish({type: 'OP_ACTION', opType: 'MISION'});
-            publish({type: 'SCORE_UPDATE', vp: myVP});
-            passTurn(0);
-        } else if(op === 'PASAR') {
-            log("PASAR: Sin acciones.");
-            passTurn(consecutivePasses + 1);
-        }
+        const me = myUnits[myIdx];
+        log(`REALIZAS ${op}`);
+        if(op === 'MISION') { myVP += 1; publish({type: 'SCORE_UPDATE', vp: myVP}); log("OBJETIVO TOMADO (+1 PV)"); }
+        if(op === 'PASAR') log("PASAS TURNO");
+        if(!me.acted) me.acted = true; else me.reacted = true;
+        publish({type:'OP_ACTION', opType: op});
+        publish({type:'SYNC_SQUAD', squad: myUnits});
+        passTurn(0);
     }
 
     function passTurn(passes) {
         if(myUnits[myIdx].acted) { } 
         else { myUnits[myIdx].acted = true; } 
         
-        publish({type: 'SYNC_SQUAD', squad: myUnits}); // Sincronizar estado (si usé gear)
+        publish({type: 'SYNC_SQUAD', squad: myUnits}); 
 
-        if(passes >= 2) { // Ambos pasaron
+        if(passes >= 2) { 
             endRound();
         } else {
             setTurn('ENEMY_TURN', passes);
@@ -782,187 +771,87 @@
     }
 
     window.proceedPhase = function(e) {
-        e.stopPropagation();
-        if(gameState !== 'MY_TURN' && dicePhase !== 'DEFENSE_ROLL') return;
+        if(e) { e.preventDefault(); e.stopPropagation(); }
+        if(waitingForAck) return;
 
         if(dicePhase === 'ATTACK_ROLL') {
-            const hits = activeDice.filter(d => d >= diceTarget).length;
-            const crits = activeDice.filter(d => d === 6).length;
-            
-            if(hits === 0) {
-                log("FALLO TOTAL");
-                closeDice();
-                passTurn(0);
-            } else {
-                log(`ATAQUE: ${hits} IMPACTOS`);
-                pendingHits = { normal: hits - crits, crit: crits };
-                publish({type: 'REQ_DEFENSE', hitsStruct: pendingHits});
-                document.getElementById('dice-sub').innerText = "Esperando defensa...";
-                document.getElementById('btn-dice-main').style.display = 'none'; // Esperar ack
-            }
+            let hitsStruct = { normal: 0, crit: 0 };
+            activeDice.forEach(val => { if(val === 6) hitsStruct.crit++; else if(val >= diceTarget) hitsStruct.normal++; });
+            log(`IMPACTOS: ${hitsStruct.normal} N, ${hitsStruct.crit} Crit`);
+            publish({ type: 'REQ_DEFENSE', hitsStruct: hitsStruct, uName: myUnits[myIdx].name });
+            document.getElementById('dice-sub').innerHTML = `Impactos: ${hitsStruct.normal} <span class="crit-text">+ ${hitsStruct.crit} CRIT</span>`;
+            document.getElementById('btn-dice-main').style.display = 'none';
         } 
-        else if (dicePhase === 'DEFENSE_ROLL') {
-            const sv = parseInt(myUnits[myIdx].stats.sv.replace('+',''));
-            // Aplicar cobertura
-            const finalSv = coverActive ? Math.max(2, sv - 1) : sv;
+        else if(dicePhase === 'DEFENSE_ROLL') {
+            let defCrits = activeDice.filter(x => x === 6).length;
+            let defNormals = activeDice.filter(x => x >= diceTarget && x < 6).length;
             
-            const saves = activeDice.filter(d => d >= finalSv).length;
-            const dmg = Math.max(0, (pendingHits.normal + pendingHits.crit) - saves);
+            if(coverActive) { defNormals += 1; log("¡Cobertura aplicada manual! (+1 Save)"); }
+
+            let incCrits = pendingHits.crit;
+            let incNormals = pendingHits.normal;
             
-            log(`DEFENSA: ${saves} SALVADOS. ${dmg} DAÑO.`);
-            publish({type: 'DAMAGE_RESOLVE', dmg: dmg});
-            applyDamage(dmg);
-            closeDice();
+            let critsBlocked = Math.min(incCrits, defCrits); incCrits -= critsBlocked;
+            let remainingDefCrits = defCrits - critsBlocked;
+            let normalsBlockedByCrit = Math.min(incNormals, remainingDefCrits); incNormals -= normalsBlockedByCrit;
+            let normalsBlockedByNormal = Math.min(incNormals, defNormals); incNormals -= normalsBlockedByNormal;
             
+            const totalDmg = incCrits + incNormals;
             const me = myUnits[myIdx];
-            if(!me.acted) me.acted = true; else me.reacted = true;
-            publish({type:'SYNC_SQUAD', squad: myUnits});
-            passTurn(0);
+            globalHP[me.uid].c = Math.max(0, globalHP[me.uid].c - totalDmg);
+            log(`DAÑO RECIBIDO: ${totalDmg}`);
+            publish({ type: 'DAMAGE_RESOLVE', dmg: totalDmg }); 
+            publish({ type: 'SYNC_HP', state: globalHP });
+            closeDice(); applyDamage(totalDmg);
         }
     }
 
-    function startDefensePhase() {
-        dicePhase = 'DEFENSE_ROLL';
-        const me = myUnits[myIdx];
-        const totalHits = pendingHits.normal + pendingHits.crit;
-        activeDice = Array(totalHits).fill(0).map(()=>Math.ceil(Math.random()*6));
-        
-        // Calcular SV base para mostrar
-        const svBase = parseInt(me.stats.sv.replace('+',''));
-        diceTarget = svBase; 
-
-        // Mostrar Toggle de Cobertura
-        document.getElementById('btn-cover-toggle').style.display = 'block';
-        document.getElementById('btn-cover-toggle').innerHTML = "COBERTURA: NO";
-        document.getElementById('btn-cover-toggle').classList.remove('active');
-        coverActive = false;
-
-        showDiceOverlay('DEFENSE_ROLL', activeDice, diceTarget, true);
-    }
-
-    function applyDamage(dmg) {
-        if(dmg > 0) {
-            const me = myUnits[myIdx];
-            document.getElementById('flash-fx').innerHTML = '<div class="flash"></div>';
-            setTimeout(()=>document.getElementById('flash-fx').innerHTML='', 300);
-            globalHP[me.uid].c = Math.max(0, globalHP[me.uid].c - dmg);
-            publish({type: 'SYNC_HP', state: globalHP});
-            updateHUD();
-            if(globalHP[me.uid].c === 0) log("¡OPERATIVO ABATIDO!", "danger");
-        }
-    }
-
-    function syncDiceToRival(uName) {
-        publish({type: 'DICE_SYNC', phase: dicePhase, dice: activeDice, target: diceTarget, uName: uName});
-    }
-
-    function showDiceOverlay(phase, dice, target, isInteractive) {
-        const pool = document.getElementById(isInteractive ? 'dice-pool' : 'incoming-pool');
-        const container = document.getElementById(isInteractive ? 'active-section' : 'incoming-section');
-        const title = document.getElementById('dice-title');
-        
-        container.style.display = 'block';
-        pool.innerHTML = '';
-
-        if(phase === 'ATTACK_ROLL') {
-            title.innerText = isInteractive ? "TU ATAQUE" : "ATAQUE ENEMIGO";
-            dice.forEach((d, i) => {
-                const el = document.createElement('div');
-                el.className = `die ${d>=target ? (d===6?'crit':'hit') : 'miss'}`;
-                if(!isInteractive) el.className = `die ${d>=target ? (d===6?'incoming-crit':'incoming-hit') : 'miss'}`;
-                el.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][d];
-                if(isInteractive) el.onclick = () => askReroll(i);
-                pool.appendChild(el);
-            });
-        } 
-        else if (phase === 'DEFENSE_ROLL') {
-            title.innerText = "TU DEFENSA";
-            // Check cobertura visual update logic handled in toggle
-            dice.forEach((d, i) => {
-                // Cálculo visual dinámico se hará al confirmar, aquí solo mostramos el dado crudo
-                const el = document.createElement('div');
-                el.className = 'die'; 
-                // Color simple hasta que confirmes o uses lógica avanzada, aquí usamos blanco/gris
-                el.style.color = "#fff";
-                el.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][d];
-                if(isInteractive) el.onclick = () => askReroll(i);
-                pool.appendChild(el);
-            });
-        }
-
-        document.getElementById('dice-overlay').classList.add('show');
-        if(isInteractive) document.getElementById('btn-dice-main').style.display = 'block';
-        else document.getElementById('btn-dice-main').style.display = 'none';
-    }
-
-    window.closeDice = function() {
-        document.getElementById('dice-overlay').classList.remove('show');
-        setTimeout(() => {
-            document.getElementById('incoming-pool').innerHTML = '';
-            document.getElementById('dice-pool').innerHTML = '';
-            document.getElementById('incoming-section').style.display = 'none';
-            document.getElementById('btn-cover-toggle').style.display = 'none';
-        }, 300);
-    }
-
-    // --- UI HELPERS ---
-    window.nextMyUnit = function() { myIdx = (myIdx+1)%myUnits.length; updateHUD(); }
-    window.nextEnemyUnit = function() { if(enemyUnits.length) enIdx = (enIdx+1)%enemyUnits.length; updateHUD(); }
+    function applyDamage(n) { document.getElementById('flash-fx').className = n>0?'flash':''; setTimeout(()=>document.getElementById('flash-fx').className='',300); }
     
-    window.switchMode = function() {
-        combatMode = (combatMode==='ranged') ? 'melee' : 'ranged';
-        document.getElementById('btn-combat-mode').innerHTML = (combatMode==='ranged') ? "🔫" : "🔪";
-        updateHUD();
-    }
-    window.setMode = function(m, e) {
-        e.stopPropagation();
-        myUnits[myIdx].mode = m;
-        updateHUD();
-    }
-    
-    function enableControls(enable) {
-        const btns = document.querySelectorAll('#combat-actions .btn, #ops-actions .btn');
-        btns.forEach(b => b.disabled = !enable);
-    }
-
     function checkWinCondition() {
-        isGameOver = true;
-        document.getElementById('game-over-screen').classList.add('show');
-        const won = myVP > enemyVP;
-        document.getElementById('end-title').innerText = won ? "VICTORIA" : (myVP==enemyVP?"EMPATE":"DERROTA");
-        document.getElementById('end-title').style.color = won ? "var(--g)" : "var(--r)";
-        document.getElementById('end-score').innerText = `${myVP} - ${enemyVP}`;
+        if(isGameOver) return;
+        if (!enemyUnits || enemyUnits.length === 0) return; 
+        const myAlive = myUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
+        const enemyAlive = enemyUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
+        if (myAlive === 0 || enemyAlive === 0 || currentRound > maxRounds) {
+            let res = "EMPATE"; let type = "DRAW";
+            if(myVP > enemyVP) { res = "VICTORIA"; type = "WIN"; } else if(myVP < enemyVP) { res = "DERROTA"; type = "LOSE"; }
+            triggerGameOver(res, type);
+        }
     }
-
-    function publish(payload) { if(client) { payload.sender = MY_ID; client.send(TOPIC, JSON.stringify(payload)); } }
-    function log(msg, type='') { 
-        const div = document.createElement('div'); 
-        div.className = `log-entry ${type}`; 
-        div.innerText = msg; 
-        const area = document.getElementById('combat-log');
-        area.prepend(div);
-        if(area.children.length > 5) area.lastChild.remove();
+    function triggerGameOver(text, type) {
+        if(isGameOver) return; isGameOver = true;
+        const screen = document.getElementById('game-over-screen');
+        screen.classList.add('show');
+        document.getElementById('end-title').innerText = text;
+        document.getElementById('end-score').innerText = `YO: ${myVP} - RIV: ${enemyVP}`;
+        document.getElementById('end-title').className = type === "WIN" ? "end-title win" : (type === "LOSE" ? "end-title lose" : "end-title draw");
+        closeDice();
     }
-
+    window.setMode=(m,e)=>{e.stopPropagation(); if(gameState==='PLANNING'){myUnits[myIdx].mode=m; updateHUD();}};
+    window.nextMyUnit=()=>{resetPassButtons(); myIdx=(myIdx+1)%myUnits.length; updateHUD();};
+    window.nextEnemyUnit=()=>{if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD();};
+    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
+    window.closeDice=()=>{document.getElementById('dice-overlay').classList.remove('show');};
     function updateHUD() {
         if(!myUnits.length) return;
-        const me = myUnits[myIdx];
-        const en = enemyUnits[enIdx];
-
-        // --- Render Unit YO ---
-        document.getElementById('my-name').innerText = me.name;
-        document.getElementById('my-name').style.color = me.acted ? "#555" : "#fff";
-        document.getElementById('my-r').innerText = `${me.stats.r_atk}d (${me.stats.r_hit})`;
-        document.getElementById('my-r').className = combatMode==='ranged' ? 'stat-val hl' : 'stat-val';
-        document.getElementById('my-m').innerText = `${me.stats.m_atk}d (${me.stats.m_hit})`;
-        document.getElementById('my-m').className = combatMode==='melee' ? 'stat-val hl' : 'stat-val';
-        document.getElementById('my-sv').innerText = me.stats.sv;
-        document.getElementById('my-hp').style.width = (globalHP[me.uid].c / globalHP[me.uid].m * 100) + "%";
+        if (enemyUnits.length > 0 && !isGameOver) {
+            const myAlive = myUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
+            const enemyAlive = enemyUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
+            if (myAlive === 0 || enemyAlive === 0) checkWinCondition();
+        }
+        document.getElementById('my-score').innerText = myVP;
+        document.getElementById('enemy-score').innerText = enemyVP;
+        document.getElementById('round-display').innerText = `RND ${currentRound}/${maxRounds}`;
+        const me = myUnits[myIdx]; const en = enemyUnits[enIdx];
         
-        document.getElementById('btn-mode-open').className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
-        document.getElementById('btn-mode-hidden').className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
-
-        // --- Render Tags & Buttons (NUEVO) ---
+        document.getElementById('my-name').innerText = me.name;
+        document.getElementById('my-r').innerText = `${me.stats.r_atk}d`;
+        document.getElementById('my-m').innerText = `${me.stats.m_atk}d`;
+        document.getElementById('my-sv').innerText = `${me.stats.sv}`;
+        document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
+        
+        // RENDER TAGS & BUTTON
         const tagContainer = document.getElementById('my-tags');
         tagContainer.innerHTML = '';
         let showGearBtn = false;
@@ -976,11 +865,9 @@
                 if(m.oneUse && me.gearUsed) css += " used";
                 else if(!me.gearUsed && gameState === 'MY_TURN') {
                     showGearBtn = true;
-                    gearBtnText = m.name; // Ej: GRANADA
+                    gearBtnText = m.name;
                 }
-            } else {
-                css += " passive";
-            }
+            } else { css += " passive"; }
             span.className = css;
             span.innerHTML = `${m.icon} ${m.name}`;
             tagContainer.appendChild(span);
@@ -994,26 +881,59 @@
             btnGear.style.display = 'none';
         }
 
+        const mc = document.getElementById('my-card'); mc.className = "card my"; 
+        if(me.reacted) mc.classList.add('finished'); else if(me.acted) mc.classList.add('exhausted');
 
-        // --- Render Enemy ---
+        if(gameState === 'PLANNING') {
+            document.getElementById('my-tactics').style.display = 'flex';
+            document.getElementById('btn-mode-open').className = me.mode==='open'?'mode-toggle selected':'mode-toggle';
+            document.getElementById('btn-mode-hidden').className = me.mode==='hidden'?'mode-toggle selected':'mode-toggle';
+            document.getElementById('combat-actions').style.display = 'none';
+            document.getElementById('ops-actions').style.display = 'none';
+        } else {
+            document.getElementById('my-tactics').style.display = 'none';
+            if(me.mode === 'open') {
+                document.getElementById('combat-actions').style.display = 'flex';
+                document.getElementById('ops-actions').style.display = 'none';
+                document.getElementById('btn-combat-mode').innerHTML = combatMode === 'ranged' ? "<span>🔫</span>" : "<span>⚔️</span>";
+                document.getElementById('btn-act').innerHTML = combatMode === 'ranged' ? "<span>DISPARAR</span>" : "<span>GOLPEAR</span>";
+            } else {
+                document.getElementById('combat-actions').style.display = 'none';
+                document.getElementById('ops-actions').style.display = 'grid';
+            }
+        }
         if(en) {
             document.getElementById('enemy-name').innerText = en.name;
-            document.getElementById('enemy-hp').style.width = (globalHP[en.uid].c / globalHP[en.uid].m * 100) + "%";
-            document.getElementById('en-r').innerText = en.stats.r_atk;
-            document.getElementById('en-m').innerText = en.stats.m_atk;
-            document.getElementById('en-sv').innerText = en.stats.sv;
-            document.getElementById('en-mode-icon').innerText = en.mode === 'hidden' ? '🛡️' : '⚔️';
+            document.getElementById('en-r').innerText = `${en.stats.r_atk}d`;
+            document.getElementById('en-m').innerText = `${en.stats.m_atk}d`;
+            document.getElementById('en-sv').innerText = `${en.stats.sv}`;
+            document.getElementById('enemy-hp').style.width = (globalHP[en.uid].c/globalHP[en.uid].m*100)+"%";
+            document.getElementById('en-mode-icon').innerText = en.mode==='open' ? '⚔️' : '🛡️';
+            const ec = document.getElementById('en-card'); ec.className = "card enemy";
+            if(en.reacted) ec.classList.add('finished'); else if(en.acted) ec.classList.add('exhausted');
             
-            // Render Enemy Tags (simplificado para no revelar todo)
             const enTagContainer = document.getElementById('en-tags');
             enTagContainer.innerHTML = '';
-            if(en.gear) enTagContainer.innerHTML += `<span class="tag passive">⚙</span>`; // Solo icono
+            if(en.gear) enTagContainer.innerHTML += `<span class="tag passive">⚙</span>`;
             if(en.ability) enTagContainer.innerHTML += `<span class="tag passive">★</span>`;
         }
-
-        document.getElementById('my-score').innerText = myVP;
-        document.getElementById('enemy-score').innerText = enemyVP;
-        document.getElementById('round-display').innerText = `RND ${currentRound}/${maxRounds}`;
+    }
+    function publish(p) { if(client){ p.sender=MY_ID; client.send(TOPIC, JSON.stringify(p)); } }
+    
+    function log(t, type='info') { 
+        const container = document.getElementById('combat-log');
+        const el = document.createElement('div');
+        el.innerText = `> ${t}`;
+        
+        let cssType = type;
+        if(type==='info') {
+            if(t.includes('DAÑO') || t.includes('RIVAL') || t.includes('ABATIDO')) cssType = 'danger';
+            else if(t.includes('PV') || t.includes('EXITO') || t.includes('ACEPTADA') || t.includes('TURNO')) cssType = 'success';
+        }
+        
+        el.className = `log-entry ${cssType}`;
+        container.prepend(el); 
+        setTimeout(() => { el.classList.add('fade-out'); setTimeout(() => el.remove(), 500); }, 10000);
     }
 </script>
 </body>
