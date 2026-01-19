@@ -710,8 +710,12 @@
             const d = document.createElement('div'); d.className = 'die';
             d.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][val];
             if(val === 6) d.classList.add('crit'); else if(val >= target) d.classList.add(phase==='ATTACK_ROLL'?'hit':'save-ok'); else d.classList.add(phase==='ATTACK_ROLL'?'miss':'save-fail');
-            if(isInteractive) { d.onclick = () => askReroll(i); } else d.classList.add('locked');
-            pool.appendChild(d);
+            if(isInteractive) { d.onclick = (e) => { e.preventDefault();  
+            e.stopPropagation(); 
+            askReroll(i); 
+        }; 
+    } else d.classList.add('locked');
+                pool.appendChild(d);
         });
     }
 
@@ -867,4 +871,5 @@
 </script>
 </body>
 </html>
+
 
