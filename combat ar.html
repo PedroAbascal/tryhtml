@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v44 IMMERSIVE LOG</title>
+    <title>SQUAD COMMAND: v45 ACTIVE LOGS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -102,27 +102,29 @@
         .flash { animation: flashRed 0.3s; }
         @keyframes flashRed { 50% { background: rgba(255, 0, 0, 0.5); } }
         
-        /* --- NUEVO SISTEMA DE LOG INMERSIVO --- */
+        /* --- LOG VISUAL AJUSTADO --- */
         .log-area { 
             position: absolute; top: 120px; left: 10px; width: 70%; 
-            display: flex; flex-direction: column-reverse; pointer-events: none; 
+            display: flex; flex-direction: column; /* Cambiado de reverse a normal */
+            pointer-events: none; 
             z-index: 50; 
         }
         .log-entry {
-            background: rgba(0, 10, 20, 0.8);
-            border-left: 3px solid var(--c);
+            background: rgba(0, 10, 20, 0.9); /* Más opaco para leer mejor */
+            border-left: 4px solid var(--c);
             color: #fff;
-            font-size: 0.7rem;
-            padding: 6px 10px;
+            font-size: 0.75rem;
+            padding: 8px 10px;
             margin-bottom: 6px;
             font-family: 'Courier New', monospace;
             text-shadow: 0 0 2px var(--c);
-            backdrop-filter: blur(2px);
+            backdrop-filter: blur(4px);
             animation: slideIn 0.3s ease-out;
             opacity: 1;
             transform: translateX(0);
             transition: all 0.5s ease;
-            box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+            font-weight: bold;
         }
         .log-entry.danger { border-color: var(--r); color: #ffcccc; text-shadow: 0 0 5px var(--r); }
         .log-entry.success { border-color: var(--gold); color: #fffee0; text-shadow: 0 0 5px var(--gold); }
@@ -179,7 +181,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v44 IMMERSIVE LOG</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v45 ACTIVE LOGS</div>
         
         <div class="box"><textarea id="json-input" placeholder='JSON'></textarea></div>
         
@@ -464,13 +466,13 @@
             updateMissionDisplay();
             navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>{});
             updateHUD(); startNetwork(code);
+            log("SISTEMA ONLINE. ESPERANDO ENLACE...");
         } catch(e) { alert("ERROR EN JSON"); console.error(e); }
     }
 
     function assignSecretMission() {
         if(secondaryActive) {
             secretMission = SECRET_POOL[Math.floor(Math.random() * SECRET_POOL.length)];
-            log(`TU SECRETA: ${secretMission}`);
         } else secretMission = null;
     }
     function updateMissionDisplay() {
@@ -526,6 +528,7 @@
             if(d.phase === 'ATTACK_ROLL') {
                 showDiceOverlay(d.phase, d.dice, d.target, false); 
                 document.getElementById('dice-sub').innerText = `${d.uName} apuntando...`;
+                log("RIVAL APUNTANDO...");
             }
         }
         else if(d.type === 'REQ_DEFENSE') { pendingHits = d.hitsStruct; startDefensePhase(); }
@@ -576,6 +579,7 @@
         document.getElementById('turn-indicator').innerText = "PLANIFICACIÓN";
         document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show'));
         enableControls(false); updateHUD();
+        log(`INICIO RONDA ${currentRound}`);
     }
     function commitPlanning() {
         if(gameState !== 'PLANNING') return;
@@ -607,10 +611,17 @@
         if(st === 'MY_TURN') {
             const fresh = myUnits.filter(u => !u.acted && globalHP[u.uid].c > 0);
             const react = myUnits.filter(u => u.acted && !u.reacted && globalHP[u.uid].c > 0);
+            
+            // LOG IMPORTANTE: AVISAR QUE ES TU TURNO
+            log("--- TU TURNO ---");
+
             if(fresh.length) { b.innerText="TU TURNO"; b.className="turn-badge my-turn"; enableControls(true); selectUnit(fresh[0]); }
             else if(react.length && enemyUnits.some(u=>!u.acted)) { b.innerText="REACCIÓN"; b.className="turn-badge planning"; enableControls(true); selectUnit(react[0]); }
             else { passTurn(consecutivePasses); enableControls(false); }
-        } else { b.innerText="TURNO RIVAL"; b.className="turn-badge enemy-turn"; enableControls(false); }
+        } else { 
+            b.innerText="TURNO RIVAL"; b.className="turn-badge enemy-turn"; enableControls(false); 
+            log("TURNO DEL RIVAL");
+        }
         updateHUD();
     }
     function enableControls(ok) { 
@@ -623,7 +634,7 @@
     window.performOp = function(type) {
         if(gameState !== 'MY_TURN') return;
         const me = myUnits[myIdx];
-        log(`REALIZA ${type}.`);
+        log(`REALIZAS ${type}`);
         if(type === 'MISION') { myVP += 1; publish({type: 'SCORE_UPDATE', vp: myVP}); log("OBJETIVO TOMADO (+1 PV)"); }
         if(type === 'PASAR') log("PASAS TURNO");
         if(!me.acted) me.acted = true; else me.reacted = true;
@@ -637,6 +648,7 @@
         const me = myUnits[myIdx];
         if(me.reacted || globalHP[me.uid].c <= 0) return log("Unidad no disponible");
         if(me.mode==='hidden') return;
+        log("INICIANDO ATAQUE...");
         let count = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
         diceTarget = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
         if(me.stratagem==='aim') diceTarget = Math.max(2, diceTarget-1);
@@ -649,6 +661,7 @@
 
     function startDefensePhase() {
         const me = myUnits[myIdx];
+        log(`¡DEFENSA! (${me.name})`);
         diceTarget = parseInt(me.stats.sv);
         
         coverActive = false;
@@ -716,6 +729,9 @@
         if(dicePhase === 'ATTACK_ROLL') {
             let hitsStruct = { normal: 0, crit: 0 };
             activeDice.forEach(val => { if(val === 6) hitsStruct.crit++; else if(val >= diceTarget) hitsStruct.normal++; });
+            
+            log(`IMPACTOS: ${hitsStruct.normal} N, ${hitsStruct.crit} Crit`); // LOG AÑADIDO
+            
             publish({ type: 'REQ_DEFENSE', hitsStruct: hitsStruct, uName: myUnits[myIdx].name });
             document.getElementById('dice-sub').innerHTML = `Impactos: ${hitsStruct.normal} <span class="crit-text">+ ${hitsStruct.crit} CRIT</span>`;
             document.getElementById('btn-dice-main').style.display = 'none';
@@ -740,6 +756,9 @@
             const totalDmg = incCrits + incNormals;
             const me = myUnits[myIdx];
             globalHP[me.uid].c = Math.max(0, globalHP[me.uid].c - totalDmg);
+            
+            log(`DAÑO RECIBIDO: ${totalDmg}`); // LOG AÑADIDO
+
             publish({ type: 'DAMAGE_RESOLVE', dmg: totalDmg }); 
             publish({ type: 'SYNC_HP', state: globalHP });
             closeDice(); applyDamage(totalDmg);
@@ -823,26 +842,26 @@
     }
     function publish(p) { if(client){ p.sender=MY_ID; client.send(TOPIC, JSON.stringify(p)); } }
     
-    // --- UPDATED LOG FUNCTION ---
+    // --- FUNCIÓN LOG MEJORADA PARA INSERTAR ARRIBA ---
     function log(t) { 
         const container = document.getElementById('combat-log');
         const el = document.createElement('div');
         el.innerText = `> ${t}`;
         
-        // Auto-Coloring based on keywords
+        // Auto-Color
         let type = 'info';
         if(t.includes('DAÑO') || t.includes('RIVAL') || t.includes('ABATIDO')) type = 'danger';
-        else if(t.includes('PV') || t.includes('EXITO') || t.includes('ACEPTADA')) type = 'success';
+        else if(t.includes('PV') || t.includes('EXITO') || t.includes('ACEPTADA') || t.includes('TURNO')) type = 'success';
         
         el.className = `log-entry ${type}`;
         
-        // Add to top
-        container.appendChild(el); 
+        // INSERTAR AL PRINCIPIO (PREPEND) en lugar de append
+        container.prepend(el); 
 
         // Auto remove
         setTimeout(() => {
             el.classList.add('fade-out');
-            setTimeout(() => el.remove(), 500); // Wait for animation
+            setTimeout(() => el.remove(), 500); 
         }, 4000);
     }
 </script>
