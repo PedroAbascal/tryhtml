@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v48 GEAR MECHANICS</title>
+    <title>SQUAD COMMAND: v46 GEAR & OPS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -26,63 +26,192 @@
             background: var(--c); color: #000; border: none; padding: 15px; width: 100%; 
             font-weight: bold; cursor: pointer; font-size: 1rem; 
             clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%); 
-            margin-top: 5px; pointer-events: auto; touch-action: manipulation;
+            margin-top: 5px; pointer-events: auto; touch-action: manipulation; position: relative;
         }
+        .btn * { pointer-events: none; } 
+        .btn.wait { background: #333; color: #888; border: 1px solid #555; animation: pulse 1s infinite; cursor: default; pointer-events: none; }
+        
+        /* ESTILO NUEVO PARA BOTÓN DE EQUIPO (GEAR) */
+        .btn-gear { 
+            background: #fff !important; color: #000 !important; border: 2px solid var(--gold) !important; 
+            box-shadow: 0 0 10px var(--gold); animation: pulseGold 2s infinite; 
+        }
+        @keyframes pulseGold { 0% { box-shadow: 0 0 5px var(--gold); } 50% { box-shadow: 0 0 15px var(--gold); } 100% { box-shadow: 0 0 5px var(--gold); } }
+
         .btn-small { font-size: 0.7rem; padding: 5px; width: auto; display: inline-block; clip-path: none; border: 1px solid var(--gold); background: #000; color: var(--gold); cursor: pointer; pointer-events: auto; }
 
         .ops-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; width: 100%; display: none; }
         .btn-op { font-size: 0.8rem; padding: 15px 5px; clip-path: none; border: 1px solid #000; color: #000; font-weight: bold; }
-        
-        /* Botones de Gear Especial */
-        .btn-gear { background: #fff; color: #000; border: 2px solid var(--gold); font-size: 0.8rem; animation: pulseGold 2s infinite; }
-        @keyframes pulseGold { 0% { box-shadow: 0 0 0 var(--gold); } 50% { box-shadow: 0 0 10px var(--gold); } 100% { box-shadow: 0 0 0 var(--gold); } }
+        .op-dash { background: var(--c); }
+        .op-mission { background: var(--gold); }
+        .op-pass { background: #888; color: #000; transition: 0.2s; }
+
+        @keyframes pulse { 50% { opacity: 0.5; } }
 
         .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; flex-direction: column; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); pointer-events: auto; width: 100%; box-sizing: border-box;}
         .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px; }
+        .score-board { font-size: 1.2rem; font-weight: bold; color: #fff; text-shadow: 0 0 10px var(--c); letter-spacing: 2px; }
+        .score-detail { font-size: 0.6rem; color: #888; text-transform: uppercase; }
+
+        .turn-badge { border: 2px solid #555; padding: 5px 15px; font-weight: bold; background: #000; color: #555; text-transform: uppercase; font-size: 0.8rem; transition: 0.3s; }
+        .turn-badge.planning { border-color: var(--gold); color: var(--gold); }
+        .turn-badge.my-turn { border-color: var(--g); color: var(--g); box-shadow: 0 0 15px var(--g); transform: scale(1.1); }
+        .turn-badge.enemy-turn { border-color: var(--r); color: var(--r); opacity: 0.8; }
         
         .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; }
         .unit-selector { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
         
         .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.85); cursor: pointer; min-height: 120px; transition: 0.2s; position: relative; display: flex; flex-direction: column; justify-content: space-between; pointer-events: auto !important; }
         .card.active { border-color: #fff; transform: scale(1.02); z-index: 5; }
+        .card.exhausted { border-color: var(--gold); opacity: 0.9; } 
+        .card.finished { opacity: 0.5; filter: grayscale(1); border-color: #222; }
+        .ready-marker { position:absolute; top:-10px; right:-5px; background:var(--g); color:#000; font-size:0.6rem; padding:2px 5px; font-weight:bold; display:none; animation: pop 0.3s; }
+        .ready-marker.show { display:block; }
         .card.my { border-left: 4px solid var(--c); }
         .card.enemy { border-left: 4px solid var(--r); }
-        
-        /* Etiquetas de Habilidades/Equipo */
-        .tags-container { display:flex; flex-wrap:wrap; gap:2px; margin-top:4px; }
-        .tag { font-size: 0.55rem; padding: 2px 4px; border-radius: 2px; text-transform: uppercase; font-weight: bold; }
-        .tag.passive { background: #222; color: #aaa; border: 1px solid #444; }
-        .tag.active { background: var(--gold); color: #000; border: 1px solid #fff; }
-        .tag.used { text-decoration: line-through; opacity: 0.5; background: #000; color: #555; border-color: #333; }
-
         .hp-bar { height: 4px; background: #333; margin-top: 5px; width: 100%; }
         .hp-fill { height: 100%; transition: width 0.3s; }
         
+        /* TAGS PARA GEAR/SKILLS */
+        .tags-container { display:flex; flex-wrap:wrap; gap:2px; margin-top:4px; }
+        .tag { font-size: 0.55rem; padding: 2px 4px; border-radius: 2px; text-transform: uppercase; font-weight: bold; border: 1px solid #444; }
+        .tag.active-gear { background: var(--gold); color: #000; border-color: #fff; }
+        .tag.passive { background: #222; color: #aaa; }
+        .tag.used { text-decoration: line-through; opacity: 0.5; background: #000; color: #444; }
+
+        .tactic-row { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.7rem; border-top: 1px solid #333; padding-top: 5px; }
+        .mode-toggle { cursor: pointer; padding: 2px 5px; border: 1px solid #555; color: #888; }
+        .mode-toggle.selected { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.1); }
+
         #dice-overlay { 
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 70%; 
-            background: rgba(0, 15, 30, 0.95); border-top: 4px solid var(--gold); 
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 75%; 
+            background: rgba(0, 15, 30, 0.98); border-top: 4px solid var(--gold); 
             z-index: 100; display: flex; flex-direction: column; align-items: center; 
             transform: translateY(100%); transition: transform 0.3s; pointer-events: auto; padding-top: 20px;
         }
         #dice-overlay.show { transform: translateY(0); }
         .dice-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
-        .die { font-size: 3.5rem; color: #fff; }
+        .die { font-size: 3.5rem; cursor: pointer; transition: transform 0.2s; position:relative; }
+        .die.crit { color: var(--gold); text-shadow: 0 0 25px var(--gold); animation: pop 0.2s; }
+        .die.hit { color: var(--g); text-shadow: 0 0 20px var(--g); }
+        .die.miss { color: #444; }
+        .die.save-ok { color: var(--c); text-shadow: 0 0 20px var(--c); }
+        .die.save-fail { color: var(--r); opacity: 0.8; }
+        .die.incoming-crit { color: var(--gold); text-shadow: 0 0 15px var(--gold); pointer-events: none; }
+        .die.incoming-hit { color: var(--c); text-shadow: 0 0 10px var(--c); pointer-events: none; }
+        .die.pending { color: var(--gold); animation: pulse 0.5s infinite; cursor: wait; pointer-events: none; opacity: 0.7; }
         
-        .log-area { position: absolute; top: 80px; left: 10px; width: 70%; pointer-events: none; z-index: 50; }
-        .log-entry { background: rgba(0,0,0,0.8); border-left: 3px solid var(--c); color: #fff; font-size: 0.7rem; padding: 5px; margin-bottom: 5px; text-shadow: 0 0 2px var(--c); }
+        #btn-cover-toggle {
+            background: #000; border: 2px solid #444; color: #666; 
+            padding: 8px 20px; font-family: monospace; font-weight: bold; 
+            cursor: pointer; margin-bottom: 10px; width: 80%; text-align: center;
+            transition: 0.2s;
+        }
+        #btn-cover-toggle.active {
+            background: rgba(0, 242, 255, 0.1); border-color: var(--c); color: var(--c);
+            text-shadow: 0 0 5px var(--c);
+        }
+
+        #flash-fx { pointer-events:none; position:fixed; top:0; left:0; width:100%; height:100%; }
+        .flash { animation: flashRed 0.3s; }
+        @keyframes flashRed { 50% { background: rgba(255, 0, 0, 0.5); } }
+        
+        .log-area { 
+            position: absolute; top: 120px; left: 10px; width: 70%; 
+            display: flex; flex-direction: column; 
+            pointer-events: none; 
+            z-index: 50; 
+        }
+        .log-entry {
+            background: rgba(0, 10, 20, 0.9);
+            border-left: 4px solid var(--c);
+            color: #fff;
+            font-size: 0.75rem;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 2px var(--c);
+            backdrop-filter: blur(4px);
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+            font-weight: bold;
+        }
+        .log-entry.danger { border-color: var(--r); color: #ffcccc; text-shadow: 0 0 5px var(--r); }
+        .log-entry.success { border-color: var(--gold); color: #fffee0; text-shadow: 0 0 5px var(--gold); }
+        
+        @keyframes slideIn { from { opacity:0; transform: translateX(-50px); } to { opacity:1; transform: translateX(0); } }
+
+        #game-over-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
+        #game-over-screen.show { opacity: 1; pointer-events: auto; }
+        .end-title { font-size: 3rem; font-weight: bold; margin-bottom: 20px; letter-spacing: 5px; }
+
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; margin: 5px 0; background: rgba(255,255,255,0.05); padding: 3px; border-radius: 2px; }
+        .stat-box { display: flex; flex-direction: column; align-items: center; }
+        .stat-val { font-size: 0.7rem; font-weight: bold; color: #eee; }
+        .stat-label { font-size: 0.5rem; color: #888; }
+
+        #confirm-modal { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); z-index: 300; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            opacity: 0; pointer-events: none; transition: 0.3s; 
+        }
+        #confirm-modal.show { opacity: 1; pointer-events: auto; }
+        .modal-box { 
+            background: #111; border: 2px solid var(--gold); padding: 20px; width: 80%; max-width: 300px; text-align: center; 
+            box-shadow: 0 0 20px rgba(255,204,0,0.2);
+        }
+        .modal-text { color: var(--gold); font-size: 0.9rem; margin-bottom: 20px; font-weight: bold; }
+        .modal-btn-row { display: flex; gap: 10px; justify-content: center; }
+        .btn-modal-yes { background: var(--gold); color: #000; padding: 10px 20px; border: none; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
+    <div id="flash-fx"></div>
     <video id="ar-feed" autoplay playsinline muted></video>
     <div class="scan-line"></div>
 
+    <div id="confirm-modal">
+        <div class="modal-box">
+            <div id="modal-msg" class="modal-text">SOLICITUD ENTRANTE...</div>
+            <div class="modal-btn-row">
+                <button type="button" class="btn-modal-yes" onclick="confirmRequest()">CONFIRMAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over-screen">
+        <div id="end-title" class="end-title">---</div>
+        <div id="end-score" style="font-size:1.5rem; margin-bottom:20px; color:#fff;"></div>
+        <button type="button" class="btn" style="max-width:200px;" onclick="returnToLobby()"><span>REINICIAR</span></button>
+    </div>
+
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v48 ACTIVE GEAR</div>
-        <div class="box"><textarea id="json-input" placeholder='{"squad": [{"name":"Trooper", "gear":"grenade", "ability":"regen", "stats":{...}}]}'></textarea></div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v46 GEAR & OPS</div>
+        
+        <div class="box"><textarea id="json-input" placeholder='{"squad": [{"id":"1","name":"Trooper","stats":{"hp":"10"...},"gear":"grenade"}]}'></textarea></div>
+        
         <div class="box" style="border-color:var(--gold);">
-            <input type="text" id="room-id" value="WARZONE-1">
+            <div style="font-size:0.6rem; color:#888;">MISIÓN PRINCIPAL</div>
+            <select id="primary-mission">
+                <option value="DOMINACION">DOMINACIÓN</option>
+                <option value="SABOTAJE">SABOTAJE</option>
+                <option value="RELIC">RELIQUIA</option>
+            </select>
+
+            <div style="font-size:0.6rem; color:#888;">MISIONES SECUNDARIAS (SECRETAS)</div>
+            <select id="secondary-toggle">
+                <option value="NO">SIN SECUNDARIAS</option>
+                <option value="SI">CON SECUNDARIAS (ALEATORIO)</option>
+            </select>
+
+            <select id="round-select">
+                <option value="4">4 RONDAS</option>
+                <option value="5">5 RONDAS</option>
+            </select>
+            <input type="text" id="room-id" value="WARZONE-10">
             <button type="button" class="btn" onclick="initSystem()"><span>DESPLEGAR</span></button>
         </div>
     </div>
@@ -90,363 +219,802 @@
     <div id="game-screen" class="screen transparent hidden">
         <div class="hud-top">
             <div class="top-row">
-                <div style="font-weight:bold; color:#fff;">YO: <span id="my-score">0</span></div>
-                <div id="turn-indicator" style="background:#000; padding:5px; border:1px solid #555; font-size:0.8rem;">ESPERANDO...</div>
-                <div style="font-weight:bold; color:var(--r);">RIV: <span id="enemy-score">0</span></div>
+                <div class="score-board">YO: <span id="my-score">0</span> | RIV: <span id="enemy-score">0</span></div>
+                <div class="turn-badge planning" id="turn-indicator">PLANIFICACIÓN</div>
             </div>
+            <div class="top-row">
+                <div id="round-display" style="font-size:0.8rem; font-weight:bold;">RND 1/4</div>
+                <div class="score-detail" id="mission-info">DOMINACION</div>
+            </div>
+            <button type="button" id="btn-claim-secret" class="btn-small" style="display:none;" onclick="tryClaimSecret()">RECLAMAR SECRETA (+2)</button>
         </div>
         
         <div class="log-area" id="combat-log"></div>
 
         <div class="hud-bottom">
             <div id="planning-controls" style="text-align:center; margin-bottom:10px;">
-                <button type="button" class="btn" id="btn-ready" onclick="commitPlanning()"><span>CONFIRMAR INICIATIVA</span></button>
+                <button type="button" class="btn" id="btn-ready" onclick="commitPlanning()"><span>CONFIRMAR ÓRDENES</span></button>
             </div>
 
             <div class="unit-selector">
                 <div class="card my" onclick="nextMyUnit()" id="my-card">
                     <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.6rem;"><span>OPERATIVO</span></div>
-                        <div id="my-name" style="font-weight:bold; font-size:1.1rem;">---</div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.6rem;"><span>YO</span></div>
+                        <div id="my-name" style="font-weight:bold;">---</div>
                         <div class="tags-container" id="my-tags"></div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; margin-top:5px; font-size:0.7rem;">
-                            <div>RNG: <span id="my-r" style="color:#fff">--</span></div>
-                            <div>MEL: <span id="my-m" style="color:#fff">--</span></div>
-                            <div>SV: <span id="my-sv" style="color:#fff">--</span></div>
+
+                        <div class="stat-grid">
+                            <div class="stat-box"><span class="stat-label">RNG</span><span class="stat-val hl" id="my-r">--</span></div>
+                            <div class="stat-box"><span class="stat-label">MEL</span><span class="stat-val" id="my-m">--</span></div>
+                            <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="my-sv">--</span></div>
                         </div>
                     </div>
-                    <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
+                    <div>
+                        <div class="tactic-row" id="my-tactics">
+                            <span id="btn-mode-open" class="mode-toggle selected" onclick="setMode('open', event)">⚔️</span>
+                            <span id="btn-mode-hidden" class="mode-toggle" onclick="setMode('hidden', event)">🛡️</span>
+                        </div>
+                        <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
+                    </div>
+                    <div id="my-ready-mark" class="ready-marker">LISTO</div>
                 </div>
                 
                 <div class="card enemy" onclick="nextEnemyUnit()" id="en-card">
                     <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)"><span>OBJETIVO</span></div>
-                        <div id="enemy-name" style="font-weight:bold; font-size:1.1rem;">---</div>
-                        <div class="tags-container" id="en-tags"></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)">
+                            <span>RIVAL</span> <span id="en-mode-icon">❓</span>
+                        </div>
+                        <div id="enemy-name" style="font-weight:bold;">ESPERANDO...</div>
+                        <div class="tags-container" id="en-tags"></div> <div class="stat-grid">
+                            <div class="stat-box"><span class="stat-label">RNG</span><span class="stat-val" id="en-r">--</span></div>
+                            <div class="stat-box"><span class="stat-label">MEL</span><span class="stat-val" id="en-m">--</span></div>
+                            <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="en-sv">--</span></div>
+                        </div>
                     </div>
                     <div class="hp-bar"><div id="enemy-hp" class="hp-fill" style="background:var(--r)"></div></div>
+                    <div id="en-ready-mark" class="ready-marker">¡LISTO!</div>
                 </div>
             </div>
 
-            <div id="combat-actions" style="display:flex; gap:5px; flex-wrap:wrap;">
-                <button type="button" class="btn" id="btn-shoot" style="flex:2; background:var(--r); color:#fff;" onclick="useAction('ATTACK')"><span>DISPARAR</span></button>
-                <button type="button" class="btn btn-gear" id="btn-special" style="flex:2; display:none;" onclick="useSpecialGear()"><span>USAR ITEM</span></button>
+            <div id="combat-actions" style="display:flex; gap:5px; flex-wrap: wrap;">
+                <button type="button" class="btn" id="btn-combat-mode" style="width:40px; background:#333; color:#fff;" onclick="resetPassButtons(); switchMode()"><span>🔫</span></button>
+                <button type="button" class="btn" id="btn-pass-open" style="flex:1; background:#555; color:#fff;" onclick="tryPass('btn-pass-open')"><span>PASAR</span></button>
+                <button type="button" class="btn" id="btn-act" style="flex:2; background:var(--r); color:#fff;" onclick="resetPassButtons(); startActionPhase()"><span>DISPARAR</span></button>
                 
-                <button type="button" class="btn" style="flex:1; background:#555; color:#fff;" onclick="passTurn(0)"><span>PASAR</span></button>
+                <button type="button" class="btn btn-gear" id="btn-gear" style="flex:2; display:none;" onclick="useSpecialGear()"><span>ITEM</span></button>
+            </div>
+
+            <div id="ops-actions" class="ops-grid">
+                <button type="button" class="btn btn-op op-dash" onclick="resetPassButtons(); performOp('DASH')"><span>DASH</span></button>
+                <button type="button" class="btn btn-op op-mission" onclick="resetPassButtons(); performOp('MISION')"><span>MISIÓN (+1PV)</span></button>
+                <button type="button" id="btn-op-pass" class="btn btn-op op-pass" onclick="tryPass('btn-op-pass')"><span>PASAR</span></button>
             </div>
         </div>
     </div>
 
     <div id="dice-overlay">
-        <div style="color:var(--gold); font-size:1.5rem; margin-bottom:20px;" id="dice-title">RESULTADO</div>
-        <div class="dice-container" id="dice-pool"></div>
-        <button type="button" class="btn" style="margin-top:20px; width:80%;" onclick="closeDice()">CERRAR</button>
+        <div class="dice-header" id="dice-title">FASE DE COMBATE</div>
+        
+        <button id="btn-cover-toggle" style="display:none;" onclick="toggleCover()">COBERTURA: NO</button>
+
+        <div id="incoming-section" class="dice-section" style="display:none;">
+            <div class="dice-label"><span>AMENAZA ENTRANTE</span></div>
+            <div class="dice-container" id="incoming-pool"></div>
+        </div>
+        <div id="active-section" class="dice-section">
+            <div class="dice-label" id="active-label"><span>TUS DADOS</span></div>
+            <div class="dice-sub" id="dice-sub">Tirando...</div>
+            <div class="dice-container" id="dice-pool"></div>
+        </div>
+        <div style="display:flex; gap:10px; width:90%;">
+            <button type="button" class="btn" id="btn-dice-main" onclick="proceedPhase(event)"><span>CONFIRMAR</span></button>
+        </div>
     </div>
 
 <script>
-    // --- DICCIONARIO DE MECÁNICAS ---
-    // define el nombre visual, icono, y si activa un botón especial
+    // --- NUEVO: DICCIONARIO DE MECÁNICAS ---
     const MECHANICS_DB = {
-        // --- ACTIVOS (Generan Botón) ---
-        "granada": { name: "Granada", icon: "💣", type: "ACTIVE", oneUse: true, func: "THROW_GRENADE", desc: "3 Dados, Impacta 3+" },
-        "grenade": { name: "Granada", icon: "💣", type: "ACTIVE", oneUse: true, func: "THROW_GRENADE", desc: "3 Dados, Impacta 3+" },
-        "medkit":  { name: "Botiquín", icon: "💊", type: "ACTIVE", oneUse: true, func: "USE_MEDKIT", desc: "Cura 3 HP" },
-        "stim":    { name: "Estim",    icon: "💉", type: "ACTIVE", oneUse: true, func: "USE_STIM", desc: "Sufre 1 herida, gana +1 dado" },
-
-        // --- PASIVOS / AUTO (Texto o lógica interna) ---
-        "regen":   { name: "Regen",    icon: "🩸", type: "AUTO", func: "AUTO_REGEN" }, // Se activa al inicio del turno
-        "scope":   { name: "Mira",     icon: "🎯", type: "PASSIVE" },
-        "armor":   { name: "Placas",   icon: "🛡️", type: "PASSIVE" },
-        "shield":  { name: "Escudo",   icon: "🔵", type: "PASSIVE" },
-        "stealth": { name: "Sigilo",   icon: "👻", type: "PASSIVE" },
-        "jetpack": { name: "Propulsor",icon: "🚀", type: "PASSIVE" }
+        "grenade": { name: "GRANADA", icon: "💣", type: "ACTIVE", func: "THROW_GRENADE", oneUse: true },
+        "medkit":  { name: "MEDKIT",  icon: "💊", type: "ACTIVE", func: "USE_MEDKIT", oneUse: true },
+        "regen":   { name: "REGEN",   icon: "🩸", type: "AUTO",   func: "AUTO_REGEN" },
+        "stim":    { name: "ESTIM",   icon: "💉", type: "ACTIVE", func: "USE_STIM", oneUse: true },
+        "scope":   { name: "MIRA",    icon: "🎯", type: "PASSIVE" },
+        "stealth": { name: "SIGILO",  icon: "👻", type: "PASSIVE" }
     };
 
-    const BROKER = "broker.hivemq.com"; const PORT = 8884;
-    let MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
+    const BROKER = "broker.hivemq.com"; const PORT = 8884; 
+    const SECRET_POOL = ["ASESINATO", "INFILTRACION", "SEGURIDAD", "RECONOCIMIENTO"];
+    
+    let MY_ID = "";
     let client=null, TOPIC="";
     let myUnits=[], enemyUnits=[], globalHP={};
-    let myIdx=0, enIdx=0;
+    let initialEnemyCount = 0;
+    let myIdx=0, enIdx=0, combatMode='ranged'; 
     let gameState = 'PLANNING';
-    let myVP=0, enemyVP=0;
+    let isGameOver = false;
+    
+    let myVP = 0; let enemyVP = 0;
+    let secretMission = null; 
+    let secretClaimed = false;
+    let primaryMission = "DOMINACION";
+    let secondaryActive = false;
 
-    // --- INIT ---
-    function initSystem() {
-        const json = document.getElementById('json-input').value;
-        const code = document.getElementById('room-id').value.trim().toUpperCase();
-        
-        try {
-            const parsed = JSON.parse(json);
-            // PROCESAR UNIDADES (SIN TOCAR STATS, SOLO AGREGAR METADATA)
-            myUnits = parsed.squad.map(u => {
-                let unit = { 
-                    ...u, 
-                    uid: `${MY_ID}_${u.id || Math.random()}`, 
-                    acted: false,
-                    specialUsed: false // Para trackear items de un uso
-                };
-                // Detectar Gear/Ability y buscar en DB
-                unit.mechanics = [];
-                if(u.gear) mapMechanic(unit, u.gear);
-                if(u.ability) mapMechanic(unit, u.ability);
-                return unit;
-            });
+    let maxRounds = 4; let currentRound = 1;
+    let dicePhase='IDLE', activeDice=[], diceTarget=0;
+    let pendingHits = { normal: 0, crit: 0 }; 
+    let iAmReady=false, enemyIsReady=false;
+    let myInitRoll = null, enemyInitRoll = null;
+    let consecutivePasses = 0; 
+    let passConfirm = null;
 
-            // Inicializar HP Global
-            myUnits.forEach(u => { globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
+    let pendingRequest = null;
+    let waitingForAck = false; 
+    let diceRerollIndex = -1;
+    let coverActive = false; 
 
-            document.getElementById('lobby-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
-            navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>{});
-            
-            updateHUD();
-            startNetwork(code);
-        } catch(e) { alert("JSON ERROR: " + e.message); }
+    function returnToLobby() {
+        if(client) { try{ client.disconnect(); } catch(e){} client=null; }
+        document.getElementById('game-over-screen').classList.remove('show');
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('lobby-screen').classList.remove('hidden');
+        document.getElementById('combat-log').innerHTML = "";
+        isGameOver = false;
+        myUnits = []; enemyUnits = []; globalHP = {};
+        myVP = 0; enemyVP = 0;
+        currentRound = 1;
+        iAmReady = false; enemyIsReady = false;
+        resetPassButtons();
+        waitingForAck = false;
+        diceRerollIndex = -1;
+        coverActive = false;
     }
 
-    function mapMechanic(unit, key) {
-        const k = key.toLowerCase();
-        if(MECHANICS_DB[k]) {
-            unit.mechanics.push({ id: k, ...MECHANICS_DB[k] });
+    window.tryPass = function(btnId) {
+        const btn = document.getElementById(btnId);
+        if (passConfirm === btnId) {
+            performOp('PASAR');
+            resetPassButtons();
         } else {
-            // Fallback genérico para cosas no en DB
-            unit.mechanics.push({ id: k, name: key, icon: "🔹", type: "PASSIVE" });
+            resetPassButtons();
+            passConfirm = btnId;
+            btn.innerText = "¿CONFIRMAR?";
+            btn.style.background = "var(--gold)";
+            btn.style.color = "#000";
         }
     }
 
-    // --- NETWORK ---
+    window.resetPassButtons = function() {
+        passConfirm = null;
+        const b1 = document.getElementById('btn-pass-open');
+        b1.innerText = "PASAR"; b1.style.background = "#555"; b1.style.color = "#fff";
+        const b2 = document.getElementById('btn-op-pass');
+        b2.innerText = "PASAR"; b2.style.background = "#888"; b2.style.color = "#000";
+    }
+
+    window.tryClaimSecret = function() {
+        if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return;
+        if(waitingForAck) return;
+        const btn = document.getElementById('btn-claim-secret');
+        btn.innerText = "ESPERANDO CONFIRMACIÓN...";
+        btn.style.opacity = "0.5";
+        waitingForAck = true;
+        publish({type: 'REQ_SECRET', missionName: secretMission});
+    }
+
+    function executeSecretClaim() {
+        secretClaimed = true;
+        myVP += 2;
+        log(`SECRETA ACEPTADA (+2 PV)`);
+        document.getElementById('btn-claim-secret').style.display = 'none';
+        waitingForAck = false;
+        publish({type: 'SCORE_UPDATE', vp: myVP});
+        updateHUD();
+    }
+
+    function askReroll(index) {
+        if(waitingForAck) return;
+        diceRerollIndex = index;
+        waitingForAck = true;
+        const pool = document.getElementById('dice-pool');
+        if(pool.children[index]) {
+            pool.children[index].className = 'die pending';
+            pool.children[index].innerText = "⏳";
+        }
+        publish({type: 'REQ_REROLL'});
+    }
+
+    function executeReroll() {
+        if(diceRerollIndex === -1) return;
+        const pool = document.getElementById('dice-pool');
+        const dieEl = pool.children[diceRerollIndex];
+        dieEl.className = 'die rolling';
+        setTimeout(() => { 
+            activeDice[diceRerollIndex] = Math.ceil(Math.random()*6); 
+            syncDiceToRival(dicePhase==='ATTACK_ROLL' ? myUnits[myIdx].name : "DEFENSA"); 
+            showDiceOverlay(dicePhase, activeDice, diceTarget, true); 
+            diceRerollIndex = -1;
+            waitingForAck = false;
+        }, 300);
+    }
+
+    function showConfirmModal(text, reqData) {
+        pendingRequest = reqData;
+        const modal = document.getElementById('confirm-modal');
+        document.getElementById('modal-msg').innerText = text;
+        modal.classList.add('show');
+    }
+
+    window.confirmRequest = function() {
+        document.getElementById('confirm-modal').classList.remove('show');
+        if(!pendingRequest) return;
+        if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); }
+        else if(pendingRequest.type === 'REQ_REROLL') { publish({type: 'ACK_REROLL'}); log(`Re-tirada rival aceptada.`); }
+        pendingRequest = null;
+    }
+
+    window.toggleCover = function() {
+        coverActive = !coverActive;
+        const btn = document.getElementById('btn-cover-toggle');
+        if(coverActive) {
+            btn.classList.add('active');
+            btn.innerHTML = "🛡️ COBERTURA: SI (+1 SV)";
+        } else {
+            btn.classList.remove('active');
+            btn.innerText = "COBERTURA: NO";
+        }
+    }
+
+    function initSystem() {
+        MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
+        const json = document.getElementById('json-input').value;
+        const code = document.getElementById('room-id').value.trim().toUpperCase();
+        maxRounds = parseInt(document.getElementById('round-select').value, 10);
+        primaryMission = document.getElementById('primary-mission').value;
+        secondaryActive = (document.getElementById('secondary-toggle').value === "SI");
+        
+        try {
+            const parsed = JSON.parse(json);
+            if(!parsed.squad) throw new Error("JSON Inválido");
+            const raw = Object.values(parsed.squad);
+            
+            // --- NUEVO: PARSEAR MECÁNICAS ---
+            myUnits = raw.map(u => {
+                const unit = { ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', acted: false, reacted: false, mechanics: [] };
+                // Mapear Gear
+                if(u.gear && MECHANICS_DB[u.gear]) unit.mechanics.push(MECHANICS_DB[u.gear]);
+                // Mapear Ability
+                if(u.ability && MECHANICS_DB[u.ability]) unit.mechanics.push(MECHANICS_DB[u.ability]);
+                // Estado de uso de items
+                unit.gearUsed = false;
+                return unit;
+            });
+
+            myUnits.forEach(u => {
+                let hp = parseInt(u.stats.hp);
+                if(isNaN(hp) || hp <= 0) hp = 1; 
+                globalHP[u.uid] = {c:hp, m:hp};
+            });
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            assignSecretMission();
+            updateMissionDisplay();
+            navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>{});
+            updateHUD(); startNetwork(code);
+            log("SISTEMA ONLINE. ESPERANDO ENLACE...");
+        } catch(e) { alert("ERROR EN JSON: " + e.message); console.error(e); }
+    }
+
+    function assignSecretMission() {
+        if(secondaryActive) {
+            secretMission = SECRET_POOL[Math.floor(Math.random() * SECRET_POOL.length)];
+        } else secretMission = null;
+    }
+    function updateMissionDisplay() {
+        document.getElementById('mission-info').innerText = secondaryActive && secretMission ? `${primaryMission} + ${secretMission}` : primaryMission;
+    }
+
     function startNetwork(code) {
-        TOPIC = `sqcmd/v48/${code}`;
+        TOPIC = `sqcmd/v46/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
-        client.onMessageArrived = onMessage;
+        client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
+        client.onMessageArrived=onMessage;
         client.connect({useSSL:true, onSuccess:()=>{ 
-            client.subscribe(TOPIC);
-            publish({type:'JOIN', squad: myUnits});
+            client.subscribe(TOPIC); 
+            publish({type:'JOIN_REQ', squad:myUnits, pMission: primaryMission, secActive: secondaryActive}); 
         }});
     }
 
     function onMessage(msg) {
+        if(isGameOver) return;
         const d = JSON.parse(msg.payloadString);
         if(d.sender === MY_ID) return;
+
+        if(d.type === 'REQ_SECRET') showConfirmModal(`RIVAL RECLAMA SECRETA: ${d.missionName}\n¿CONFIRMAR?`, d);
+        else if(d.type === 'ACK_SECRET') executeSecretClaim();
+        else if(d.type === 'REQ_REROLL') showConfirmModal(`RIVAL PIDE RE-TIRAR\n¿CONFIRMAR?`, d);
+        else if(d.type === 'ACK_REROLL') executeReroll();
         
-        if(d.type === 'JOIN') {
+        // --- NUEVO: EVENTOS DE MECÁNICAS RIVALES ---
+        else if(d.type === 'GEAR_EFFECT') {
+            log(`RIVAL USA ${d.gearName}: ${d.desc}`);
+            if(d.dmg) {
+                // Daño directo (Granada)
+                const target = myUnits[myIdx];
+                applyDamage(d.dmg);
+                alert(`¡IMPACTO DE ${d.gearName}!\nDaño recibido: ${d.dmg}`);
+            }
+        }
+
+        else if(d.type === 'JOIN_REQ' || d.type === 'JOIN_ACK') {
             if(!enemyUnits.length) {
                 enemyUnits = d.squad;
+                initialEnemyCount = enemyUnits.length;
+                if(d.type==='JOIN_REQ') publish({type:'JOIN_ACK', squad:myUnits, rounds:maxRounds, pMission: primaryMission, secActive: secondaryActive}); 
+                else {
+                    if(d.rounds) maxRounds = d.rounds;
+                    if(d.pMission) primaryMission = d.pMission;
+                    secondaryActive = d.secActive;
+                    if(secondaryActive && !secretMission) assignSecretMission(); else if(!secondaryActive) secretMission = null;
+                    updateMissionDisplay();
+                }
                 enemyUnits.forEach(u => { if(!globalHP[u.uid]) globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
-                publish({type:'SYNC_HP', hp: globalHP}); // Mandar mi HP al nuevo
                 updateHUD();
-                log("RIVAL CONECTADO");
+                log(`RIVAL CONECTADO: ${initialEnemyCount} OPS.`);
             }
         }
-        else if(d.type === 'SYNC_HP') { globalHP = {...globalHP, ...d.hp}; updateHUD(); }
-        else if(d.type === 'ATTACK') {
-            log(`RIVAL ATACA: ${d.hits} IMPACTOS (Daño ${d.dmg})`);
-            // Aplicar daño simple (sin tirada de salvación interactiva para simplificar demo)
-            const target = myUnits.find(u => u.uid === d.targetUid);
-            if(target) {
-                applyDamage(target.uid, d.finalDmg); 
-                alert(`¡TE HAN DISPARADO!\nUnidad: ${target.name}\nDaño: ${d.finalDmg}`);
+        else if(d.type === 'SCORE_UPDATE') { enemyVP = d.vp; updateHUD(); }
+        else if(d.type === 'READY') {
+            enemyUnits = d.squad; enemyIsReady = true; enemyInitRoll = d.roll;
+            document.getElementById('en-ready-mark').classList.add('show');
+            checkStartRound();
+        }
+        else if(d.type === 'DICE_SYNC') {
+            pendingHits = d.hitsStruct || { normal: 0, crit: 0 };
+            if(d.phase === 'ATTACK_ROLL') {
+                showDiceOverlay(d.phase, d.dice, d.target, false); 
+                document.getElementById('dice-sub').innerText = `${d.uName} apuntando...`;
+                log("RIVAL APUNTANDO...");
             }
         }
-        else if(d.type === 'GRENADE') {
-            log(`¡GRANADA ENEMIGA! ${d.hits} Impactos`);
-            // Efecto de área simple: daña a la unidad seleccionada
-            const target = myUnits[myIdx]; 
-            if(target) { applyDamage(target.uid, d.hits); alert("¡BOOM! GRANADA RECIBIDA"); }
+        else if(d.type === 'REQ_DEFENSE') { pendingHits = d.hitsStruct; startDefensePhase(); }
+        else if(d.type === 'DAMAGE_RESOLVE') {
+            applyDamage(d.dmg); closeDice();
+            const me = myUnits[myIdx];
+            if(!me.acted) me.acted = true; else me.reacted = true;        
+            publish({type:'SYNC_SQUAD', squad: myUnits});
+            passTurn(0); 
         }
-        else if(d.type === 'TURN_CHANGE') {
-            gameState = 'MY_TURN';
-            document.getElementById('turn-indicator').innerText = "TU TURNO";
-            document.getElementById('turn-indicator').style.background = "var(--c)";
-            document.getElementById('turn-indicator').style.color = "#000";
-            document.getElementById('combat-actions').style.display = 'flex';
-            checkAutoMechanics(); // Chequear regeneración
+        else if(d.type === 'OP_ACTION') { if(gameState!=='PLANNING'){ log(`RIVAL: ${d.opType}`); setTurn('MY_TURN', 0); } }
+        else if(d.type === 'CHANGE_TURN') { if(gameState!=='PLANNING') setTurn('MY_TURN', d.passes || 0); }
+        else if(d.type === 'ROUND_OVER') resetRound();
+        else if(d.type === 'SYNC_SQUAD') { enemyUnits = d.squad; updateHUD(); }
+        else if(d.type === 'SYNC_HP') { 
+            const oldHP = {...globalHP};
+            globalHP = {...globalHP, ...d.state}; 
+            enemyUnits.forEach(u => {
+                const old = oldHP[u.uid] ? oldHP[u.uid].c : 0;
+                if(old > 0 && globalHP[u.uid].c <= 0) {
+                    let pts = getKillPoints(initialEnemyCount);
+                    myVP += pts;
+                    log(`ENEMIGO ABATIDO (+${pts} PV)`);
+                    publish({type: 'SCORE_UPDATE', vp: myVP});
+                }
+            });
+            updateHUD(); 
         }
     }
 
-    function publish(payload) { if(client) { payload.sender = MY_ID; client.send(TOPIC, JSON.stringify(payload)); } }
+    function getKillPoints(total) {
+        if(total <= 4) return 4; if(total <= 7) return 3; if(total <= 10) return 2; return 1;
+    }
 
-    // --- GAMEPLAY MECHANICS ---
+    function resetRound() {
+        if(isGameOver) return;
+        if(currentRound >= maxRounds) { checkWinCondition(); return; }
+        currentRound++; gameState = 'PLANNING'; iAmReady = false; enemyIsReady = false;
+        myUnits.forEach(u => { u.acted = false; u.reacted = false; });
+        resetPassButtons();
+        document.getElementById('planning-controls').style.display = 'block';
+        document.getElementById('combat-actions').style.display = 'flex';
+        document.getElementById('ops-actions').style.display = 'none';
+        document.getElementById('btn-claim-secret').style.display = 'none';
+        document.getElementById('btn-ready').innerHTML = "<span>CONFIRMAR ÓRDENES</span>";
+        document.getElementById('btn-ready').className = "btn";
+        document.getElementById('turn-indicator').className = "turn-badge planning";
+        document.getElementById('turn-indicator').innerText = "PLANIFICACIÓN";
+        document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show'));
+        enableControls(false); updateHUD();
+        log(`INICIO RONDA ${currentRound}`);
+    }
 
     function commitPlanning() {
-        // Simple switch a combate
+        if(gameState !== 'PLANNING') return;
+        iAmReady = true; myInitRoll = Math.ceil(Math.random()*100);
         document.getElementById('planning-controls').style.display = 'none';
-        gameState = 'MY_TURN'; // Simplificado: empiezas tú para probar
-        document.getElementById('turn-indicator').innerText = "TU TURNO";
-        document.getElementById('turn-indicator').style.background = "var(--c)";
-        document.getElementById('turn-indicator').style.color = "#000";
-        checkAutoMechanics();
+        document.getElementById('my-ready-mark').classList.add('show');
+        publish({type: 'READY', squad: myUnits, roll: myInitRoll});
+        log("ESPERANDO AL RIVAL...");
+        checkStartRound();
     }
 
+    function checkStartRound() {
+        if(iAmReady && enemyIsReady) {
+            log(`INICIATIVA: YO ${myInitRoll} vs ${enemyInitRoll} RIV`);
+            gameState = (myInitRoll >= enemyInitRoll) ? 'MY_TURN' : 'ENEMY_TURN';
+            document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show'));
+            setTurn(gameState, 0);
+        }
+    }
+
+    function setTurn(state, passes) {
+        gameState = state; consecutivePasses = passes;
+        const ind = document.getElementById('turn-indicator');
+        const actions = document.getElementById('combat-actions');
+        
+        // --- NUEVO: REGEN AUTOMÁTICA AL INICIAR TURNO ---
+        if(gameState === 'MY_TURN') checkAutoMechanics();
+
+        if(gameState === 'MY_TURN') {
+            ind.className = "turn-badge my-turn"; ind.innerText = "TU TURNO";
+            actions.style.opacity = "1"; actions.style.pointerEvents = "auto";
+            document.getElementById('ops-actions').style.pointerEvents = "auto";
+            enableControls(true);
+            updateHUD(); // Actualizar botones de Gear
+            if(secondaryActive && !secretClaimed) document.getElementById('btn-claim-secret').style.display = 'block';
+        } else {
+            ind.className = "turn-badge enemy-turn"; ind.innerText = "TURNO RIVAL";
+            actions.style.opacity = "0.5"; actions.style.pointerEvents = "none";
+            document.getElementById('ops-actions').style.pointerEvents = "none";
+            document.getElementById('btn-claim-secret').style.display = 'none';
+        }
+        updateHUD();
+    }
+
+    // --- NUEVO: LÓGICA DE MECÁNICAS AUTOMÁTICAS ---
     function checkAutoMechanics() {
-        // Lógica para "Regen" al inicio del turno
         const me = myUnits[myIdx];
-        const regen = me.mechanics.find(m => m.func === 'AUTO_REGEN');
-        if(regen && globalHP[me.uid].c < globalHP[me.uid].m && globalHP[me.uid].c > 0) {
-            globalHP[me.uid].c++;
-            log(`AUTO: ${me.name} REGENERA 1 HP`);
-            publish({type: 'SYNC_HP', hp: globalHP});
+        if(!me || globalHP[me.uid].c <= 0) return;
+        
+        me.mechanics.forEach(m => {
+            if(m.type === 'AUTO' && m.func === 'AUTO_REGEN') {
+                if(globalHP[me.uid].c < globalHP[me.uid].m) {
+                    globalHP[me.uid].c++;
+                    publish({type: 'SYNC_HP', state: globalHP});
+                    log(`REGEN: ${me.name} recupera 1 HP`);
+                    updateHUD();
+                }
+            }
+        });
+    }
+
+    // --- NUEVO: USAR ITEM ACTIVO ---
+    window.useSpecialGear = function() {
+        if(gameState !== 'MY_TURN') return;
+        const me = myUnits[myIdx];
+        // Buscar item activo disponible
+        const item = me.mechanics.find(m => m.type === 'ACTIVE' && !me.gearUsed);
+        
+        if(!item) return;
+
+        if(item.func === 'THROW_GRENADE') {
+            // Granada: Daño automático de 3 (simplificado)
+            const dmg = 3;
+            log(`LANZANDO GRANADA...`);
+            publish({type: 'GEAR_EFFECT', gearName: 'GRANADA', desc: `BOOM! ${dmg} Daño`, dmg: dmg});
+            alert("GRANADA LANZADA: 3 DAÑO AL RIVAL");
+            passTurn(0);
+        } 
+        else if (item.func === 'USE_MEDKIT') {
+            // Medkit: Cura 3
+            globalHP[me.uid].c = Math.min(globalHP[me.uid].m, globalHP[me.uid].c + 3);
+            publish({type: 'SYNC_HP', state: globalHP});
+            log(`${me.name} USA MEDKIT (+3 HP)`);
+            updateHUD();
+            passTurn(0);
+        }
+        else if (item.func === 'USE_STIM') {
+             // Estimulante: Sacrifica 1 HP para ganar accion extra (narrativo)
+             globalHP[me.uid].c = Math.max(0, globalHP[me.uid].c - 1);
+             publish({type: 'SYNC_HP', state: globalHP});
+             log(`${me.name} USA ESTIMULANTE (-1 HP, +BUFF)`);
+             // No pasa turno, permite actuar
+             me.gearUsed = true;
+             updateHUD();
+             return; 
+        }
+
+        // Marcar como usado
+        if(item.oneUse) {
+            me.gearUsed = true;
             updateHUD();
         }
     }
 
-    window.useAction = function(type) {
+    window.performOp = function(op) {
+        if(gameState !== 'MY_TURN') return;
+        if(op === 'DASH') {
+            log("DASH: Movimiento rápido.");
+            publish({type: 'OP_ACTION', opType: 'DASH'});
+            passTurn(0);
+        } else if(op === 'MISION') {
+            myVP += 1;
+            log("MISION: Objetivo asegurado (+1 PV).");
+            publish({type: 'OP_ACTION', opType: 'MISION'});
+            publish({type: 'SCORE_UPDATE', vp: myVP});
+            passTurn(0);
+        } else if(op === 'PASAR') {
+            log("PASAR: Sin acciones.");
+            passTurn(consecutivePasses + 1);
+        }
+    }
+
+    function passTurn(passes) {
+        if(myUnits[myIdx].acted) { } 
+        else { myUnits[myIdx].acted = true; } 
+        
+        publish({type: 'SYNC_SQUAD', squad: myUnits}); // Sincronizar estado (si usé gear)
+
+        if(passes >= 2) { // Ambos pasaron
+            endRound();
+        } else {
+            setTurn('ENEMY_TURN', passes);
+            publish({type: 'CHANGE_TURN', passes: passes});
+        }
+    }
+
+    function endRound() {
+        publish({type: 'ROUND_OVER'});
+        resetRound();
+    }
+
+    window.startActionPhase = function() {
         if(gameState !== 'MY_TURN') return;
         const me = myUnits[myIdx];
+        if(me.acted && me.reacted) { log("UNIDAD AGOTADA"); return; }
         
-        if(type === 'ATTACK') {
-            // Lógica normal de disparo
-            const dice = parseInt(me.stats.r_atk);
-            const hit = parseInt(me.stats.r_hit.replace('+',''));
-            const dmg = parseInt(me.stats.r_dmg);
+        dicePhase = 'ATTACK_ROLL';
+        const diceCount = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
+        diceTarget = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
+        
+        activeDice = Array(diceCount).fill(0).map(()=>Math.ceil(Math.random()*6));
+        showDiceOverlay('ATTACK_ROLL', activeDice, diceTarget, true);
+        syncDiceToRival(me.name);
+    }
+
+    window.proceedPhase = function(e) {
+        e.stopPropagation();
+        if(gameState !== 'MY_TURN' && dicePhase !== 'DEFENSE_ROLL') return;
+
+        if(dicePhase === 'ATTACK_ROLL') {
+            const hits = activeDice.filter(d => d >= diceTarget).length;
+            const crits = activeDice.filter(d => d === 6).length;
             
-            const results = rollDice(dice);
-            const hits = results.filter(r => r >= hit).length;
-            const totalDmg = hits * dmg;
-
-            showDiceResult(results, hit);
-            log(`DISPARO: ${hits} hits. Daño Potencial: ${totalDmg}`);
-
-            if(enemyUnits.length > 0) {
-                publish({type:'ATTACK', targetUid: enemyUnits[enIdx].uid, hits: hits, dmg: dmg, finalDmg: totalDmg});
+            if(hits === 0) {
+                log("FALLO TOTAL");
+                closeDice();
+                passTurn(0);
+            } else {
+                log(`ATAQUE: ${hits} IMPACTOS`);
+                pendingHits = { normal: hits - crits, crit: crits };
+                publish({type: 'REQ_DEFENSE', hitsStruct: pendingHits});
+                document.getElementById('dice-sub').innerText = "Esperando defensa...";
+                document.getElementById('btn-dice-main').style.display = 'none'; // Esperar ack
             }
+        } 
+        else if (dicePhase === 'DEFENSE_ROLL') {
+            const sv = parseInt(myUnits[myIdx].stats.sv.replace('+',''));
+            // Aplicar cobertura
+            const finalSv = coverActive ? Math.max(2, sv - 1) : sv;
+            
+            const saves = activeDice.filter(d => d >= finalSv).length;
+            const dmg = Math.max(0, (pendingHits.normal + pendingHits.crit) - saves);
+            
+            log(`DEFENSA: ${saves} SALVADOS. ${dmg} DAÑO.`);
+            publish({type: 'DAMAGE_RESOLVE', dmg: dmg});
+            applyDamage(dmg);
+            closeDice();
+            
+            const me = myUnits[myIdx];
+            if(!me.acted) me.acted = true; else me.reacted = true;
+            publish({type:'SYNC_SQUAD', squad: myUnits});
             passTurn(0);
         }
     }
 
-    window.useSpecialGear = function() {
-        if(gameState !== 'MY_TURN') return;
+    function startDefensePhase() {
+        dicePhase = 'DEFENSE_ROLL';
         const me = myUnits[myIdx];
-        // Buscar el item activo
-        const activeItem = me.mechanics.find(m => m.type === 'ACTIVE' && !me.specialUsed);
+        const totalHits = pendingHits.normal + pendingHits.crit;
+        activeDice = Array(totalHits).fill(0).map(()=>Math.ceil(Math.random()*6));
         
-        if(!activeItem) return;
+        // Calcular SV base para mostrar
+        const svBase = parseInt(me.stats.sv.replace('+',''));
+        diceTarget = svBase; 
 
-        if(activeItem.func === 'THROW_GRENADE') {
-            // Mecánica de Granada
-            const results = rollDice(3); // 3 Dados fijos
-            const hits = results.filter(r => r >= 3).length; // Impacta a 3+
-            showDiceResult(results, 3);
-            log(`LANZA GRANADA: ${hits} Impactos!`);
-            publish({type:'GRENADE', hits: hits});
-            
-        } else if (activeItem.func === 'USE_MEDKIT') {
-            // Mecánica de Botiquín
-            const heal = 3;
-            globalHP[me.uid].c = Math.min(globalHP[me.uid].m, globalHP[me.uid].c + heal);
-            log(`MEDKIT: ${me.name} recupera ${heal} HP`);
-            publish({type:'SYNC_HP', hp: globalHP});
-            updateHUD();
-            // No termina turno, es una acción gratis? O termina? Asumamos que termina.
-        } else if (activeItem.func === 'USE_STIM') {
-            // Estimulante: -1 HP, Buff temporal (simulado)
-            globalHP[me.uid].c = Math.max(0, globalHP[me.uid].c - 1);
-            log(`ESTIMULANTE: Sufres 1 daño, +1 Dado (Narrativo)`);
-            publish({type:'SYNC_HP', hp: globalHP});
-            updateHUD();
-        }
+        // Mostrar Toggle de Cobertura
+        document.getElementById('btn-cover-toggle').style.display = 'block';
+        document.getElementById('btn-cover-toggle').innerHTML = "COBERTURA: NO";
+        document.getElementById('btn-cover-toggle').classList.remove('active');
+        coverActive = false;
 
-        // Marcar como usado si es OneUse
-        if(activeItem.oneUse) {
-            me.specialUsed = true;
-            updateHUD(); // Para ocultar el botón
-        }
-        passTurn(0);
+        showDiceOverlay('DEFENSE_ROLL', activeDice, diceTarget, true);
     }
 
-    window.passTurn = function(p) {
-        gameState = 'ENEMY_TURN';
-        document.getElementById('turn-indicator').innerText = "TURNO RIVAL";
-        document.getElementById('turn-indicator').style.background = "#333";
-        document.getElementById('turn-indicator').style.color = "#888";
-        document.getElementById('combat-actions').style.display = 'none';
-        publish({type:'TURN_CHANGE'});
+    function applyDamage(dmg) {
+        if(dmg > 0) {
+            const me = myUnits[myIdx];
+            document.getElementById('flash-fx').innerHTML = '<div class="flash"></div>';
+            setTimeout(()=>document.getElementById('flash-fx').innerHTML='', 300);
+            globalHP[me.uid].c = Math.max(0, globalHP[me.uid].c - dmg);
+            publish({type: 'SYNC_HP', state: globalHP});
+            updateHUD();
+            if(globalHP[me.uid].c === 0) log("¡OPERATIVO ABATIDO!", "danger");
+        }
     }
 
-    function applyDamage(uid, dmg) {
-        if(globalHP[uid]) {
-            globalHP[uid].c = Math.max(0, globalHP[uid].c - dmg);
-            publish({type:'SYNC_HP', hp: globalHP});
-            updateHUD();
+    function syncDiceToRival(uName) {
+        publish({type: 'DICE_SYNC', phase: dicePhase, dice: activeDice, target: diceTarget, uName: uName});
+    }
+
+    function showDiceOverlay(phase, dice, target, isInteractive) {
+        const pool = document.getElementById(isInteractive ? 'dice-pool' : 'incoming-pool');
+        const container = document.getElementById(isInteractive ? 'active-section' : 'incoming-section');
+        const title = document.getElementById('dice-title');
+        
+        container.style.display = 'block';
+        pool.innerHTML = '';
+
+        if(phase === 'ATTACK_ROLL') {
+            title.innerText = isInteractive ? "TU ATAQUE" : "ATAQUE ENEMIGO";
+            dice.forEach((d, i) => {
+                const el = document.createElement('div');
+                el.className = `die ${d>=target ? (d===6?'crit':'hit') : 'miss'}`;
+                if(!isInteractive) el.className = `die ${d>=target ? (d===6?'incoming-crit':'incoming-hit') : 'miss'}`;
+                el.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][d];
+                if(isInteractive) el.onclick = () => askReroll(i);
+                pool.appendChild(el);
+            });
+        } 
+        else if (phase === 'DEFENSE_ROLL') {
+            title.innerText = "TU DEFENSA";
+            // Check cobertura visual update logic handled in toggle
+            dice.forEach((d, i) => {
+                // Cálculo visual dinámico se hará al confirmar, aquí solo mostramos el dado crudo
+                const el = document.createElement('div');
+                el.className = 'die'; 
+                // Color simple hasta que confirmes o uses lógica avanzada, aquí usamos blanco/gris
+                el.style.color = "#fff";
+                el.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][d];
+                if(isInteractive) el.onclick = () => askReroll(i);
+                pool.appendChild(el);
+            });
         }
+
+        document.getElementById('dice-overlay').classList.add('show');
+        if(isInteractive) document.getElementById('btn-dice-main').style.display = 'block';
+        else document.getElementById('btn-dice-main').style.display = 'none';
+    }
+
+    window.closeDice = function() {
+        document.getElementById('dice-overlay').classList.remove('show');
+        setTimeout(() => {
+            document.getElementById('incoming-pool').innerHTML = '';
+            document.getElementById('dice-pool').innerHTML = '';
+            document.getElementById('incoming-section').style.display = 'none';
+            document.getElementById('btn-cover-toggle').style.display = 'none';
+        }, 300);
     }
 
     // --- UI HELPERS ---
-    window.nextMyUnit = function() { myIdx = (myIdx+1)%myUnits.length; updateHUD(); checkAutoMechanics(); }
+    window.nextMyUnit = function() { myIdx = (myIdx+1)%myUnits.length; updateHUD(); }
     window.nextEnemyUnit = function() { if(enemyUnits.length) enIdx = (enIdx+1)%enemyUnits.length; updateHUD(); }
+    
+    window.switchMode = function() {
+        combatMode = (combatMode==='ranged') ? 'melee' : 'ranged';
+        document.getElementById('btn-combat-mode').innerHTML = (combatMode==='ranged') ? "🔫" : "🔪";
+        updateHUD();
+    }
+    window.setMode = function(m, e) {
+        e.stopPropagation();
+        myUnits[myIdx].mode = m;
+        updateHUD();
+    }
+    
+    function enableControls(enable) {
+        const btns = document.querySelectorAll('#combat-actions .btn, #ops-actions .btn');
+        btns.forEach(b => b.disabled = !enable);
+    }
+
+    function checkWinCondition() {
+        isGameOver = true;
+        document.getElementById('game-over-screen').classList.add('show');
+        const won = myVP > enemyVP;
+        document.getElementById('end-title').innerText = won ? "VICTORIA" : (myVP==enemyVP?"EMPATE":"DERROTA");
+        document.getElementById('end-title').style.color = won ? "var(--g)" : "var(--r)";
+        document.getElementById('end-score').innerText = `${myVP} - ${enemyVP}`;
+    }
+
+    function publish(payload) { if(client) { payload.sender = MY_ID; client.send(TOPIC, JSON.stringify(payload)); } }
+    function log(msg, type='') { 
+        const div = document.createElement('div'); 
+        div.className = `log-entry ${type}`; 
+        div.innerText = msg; 
+        const area = document.getElementById('combat-log');
+        area.prepend(div);
+        if(area.children.length > 5) area.lastChild.remove();
+    }
 
     function updateHUD() {
         if(!myUnits.length) return;
         const me = myUnits[myIdx];
         const en = enemyUnits[enIdx];
 
-        // 1. Render Stats Básicas (directo del JSON)
+        // --- Render Unit YO ---
         document.getElementById('my-name').innerText = me.name;
+        document.getElementById('my-name').style.color = me.acted ? "#555" : "#fff";
         document.getElementById('my-r').innerText = `${me.stats.r_atk}d (${me.stats.r_hit})`;
+        document.getElementById('my-r').className = combatMode==='ranged' ? 'stat-val hl' : 'stat-val';
         document.getElementById('my-m').innerText = `${me.stats.m_atk}d (${me.stats.m_hit})`;
+        document.getElementById('my-m').className = combatMode==='melee' ? 'stat-val hl' : 'stat-val';
         document.getElementById('my-sv').innerText = me.stats.sv;
         document.getElementById('my-hp').style.width = (globalHP[me.uid].c / globalHP[me.uid].m * 100) + "%";
+        
+        document.getElementById('btn-mode-open').className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
+        document.getElementById('btn-mode-hidden').className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
 
-        // 2. Render TAGS (Habilidades Visuales)
+        // --- Render Tags & Buttons (NUEVO) ---
         const tagContainer = document.getElementById('my-tags');
         tagContainer.innerHTML = '';
-        let hasActiveAvailable = false;
-        let activeActionName = "";
+        let showGearBtn = false;
+        let gearBtnText = "ITEM";
 
         me.mechanics.forEach(m => {
             const span = document.createElement('span');
-            span.className = `tag ${m.type === 'ACTIVE' ? 'active' : 'passive'}`;
-            // Si es item usado, tacharlo
-            if(m.type === 'ACTIVE' && me.specialUsed && m.oneUse) {
-                span.classList.add('used');
+            let css = "tag";
+            if(m.type === 'ACTIVE') {
+                css += " active-gear";
+                if(m.oneUse && me.gearUsed) css += " used";
+                else if(!me.gearUsed && gameState === 'MY_TURN') {
+                    showGearBtn = true;
+                    gearBtnText = m.name; // Ej: GRANADA
+                }
+            } else {
+                css += " passive";
             }
+            span.className = css;
             span.innerHTML = `${m.icon} ${m.name}`;
             tagContainer.appendChild(span);
-
-            // Chequear si mostramos botón especial
-            if(m.type === 'ACTIVE' && (!m.oneUse || !me.specialUsed)) {
-                hasActiveAvailable = true;
-                activeActionName = m.func === 'THROW_GRENADE' ? "LANZAR GRANADA" : 
-                                   m.func === 'USE_MEDKIT' ? "USAR MEDKIT" : "USAR ITEM";
-            }
         });
 
-        // 3. Botón Dinámico
-        const btnSpecial = document.getElementById('btn-special');
-        if(gameState === 'MY_TURN' && hasActiveAvailable) {
-            btnSpecial.style.display = 'block';
-            btnSpecial.querySelector('span').innerText = activeActionName;
+        const btnGear = document.getElementById('btn-gear');
+        if(showGearBtn && gameState === 'MY_TURN') {
+            btnGear.style.display = 'block';
+            btnGear.querySelector('span').innerText = gearBtnText;
         } else {
-            btnSpecial.style.display = 'none';
+            btnGear.style.display = 'none';
         }
 
-        // Render Enemy
+
+        // --- Render Enemy ---
         if(en) {
             document.getElementById('enemy-name').innerText = en.name;
             document.getElementById('enemy-hp').style.width = (globalHP[en.uid].c / globalHP[en.uid].m * 100) + "%";
-            // Render Enemy Tags (simple)
-            const enTags = document.getElementById('en-tags');
-            enTags.innerHTML = '';
-            if(en.gear) enTags.innerHTML += `<span class="tag passive">⚙ ${en.gear}</span>`;
-            if(en.ability) enTags.innerHTML += `<span class="tag passive">★ ${en.ability}</span>`;
+            document.getElementById('en-r').innerText = en.stats.r_atk;
+            document.getElementById('en-m').innerText = en.stats.m_atk;
+            document.getElementById('en-sv').innerText = en.stats.sv;
+            document.getElementById('en-mode-icon').innerText = en.mode === 'hidden' ? '🛡️' : '⚔️';
+            
+            // Render Enemy Tags (simplificado para no revelar todo)
+            const enTagContainer = document.getElementById('en-tags');
+            enTagContainer.innerHTML = '';
+            if(en.gear) enTagContainer.innerHTML += `<span class="tag passive">⚙</span>`; // Solo icono
+            if(en.ability) enTagContainer.innerHTML += `<span class="tag passive">★</span>`;
         }
-    }
 
-    function rollDice(n) { return Array(n).fill(0).map(()=>Math.ceil(Math.random()*6)); }
-    function showDiceResult(dice, target) {
-        const pool = document.getElementById('dice-pool');
-        pool.innerHTML = '';
-        dice.forEach(d => {
-            const el = document.createElement('div'); el.className = 'die';
-            el.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][d];
-            el.style.color = d >= target ? 'var(--g)' : '#555';
-            pool.appendChild(el);
-        });
-        document.getElementById('dice-overlay').classList.add('show');
+        document.getElementById('my-score').innerText = myVP;
+        document.getElementById('enemy-score').innerText = enemyVP;
+        document.getElementById('round-display').innerText = `RND ${currentRound}/${maxRounds}`;
     }
-    window.closeDice = () => document.getElementById('dice-overlay').classList.remove('show');
-    function log(msg) { document.getElementById('combat-log').innerHTML = `<div class="log-entry">${msg}</div>` + document.getElementById('combat-log').innerHTML; }
-
 </script>
 </body>
 </html>
