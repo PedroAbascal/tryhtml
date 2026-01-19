@@ -164,39 +164,129 @@
             necron: { name: "Necrón", bs: 3, ws: 3, hp: 10, sv: 3, cost: 6, color: "#ccc", baseMelee: {A:3, D:3} },
             tyranid: { name: "Tiránido", bs: 4, ws: 3, hp: 9, sv: 5, cost: 3, color: "#ff0055", baseMelee: {A:4, D:3} } // Garras naturales
         },
-        roles: {
+       roles: {
+            // --- Básicos (Coste 0-1) ---
             trooper: { name: "Guerrero", cost: 0, modA: 0, modHit: 0, modHP: 0 },
-            assault: { name: "Asalto", cost: 2, modA: 1, modHit: 0, modHP: 1 }, // Mejora Melee general
-            heavy: { name: "Artillero", cost: 4, modA: 0, modHit: 0, modHP: 2 },
-            sniper: { name: "Franco", cost: 3, modA: 0, modHit: -1, modHP: -1 },
-            leader: { name: "Líder", cost: 5, modA: 1, modHit: -1, modHP: 3 }
-        },
-        abilities: {
-            none: { name: "-", cost: 0, modA: 0, modHit: 0, modHP: 0, modSV: 0 },
-            voice: { name: "Voz Mando", cost: 5, modHit: -1 }, // Aplica a todo
-            frenzy: { name: "Frenesí", cost: 3, modA: 2, modSV: 1 }, // +2 A Melee (por lógica de calc)
-            stealth: { name: "Sigilo", cost: 4, modSV: -1 },
-            bionics: { name: "Biónica", cost: 3, modHP: 4 }
-        },
-        armas: {
-            // RANGED
-            lasgun: { name: "Rifle Láser", cost: 0, A: 4, D: 3, type: "Ranged" },
-            bolter: { name: "Bólter", cost: 2, A: 4, D: 4, type: "Ranged" },
-            plasma: { name: "Plasma", cost: 4, A: 4, D: 6, type: "Ranged" },
-            minigun: { name: "Cañón Rot.", cost: 5, A: 6, D: 4, type: "Ranged" },
-            sniper: { name: "Rifle Prec.", cost: 3, A: 3, D: 5, type: "Ranged" },
-            // MELEE (Mejora el base)
-            knife: { name: "Cuchillo C.", cost: 0, A: 4, D: 3, type: "Melee" }, // Un poco mejor que puños
-            chainsword: { name: "Espada Sierra", cost: 2, A: 5, D: 4, type: "Melee" },
-            powerw: { name: "Arma Energía", cost: 4, A: 4, D: 6, type: "Melee" },
-            claws: { name: "Garras", cost: 3, A: 6, D: 4, type: "Melee" }
-        },
+            scout:   { name: "Explorador", cost: 1, modA: -1, modHit: -1, modHP: -1 }, // Poca vida y daño, pero preciso
+        
+            // --- Infantería (Coste 2) ---
+            assault: { name: "Asalto", cost: 2, modA: 1, modHit: 0, modHP: 1 }, 
+            hunter:  { name: "Cazador", cost: 2, modA: 1, modHit: 0, modHP: -1 }, // Más ofensivo que el asalto, menos vida
+        
+            // --- Especialistas (Coste 3) ---
+            sniper:  { name: "Franco", cost: 3, modA: 0, modHit: -1, modHP: -1 },
+            medic:   { name: "Médico", cost: 3, modA: -1, modHit: 0, modHP: 2 }, // Aguanta bien, poco daño
+            guard:   { name: "Escudo", cost: 3, modA: -1, modHit: 0, modHP: 3 }, // Tanque barato, puro HP
+            berserk: { name: "Frenético", cost: 3, modA: 2, modHit: 1, modHP: 0 }, // Mucho daño, mala puntería
+        
+            // --- Élites (Coste 4-5) ---
+            heavy:   { name: "Artillero", cost: 4, modA: 0, modHit: 0, modHP: 2 },
+            assassin:{ name: "Asesino", cost: 4, modA: 2, modHit: -2, modHP: -2 }, // Muy letal y preciso, muere de un golpe
+            leader:  { name: "Líder", cost: 5, modA: 1, modHit: -1, modHP: 3 },
+            flamer:  { name: "Incendiario", cost: 5, modA: 2, modHit: 0, modHP: 1 }, // Daño alto y consistente
+        
+            // --- Pesados (Coste 6+) ---
+            tank:    { name: "Blindado", cost: 6, modA: 1, modHit: 1, modHP: 5 }, // Una muralla de vida
+            mech:    { name: "Mecha", cost: 8, modA: 3, modHit: 0, modHP: 4 }  // Unidad definitiva
+},
+      abilities: {
+            // --- Básicas ---
+            none:     { name: "-", cost: 0, modA: 0, modHit: 0, modHP: 0, modSV: 0 },
+        
+            // --- Ofensivas (Puntería y Daño) ---
+            scope:    { name: "Mira Láser",     cost: 3, modHit: -1 }, // Puntería simple
+            targeter: { name: "Visor Táctico",  cost: 5, modHit: -2 }, // Puntería de élite
+            ammo:     { name: "Munición AP",    cost: 4, modA: 2, modHit: 0 }, // Puro daño extra
+            rage:     { name: "Furia Ciega",    cost: 2, modA: 3, modHit: 1, modSV: 1 }, // Mucho daño, pero fallas más y te cubres menos
+        
+            // --- Defensivas (Vida y Evasión) ---
+            armor:    { name: "Placas",         cost: 2, modHP: 2 }, // Vida simple
+            shield:   { name: "Campo de Fuerza",cost: 5, modHP: 1, modSV: -2 }, // Poca vida, mucha evasión
+            reflex:   { name: "Reflejos",       cost: 3, modSV: -1 }, // Evasión simple (como Stealth pero más barato/distinto sabor)
+            regen:    { name: "Regeneración",   cost: 6, modHP: 5, modSV: 0 }, // Tanque de carne puro
+        
+            // --- Tácticas y Mixtas ---
+            stim:     { name: "Estimulantes",   cost: 2, modA: 1, modHP: -1, modSV: 0 }, // Daño a cambio de vida (Droga de combate)
+            exo:      { name: "Exoesqueleto",   cost: 7, modA: 1, modHP: 3, modSV: -1 }, // Un poco de todo, muy caro
+            scanner:  { name: "Escáner",        cost: 3, modHit: -1, modSV: 0 }, // Menos costoso que Voz de Mando, individual
+            jetpack:  { name: "Propulsores",    cost: 4, modSV: -1, modHit: 0, modHP: 0 }, // Movilidad (interpretado como evasión)
+        
+            // --- Las tuyas originales (para referencia) ---
+            voice:    { name: "Voz de Mando",   cost: 5, modHit: -1 },
+            frenzy:   { name: "Frenesí",        cost: 3, modA: 2, modSV: 1 },
+            stealth:  { name: "Sigilo",         cost: 4, modSV: -1 },
+            bionics:  { name: "Biónica",        cost: 3, modHP: 4 }
+},
+       weapons: {
+    // --- RANGED (Disparo) ---
+    // Básicas y Ligeras
+    pistol:     { name: "Pistola",      cost: 0, A: 3, D: 3, type: "Ranged" }, // Opción "gratis" más débil
+    autogun:    { name: "Rifle Automático",   cost: 1, A: 5, D: 3, type: "Ranged" }, // Mejora barata del Lasgun (más disparos)
+    shotgun:    { name: "Escopeta",     cost: 2, A: 3, D: 5, type: "Ranged" }, // Pocos tiros, alto daño corto alcance
+    
+    // Especiales
+    flamer:     { name: "Lanzallamas",  cost: 3, A: 8, D: 2, type: "Ranged" }, // Muchos impactos (A), daño bajo (D). Mata-hordas
+    grenade_l:  { name: "Lanzagranad.", cost: 3, A: 2, D: 5, type: "Ranged" }, // Daño explosivo medio
+    
+    // Pesadas / Anti-Tanque
+    rocket:     { name: "Lanzamisiles", cost: 5, A: 1, D: 9, type: "Ranged" }, // Un solo tiro (A1), daño masivo (D9)
+    melta:      { name: "Fusil Fusión", cost: 4, A: 2, D: 7, type: "Ranged" }, // Anti-blindaje rango corto
+    railgun:    { name: "Cañón Riel",   cost: 6, A: 2, D: 8, type: "Ranged" }, // Francotirador pesado anti-vehículos
+
+    // Tus originales (para referencia/copiar todo junto)
+    lasgun:     { name: "Rifle Láser",  cost: 0, A: 4, D: 3, type: "Ranged" },
+    bolter:     { name: "Bólter",       cost: 2, A: 4, D: 4, type: "Ranged" },
+    plasma:     { name: "Plasma",       cost: 4, A: 4, D: 6, type: "Ranged" },
+    minigun:    { name: "Cañón Rotatorio",   cost: 5, A: 6, D: 4, type: "Ranged" },
+    sniper:     { name: "Rifle Precisión",  cost: 3, A: 3, D: 5, type: "Ranged" },
+
+    // --- MELEE (Cuerpo a cuerpo) ---
+    // Básicas
+    staff:      { name: "Bastón",       cost: 0, A: 3, D: 4, type: "Melee" }, // Alternativa defensiva gratis
+    spear:      { name: "Lanza",        cost: 1, A: 4, D: 4, type: "Melee" }, // Mejora barata de daño
+    axe:        { name: "Hacha",        cost: 2, A: 3, D: 5, type: "Melee" }, // Pega duro pero es lenta (menos A)
+    
+    // Avanzadas
+    hammer:     { name: "Martillo",  cost: 5, A: 2, D: 8, type: "Melee" }, // Difícil de acertar, daño brutal
+    fist:       { name: "Puño de Combate", cost: 4, A: 3, D: 7, type: "Melee" }, // Versión equilibrada del martillo
+    dualblade:  { name: "Dagas Dobles", cost: 3, A: 7, D: 2, type: "Melee" }, // Lluvia de ataques, poco daño individual
+    whip:       { name: "Látigo",    cost: 3, A: 5, D: 3, type: "Melee" }, // Rango medio, daño bajo
+
+    // Tus originales
+    knife:      { name: "Cuchillo C.",  cost: 0, A: 4, D: 3, type: "Melee" },
+    chainsword: { name: "Espada Sierra",cost: 2, A: 5, D: 4, type: "Melee" },
+    powerw:     { name: "Arma Energía", cost: 4, A: 4, D: 6, type: "Melee" },
+    claws:      { name: "Garras",       cost: 3, A: 6, D: 4, type: "Melee" }
+},
         peanas: {
             25: { name: "25mm", hpMod: 0, svMod: 0, dmgMod: 0, cost: 0 },
             32: { name: "32mm", hpMod: 3, svMod: 0, dmgMod: 0, cost: 2 },
             40: { name: "40mm", hpMod: 6, svMod: -1, dmgMod: 1, cost: 5 }
         },
-        gear: { none: 0, granada: 2, scope: 2, shield: 4 }
+        gear: {
+    // --- Básico (Coste 0) ---
+    none: 0,
+
+    // --- Supervivencia y Defensa ---
+    camo: 1,      // Camuflaje: Pequeña mejora a la evasión (modSV)
+    smoke: 2,     // Granana de Humo: Cobertura temporal
+    armor: 3,     // Placas Extra: +1 HP o salvación
+    shield: 4,    // Escudo de Energía: Tu original (alto coste, alta defensa)
+    medkit: 3,    // Botiquín: Curar o revivir una vez
+
+    // --- Ofensivo y Utilidad ---
+    knife: 1,     // Cuchillo secundario: Evita penalizador en cuerpo a cuerpo si usas rifles
+    granada: 2,   // Tu original: Daño en área un solo uso
+    ammo: 2,      // Munición Extra: Permite repetir 1 dado de ataque fallido
+    scope: 2,     // Mira: Tu original (mejora modHit)
+    scanner: 3,   // Escáner: Detecta unidades en sigilo o invisibles
+
+    // --- Movilidad y Especiales ---
+    stim: 1,      // Estimulante: +Movimiento o +Ataque un turno, luego daño
+    goggles: 2,   // Visor Nocturno: Ignora penalizadores por oscuridad
+    jetpack: 5,   // Mochila Cohete: Permite volar o "Saltar" terreno
+    drone: 4      // Dron de apoyo: Un "token" extra que dispara o absorbe un golpe
+}
     };
 
     let state = { squad: {}, pts: 0 };
@@ -397,4 +487,5 @@
     }
 </script>
 </body>
+
 </html>
