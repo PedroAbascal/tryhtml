@@ -3,38 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ArUco Robust Mobile</title>
+    <title>ArUco Class API</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: monospace; }
         
         #ui {
             position: absolute; top: 0; left: 0; width: 100%; z-index: 10;
             background: rgba(0,0,0,0.6); color: #0f0; padding: 5px;
-            pointer-events: none;
+            pointer-events: none; text-align: center;
         }
         
-        #btn-container { pointer-events: auto; text-align: center; margin-bottom: 5px; }
+        #btn-container { pointer-events: auto; margin-bottom: 5px; }
         
         button { 
-            padding: 12px 24px; font-size: 16px; 
-            background: #007bff; color: white; 
+            padding: 15px 30px; font-size: 16px; 
+            background: #007bff; color: white; font-weight: bold;
             border: none; border-radius: 5px; cursor: pointer;
         }
         
         #log { 
-            font-size: 11px; max-height: 100px; 
-            overflow-y: auto; padding: 5px; 
+            font-size: 11px; max-height: 120px; 
+            overflow-y: auto; padding: 5px; text-align: left;
             border-top: 1px solid #444; color: #ccffcc;
         }
 
         #container { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background: #222; }
         
-        /* Video invisible para el usuario, pero con dimensiones reales para OpenCV */
         video { 
             position: absolute; top: 0; left: 0; 
             width: 100%; height: 100%; 
-            object-fit: cover; opacity: 0.01; 
-            z-index: 1;
+            object-fit: cover; opacity: 0.01; z-index: 1;
         }
         
         canvas { 
@@ -47,10 +45,10 @@
 <body>
 
 <div id="ui">
+    <div id="log">Cargando librerías...</div>
     <div id="btn-container">
-        <button id="btnStart" disabled>Cargando Motor...</button>
+        <button id="btnStart" disabled>Espere...</button>
     </div>
-    <div id="log">Inicializando sistema...</div>
 </div>
 
 <div id="container">
@@ -71,26 +69,27 @@
     let stream = null;
     let streaming = false;
     
-    // Variables OpenCV globales
+    // Variables OpenCV
     let cap = null;
     let src = null;
     let gray = null;
     let dictionary = null;
+    let params = null;
+    let detector = null; // NUEVO: El objeto detector
     let markerIds = null;
     let markerCorners = null;
-    let params = null;
     let rejected = null;
 
     function onCvLoaded() {
-        log("OpenCV Cargado.");
-        btnStart.innerText = "INICIAR CÁMARA";
+        log("OpenCV 4.8.0 Cargado.");
+        btnStart.innerText = "INICIAR PRUEBA ARUCO";
         btnStart.disabled = false;
         btnStart.onclick = startCamera;
     }
 
     async function startCamera() {
         btnStart.style.display = 'none';
-        log("Solicitando cámara trasera...");
+        log("Accediendo a cámara...");
         
         try {
             const constraints = { 
@@ -100,24 +99,20 @@
             stream = await navigator.mediaDevices.getUserMedia(constraints);
             video.srcObject = stream;
             
-            // Promesa de play explícita
             await video.play();
             
-            log("Video corriendo. Sincronizando tamaño...");
-            
-            // Iniciamos el bucle de comprobación de tamaño
+            log("Video activo. Esperando dimensiones...");
             waitForVideoSize();
 
         } catch (err) {
-            log("ERROR AL INICIAR: " + err.message);
+            log("ERROR CÁMARA: " + err.message);
             btnStart.style.display = 'inline-block';
         }
     }
 
     function waitForVideoSize() {
-        // Esperamos a que el video tenga dimensiones válidas
         if (video.videoWidth > 0 && video.videoHeight > 0) {
-            log(`Dimensiones iniciales: ${video.videoWidth}x${video.videoHeight}`);
+            log(`Dimensión detectada: ${video.videoWidth}x${video.videoHeight}`);
             startOpenCV();
         } else {
             requestAnimationFrame(waitForVideoSize);
@@ -127,27 +122,39 @@
     function startOpenCV() {
         streaming = true;
         
-        // 1. Configuramos los atributos físicos del elemento video
-        // IMPORTANTE: Esto evita el error "bad size" inicial
+        // 1. Sincronizar tamaños
         video.width = video.videoWidth;
         video.height = video.videoHeight;
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
-        // 2. Inicializamos objetos
+        // 2. Crear Mats
         cap = new cv.VideoCapture(video);
         src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
         gray = new cv.Mat();
         
-        // Diccionario ORIGINAL
+        // 3. CONFIGURACIÓN ARUCO (NUEVA API DE CLASES)
+        // Paso A: Obtener diccionario (sin new)
         dictionary = cv.getPredefinedDictionary(cv.DICT_ARUCO_ORIGINAL);
+        
+        // Paso B: Crear parámetros
         params = new cv.aruco_DetectorParameters();
+        
+        // Paso C: Crear EL DETECTOR (Esto reemplaza a la función detectMarkers)
+        // La clase se llama aruco_ArucoDetector
+        try {
+            detector = new cv.aruco_ArucoDetector(dictionary, params);
+            log("Detector ArUco creado correctamente.");
+        } catch(e) {
+            log("Error creando ArucoDetector: " + e);
+            return;
+        }
         
         markerIds = new cv.Mat();
         markerCorners = new cv.MatVector();
         rejected = new cv.MatVector();
         
-        log("Sistema ArUco Activo.");
+        log("Sistema listo. Buscando marcadores...");
         requestAnimationFrame(processFrame);
     }
 
@@ -155,52 +162,40 @@
         if (!streaming) return;
 
         try {
-            // --- BLOQUE CRÍTICO: GESTIÓN DE REDIMENSIÓN ---
-            // Si el video cambia de resolución (giro de pantalla o ajuste automático)
-            // las dimensiones no coincidirán y OpenCV lanzará error.
+            // Protección contra cambio de tamaño
             if (video.videoWidth !== src.cols || video.videoHeight !== src.rows) {
-                log(`Cambio de resolución detectado: ${video.videoWidth}x${video.videoHeight}`);
-                
-                // 1. Actualizar atributos HTML para que VideoCapture lea bien
                 video.width = video.videoWidth;
                 video.height = video.videoHeight;
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
-
-                // 2. Recrear matrices con el nuevo tamaño
                 src.delete();
-                gray.delete();
                 src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
-                gray = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC1);
+                // Si cambiamos src, quizás debamos reiniciar cap? Generalmente VideoCapture se adapta
+                // pero por seguridad, reasignamos tamaño.
             }
-            // ----------------------------------------------
 
-            // Leer frame
             cap.read(src);
-            
-            // Procesar
             cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-            cv.detectMarkers(gray, dictionary, markerCorners, markerIds, params, rejected);
 
-            // Dibujar
+            // --- NUEVA LLAMADA DE DETECCIÓN ---
+            // Usamos el objeto 'detector', no la función global 'cv'
+            detector.detectMarkers(gray, markerCorners, markerIds, rejected);
+
             if (markerIds.rows > 0) {
+                // Dibujar (Esto sigue siendo una función global de utilidad)
                 cv.drawDetectedMarkers(src, markerCorners, markerIds, new cv.Scalar(0, 255, 0, 255));
+                
+                // Opcional: Mostrar ID en el log solo si cambia (para no saturar)
+                // log("ID Detectado: " + markerIds.data32S[0]);
             }
             
             cv.imshow('canvasOutput', src);
-
-            // Limpieza temporal obligatoria
-            // Nota: No borramos src/gray aquí, solo lo que se regenera
-            // rejected se limpia automáticamente al sobrescribirse o deberíamos limpiarlo si crece mucho, 
-            // pero en JS MatVector suele gestionarse bien en scope corto. 
-            // Para seguridad en loops largos:
-            // rejected.delete(); rejected = new cv.MatVector(); // (Opcional si notamos lentitud)
 
             requestAnimationFrame(processFrame);
 
         } catch (err) {
             log("Error Loop: " + err);
-            // Intentar recuperar en el siguiente frame
+            // Intentar seguir
             requestAnimationFrame(processFrame);
         }
     }
