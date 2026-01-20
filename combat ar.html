@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v66 FINAL SHOWDOWN</title>
+    <title>SQUAD COMMAND: v67 MODE FIX</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -117,10 +117,14 @@
         #game-over-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
         #game-over-screen.show { opacity: 1; pointer-events: auto; }
         .end-title { font-size: 3rem; font-weight: bold; margin-bottom: 20px; letter-spacing: 5px; }
+        
+        /* FIX: CSS PARA HIGHLIGHT DE STATS */
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; margin: 5px 0; background: rgba(255,255,255,0.05); padding: 3px; border-radius: 2px; }
         .stat-box { display: flex; flex-direction: column; align-items: center; }
-        .stat-val { font-size: 0.7rem; font-weight: bold; color: #eee; }
+        .stat-val { font-size: 0.7rem; font-weight: bold; color: #eee; transition: 0.3s; }
+        .stat-val.hl { color: var(--c); text-shadow: 0 0 8px var(--c); font-size: 0.8rem; } /* NUEVO */
         .stat-label { font-size: 0.5rem; color: #888; }
+        
         #confirm-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; }
         #confirm-modal.show { opacity: 1; pointer-events: auto; }
         .modal-box { background: #111; border: 2px solid var(--gold); padding: 20px; width: 80%; max-width: 300px; text-align: center; box-shadow: 0 0 20px rgba(255,204,0,0.2); }
@@ -157,7 +161,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v66 FINAL SHOWDOWN</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v67 MODE FIX</div>
         <div class="box"><textarea id="json-input" placeholder='PEGAR JSON AQUÍ'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem; color:#888;">MISIÓN PRINCIPAL</div>
@@ -347,18 +351,15 @@
         resetPassButtons(); coverActive = false;
     }
 
-    // --- GAME END LOGIC ---
     function checkWinCondition() {
         isGameOver = true;
         const screen = document.getElementById('game-over-screen');
         const title = document.getElementById('end-title');
         const score = document.getElementById('end-score');
         screen.classList.add('show');
-        
         let res = "EMPATE"; let color = "#ffcc00";
         if(myVP > enemyVP) { res = "VICTORIA"; color = "#00ff99"; }
         else if(myVP < enemyVP) { res = "DERROTA"; color = "#ff0055"; }
-        
         title.innerText = res; title.style.color = color;
         score.innerText = `YO: ${myVP} - RIV: ${enemyVP}`;
         if(client) try{ client.disconnect(); } catch(e){}
@@ -428,7 +429,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v66/${code}`;
+        TOPIC = `sqcmd/v67/${code}`;
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -531,7 +532,6 @@
             const sv = parseInt(myUnits[myIdx].stats.sv.replace('+',''));
             const finalSv = coverActive ? Math.max(2, sv - 1) : sv;
             
-            // MATH FIX:
             let defCrits = activeDice.filter(d => d === 6).length;
             let defNormals = activeDice.filter(d => d >= finalSv && d < 6).length;
 
@@ -590,8 +590,16 @@
         if(me.activations===2) statusText = "AGOTADO";
         document.getElementById('my-status-text').innerText = statusText;
         if(globalHP[me.uid]) document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
+        
+        // VISUAL FIX: Update HUD buttons
         document.getElementById('btn-mode-open').className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
         document.getElementById('btn-mode-hidden').className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
+        
+        document.getElementById('btn-combat-mode').innerHTML = combatMode === 'ranged' ? "<span>🔫</span>" : "<span>⚔️</span>";
+        document.getElementById('btn-act').innerHTML = combatMode === 'ranged' ? "<span>DISPARAR</span>" : "<span>GOLPEAR</span>";
+        document.getElementById('my-r').className = combatMode==='ranged' ? 'stat-val hl' : 'stat-val';
+        document.getElementById('my-m').className = combatMode==='melee' ? 'stat-val hl' : 'stat-val';
+
         document.getElementById('my-r').innerText = me.stats.r_atk;
         document.getElementById('my-m').innerText = me.stats.m_atk;
         document.getElementById('my-sv').innerText = me.stats.sv;
@@ -614,7 +622,7 @@
         document.getElementById('round-display').innerText = `RND ${currentRound}/${maxRounds}`;
     }
 
-    // --- Helpers (Standard) ---
+    // --- Helpers ---
     window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; updateHUD(); } }
     window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); updateHUD(); }
     window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
