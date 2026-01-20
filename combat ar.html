@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v67 MODE FIX</title>
+    <title>SQUAD COMMAND: v68 FIXED DEFENSE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -117,12 +117,10 @@
         #game-over-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
         #game-over-screen.show { opacity: 1; pointer-events: auto; }
         .end-title { font-size: 3rem; font-weight: bold; margin-bottom: 20px; letter-spacing: 5px; }
-        
-        /* FIX: CSS PARA HIGHLIGHT DE STATS */
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; margin: 5px 0; background: rgba(255,255,255,0.05); padding: 3px; border-radius: 2px; }
         .stat-box { display: flex; flex-direction: column; align-items: center; }
         .stat-val { font-size: 0.7rem; font-weight: bold; color: #eee; transition: 0.3s; }
-        .stat-val.hl { color: var(--c); text-shadow: 0 0 8px var(--c); font-size: 0.8rem; } /* NUEVO */
+        .stat-val.hl { color: var(--c); text-shadow: 0 0 8px var(--c); font-size: 0.8rem; }
         .stat-label { font-size: 0.5rem; color: #888; }
         
         #confirm-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; }
@@ -161,7 +159,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v67 MODE FIX</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v68 FIXED DEFENSE</div>
         <div class="box"><textarea id="json-input" placeholder='PEGAR JSON AQUÍ'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem; color:#888;">MISIÓN PRINCIPAL</div>
@@ -429,7 +427,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v67/${code}`;
+        TOPIC = `sqcmd/v68/${code}`;
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -530,10 +528,15 @@
         } 
         else if(dicePhase === 'DEFENSE_ROLL') {
             const sv = parseInt(myUnits[myIdx].stats.sv.replace('+',''));
-            const finalSv = coverActive ? Math.max(2, sv - 1) : sv;
             
+            // MATH UPDATE v68: Fixed Defense
             let defCrits = activeDice.filter(d => d === 6).length;
-            let defNormals = activeDice.filter(d => d >= finalSv && d < 6).length;
+            let defNormals = activeDice.filter(d => d >= sv && d < 6).length;
+
+            if (coverActive) {
+                defNormals++;
+                log("COBERTURA: +1 SALVACIÓN AUTOMÁTICA");
+            }
 
             let incCrits = pendingHits.crit;
             let incNormals = pendingHits.normal;
@@ -591,7 +594,6 @@
         document.getElementById('my-status-text').innerText = statusText;
         if(globalHP[me.uid]) document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
         
-        // VISUAL FIX: Update HUD buttons
         document.getElementById('btn-mode-open').className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
         document.getElementById('btn-mode-hidden').className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
         
@@ -628,7 +630,7 @@
     window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
     window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
     window.closeDice=()=>{document.getElementById('dice-overlay').classList.remove('show');};
-    window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: SI (+1 SV)"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
+    window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
     window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
     function executeSecretClaim() { secretClaimed = true; myVP += 2; log(`SECRETA ACEPTADA (+2 PV)`); document.getElementById('btn-claim-secret').style.display = 'none'; publish({type: 'SCORE_UPDATE', vp: myVP}); updateHUD(); }
     function showConfirmModal(text, reqData) { pendingRequest = reqData; const modal = document.getElementById('confirm-modal'); document.getElementById('modal-msg').innerText = text; modal.classList.add('show'); }
@@ -639,7 +641,16 @@
     function checkStartRound() { if(iAmReady && enemyIsReady) { log(`INICIATIVA: YO ${myInitRoll} vs ${enemyInitRoll} RIV`); gameState = (myInitRoll >= enemyInitRoll) ? 'MY_TURN' : 'ENEMY_TURN'; document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show')); setTurn(gameState, 0); } }
     function getKillPoints(total) { return total <= 4 ? 4 : (total <= 7 ? 3 : 1); }
     function checkAutoMechanics() { const me = myUnits[myIdx]; if(!me || globalHP[me.uid].c <= 0) return; me.mechanics.forEach(m => { if(m.type === 'AUTO' && m.func === 'AUTO_REGEN') { if(globalHP[me.uid].c < globalHP[me.uid].m) { globalHP[me.uid].c++; publish({type: 'SYNC_HP', state: globalHP}); log(`REGEN: ${me.name} recupera 1 HP`); updateHUD(); } } }); }
-    function startDefensePhase() { dicePhase = 'DEFENSE_ROLL'; const me = myUnits[myIdx]; const totalHits = pendingHits.normal + pendingHits.crit; activeDice = Array(totalHits).fill(0).map(()=>Math.ceil(Math.random()*6)); diceTarget = parseInt(me.stats.sv.replace('+','')); document.getElementById('btn-cover-toggle').style.display = 'block'; showDiceOverlay('DEFENSE_ROLL', activeDice, diceTarget, true); }
+    // UPDATE: Start Defense Phase uses 3 fixed dice
+    function startDefensePhase() { 
+        dicePhase = 'DEFENSE_ROLL'; 
+        const me = myUnits[myIdx]; 
+        // FIXED DICE: Always 3
+        activeDice = Array(3).fill(0).map(()=>Math.ceil(Math.random()*6)); 
+        diceTarget = parseInt(me.stats.sv.replace('+','')); 
+        document.getElementById('btn-cover-toggle').style.display = 'block'; 
+        showDiceOverlay('DEFENSE_ROLL', activeDice, diceTarget, true); 
+    }
     function showDiceOverlay(phase, dice, target, isInteractive) { const pool = document.getElementById('dice-pool'); document.getElementById('active-section').style.display = 'block'; pool.innerHTML = ''; document.getElementById('dice-title').innerText = phase==='ATTACK_ROLL' ? "ATAQUE" : "DEFENSA"; dice.forEach((val, i) => { const d = document.createElement('button'); d.type = "button"; d.className = 'die-btn'; d.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][val]; if(val === 6) d.classList.add('crit'); else if(val >= target) d.classList.add(phase==='ATTACK_ROLL'?'hit':'save-ok'); else d.classList.add(phase==='ATTACK_ROLL'?'miss':'save-fail'); if(isInteractive) d.onclick = (e) => instantReroll(e, i); else d.classList.add('locked'); pool.appendChild(d); }); document.getElementById('dice-overlay').classList.add('show'); if(isInteractive) document.getElementById('btn-dice-main').style.display = 'block'; }
     function syncDiceToRival(uName) { publish({type: 'DICE_SYNC', phase: dicePhase, dice: activeDice, target: diceTarget, uName: uName}); }
     function applyDamage(n) { if(n>0){ document.getElementById('flash-fx').className='flash'; setTimeout(()=>document.getElementById('flash-fx').className='',300); globalHP[myUnits[myIdx].uid].c=Math.max(0,globalHP[myUnits[myIdx].uid].c-n); publish({type:'SYNC_HP',state:globalHP}); updateHUD(); } }
