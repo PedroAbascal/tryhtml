@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v68 FIXED DEFENSE</title>
+    <title>SQUAD COMMAND: v69 DMG FIX</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -159,7 +159,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v68 FIXED DEFENSE</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v69 WEAPON DMG</div>
         <div class="box"><textarea id="json-input" placeholder='PEGAR JSON AQUÍ'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem; color:#888;">MISIÓN PRINCIPAL</div>
@@ -300,11 +300,12 @@
     let primaryMission = "DOMINACION"; let secondaryActive = false;
     let maxRounds = 4; let currentRound = 1;
     let dicePhase='IDLE', activeDice=[], diceTarget=0;
-    let pendingHits = { normal: 0, crit: 0 }; 
+    let pendingHits = { normal: 0, crit: 0, dmgValue: 1 }; // Added dmgValue
     let iAmReady=false, enemyIsReady=false;
     let myInitRoll = null, enemyInitRoll = null;
     let consecutivePasses = 0; let passConfirm = null;
     let pendingRequest = null; let coverActive = false; 
+    let currentWeaponDmg = 1; // Store active attack damage
 
     window.initSystem = function() {
         MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
@@ -381,14 +382,10 @@
         if (!globalHP[unit.uid] || globalHP[unit.uid].c <= 0) return false; 
         if (unit.activations >= 2) return false; 
         if (unit.activations === 0) return true; 
-
-        // FATIGADO (1 activation):
         const iHaveReady = team.some(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
         if (iHaveReady) return false;
-
         const enemyHasReady = opponents.some(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
         if (enemyHasReady) return true;
-
         return false; 
     }
 
@@ -427,7 +424,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v68/${code}`;
+        TOPIC = `sqcmd/v69/${code}`;
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -460,14 +457,17 @@
             document.getElementById('en-ready-mark').classList.add('show'); checkStartRound();
         }
         else if(d.type === 'DICE_SYNC') {
-            pendingHits = d.hitsStruct || { normal: 0, crit: 0 };
+            // Note: dmgValue is not synced in real-time re-rolls, but sent in REQ_DEFENSE
             if(d.phase === 'ATTACK_ROLL') {
                 showDiceOverlay(d.phase, d.dice, d.target, false); 
                 document.getElementById('dice-sub').innerText = `${d.uName} apuntando...`;
                 if(d.contextLog) log(`RIVAL: ${d.contextLog}`); 
             }
         }
-        else if(d.type === 'REQ_DEFENSE') { pendingHits = d.hitsStruct; startDefensePhase(); }
+        else if(d.type === 'REQ_DEFENSE') { 
+            pendingHits = d.hitsStruct; // Contains .normal, .crit, and .dmgValue
+            startDefensePhase(); 
+        }
         else if(d.type === 'DAMAGE_RESOLVE') { applyDamage(d.dmg); closeDice(); passTurn(0); }
         else if(d.type === 'OP_ACTION') { if(gameState!=='PLANNING'){ log(`RIVAL: ${d.opType}`); setTurn('MY_TURN', 0); } }
         else if(d.type === 'CHANGE_TURN') { if(gameState!=='PLANNING') setTurn('MY_TURN', d.passes || 0); }
@@ -508,9 +508,19 @@
         const me = myUnits[myIdx];
         if(me.activations >= 2) { log("UNIDAD AGOTADA"); return; }
         dicePhase = 'ATTACK_ROLL';
+        
+        // Parse Stats and Damage
         let diceCount = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
         let target = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
+        let dmgRaw = combatMode==='ranged' ? me.stats.r_dmg : me.stats.m_dmg;
+        
+        // Default damage to 1 if missing or 0
+        currentWeaponDmg = parseInt(dmgRaw);
+        if(isNaN(currentWeaponDmg) || currentWeaponDmg === 0) currentWeaponDmg = 1;
+
         if(me.activations === 1) { target++; log("FATIGA: +1 DIFICULTAD", "danger"); }
+        
+        log(`ATACANDO (Daño: ${currentWeaponDmg})`);
         diceTarget = target;
         activeDice = Array(diceCount).fill(0).map(()=>Math.ceil(Math.random()*6));
         showDiceOverlay('ATTACK_ROLL', activeDice, diceTarget, true);
@@ -520,7 +530,7 @@
     window.proceedPhase = function(e) {
         if(e) { e.preventDefault(); e.stopPropagation(); }
         if(dicePhase === 'ATTACK_ROLL') {
-            let hitsStruct = { normal: 0, crit: 0 };
+            let hitsStruct = { normal: 0, crit: 0, dmgValue: currentWeaponDmg };
             activeDice.forEach(val => { if(val === 6) hitsStruct.crit++; else if(val >= diceTarget) hitsStruct.normal++; });
             log(`IMPACTOS: ${hitsStruct.normal} N, ${hitsStruct.crit} Crit`);
             publish({ type: 'REQ_DEFENSE', hitsStruct: hitsStruct, uName: myUnits[myIdx].name });
@@ -529,7 +539,7 @@
         else if(dicePhase === 'DEFENSE_ROLL') {
             const sv = parseInt(myUnits[myIdx].stats.sv.replace('+',''));
             
-            // MATH UPDATE v68: Fixed Defense
+            // MATH UPDATE v68/v69: Fixed Defense + Damage Multiplier
             let defCrits = activeDice.filter(d => d === 6).length;
             let defNormals = activeDice.filter(d => d >= sv && d < 6).length;
 
@@ -540,19 +550,23 @@
 
             let incCrits = pendingHits.crit;
             let incNormals = pendingHits.normal;
+            let incDmgPerHit = pendingHits.dmgValue || 1;
 
             let blockedCrits = Math.min(incCrits, defCrits);
-            let totalDmgCrits = incCrits - blockedCrits;
+            let totalDmgCritsHits = incCrits - blockedCrits; // Unblocked Crit Hits
             
             let extraDefCrits = defCrits - blockedCrits;
             let totalDefNormals = defNormals + extraDefCrits;
             
             let blockedNormals = Math.min(incNormals, totalDefNormals);
-            let totalDmgNormals = incNormals - blockedNormals;
+            let totalDmgNormalsHits = incNormals - blockedNormals; // Unblocked Normal Hits
             
-            let totalDmg = totalDmgCrits + totalDmgNormals;
+            let totalUnblockedHits = totalDmgCritsHits + totalDmgNormalsHits;
+            let totalDmg = totalUnblockedHits * incDmgPerHit;
 
-            log(`DEFENSA: ${blockedCrits} Crits, ${blockedNormals} Normal. ${totalDmg} DAÑO.`);
+            log(`DEFENSA: Bloqueas ${blockedCrits} Crits, ${blockedNormals} Normal.`);
+            log(`RECIBES ${totalUnblockedHits} Impactos x ${incDmgPerHit} Daño = ${totalDmg} TOTAL`, 'danger');
+            
             applyDamage(totalDmg); closeDice(); publish({type: 'DAMAGE_RESOLVE', dmg: totalDmg}); 
         }
     }
@@ -641,16 +655,7 @@
     function checkStartRound() { if(iAmReady && enemyIsReady) { log(`INICIATIVA: YO ${myInitRoll} vs ${enemyInitRoll} RIV`); gameState = (myInitRoll >= enemyInitRoll) ? 'MY_TURN' : 'ENEMY_TURN'; document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show')); setTurn(gameState, 0); } }
     function getKillPoints(total) { return total <= 4 ? 4 : (total <= 7 ? 3 : 1); }
     function checkAutoMechanics() { const me = myUnits[myIdx]; if(!me || globalHP[me.uid].c <= 0) return; me.mechanics.forEach(m => { if(m.type === 'AUTO' && m.func === 'AUTO_REGEN') { if(globalHP[me.uid].c < globalHP[me.uid].m) { globalHP[me.uid].c++; publish({type: 'SYNC_HP', state: globalHP}); log(`REGEN: ${me.name} recupera 1 HP`); updateHUD(); } } }); }
-    // UPDATE: Start Defense Phase uses 3 fixed dice
-    function startDefensePhase() { 
-        dicePhase = 'DEFENSE_ROLL'; 
-        const me = myUnits[myIdx]; 
-        // FIXED DICE: Always 3
-        activeDice = Array(3).fill(0).map(()=>Math.ceil(Math.random()*6)); 
-        diceTarget = parseInt(me.stats.sv.replace('+','')); 
-        document.getElementById('btn-cover-toggle').style.display = 'block'; 
-        showDiceOverlay('DEFENSE_ROLL', activeDice, diceTarget, true); 
-    }
+    function startDefensePhase() { dicePhase = 'DEFENSE_ROLL'; const me = myUnits[myIdx]; activeDice = Array(3).fill(0).map(()=>Math.ceil(Math.random()*6)); diceTarget = parseInt(me.stats.sv.replace('+','')); document.getElementById('btn-cover-toggle').style.display = 'block'; showDiceOverlay('DEFENSE_ROLL', activeDice, diceTarget, true); }
     function showDiceOverlay(phase, dice, target, isInteractive) { const pool = document.getElementById('dice-pool'); document.getElementById('active-section').style.display = 'block'; pool.innerHTML = ''; document.getElementById('dice-title').innerText = phase==='ATTACK_ROLL' ? "ATAQUE" : "DEFENSA"; dice.forEach((val, i) => { const d = document.createElement('button'); d.type = "button"; d.className = 'die-btn'; d.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][val]; if(val === 6) d.classList.add('crit'); else if(val >= target) d.classList.add(phase==='ATTACK_ROLL'?'hit':'save-ok'); else d.classList.add(phase==='ATTACK_ROLL'?'miss':'save-fail'); if(isInteractive) d.onclick = (e) => instantReroll(e, i); else d.classList.add('locked'); pool.appendChild(d); }); document.getElementById('dice-overlay').classList.add('show'); if(isInteractive) document.getElementById('btn-dice-main').style.display = 'block'; }
     function syncDiceToRival(uName) { publish({type: 'DICE_SYNC', phase: dicePhase, dice: activeDice, target: diceTarget, uName: uName}); }
     function applyDamage(n) { if(n>0){ document.getElementById('flash-fx').className='flash'; setTimeout(()=>document.getElementById('flash-fx').className='',300); globalHP[myUnits[myIdx].uid].c=Math.max(0,globalHP[myUnits[myIdx].uid].c-n); publish({type:'SYNC_HP',state:globalHP}); updateHUD(); } }
