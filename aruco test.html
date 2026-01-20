@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ArUco 4.8.0 Final Fix</title>
+    <title>ArUco Final Victory</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; font-family: monospace; overflow: hidden; }
         
@@ -44,8 +44,8 @@
         <canvas id="canvasOutput"></canvas>
     </div>
     <div id="controls">
-        <button id="btnStart" disabled>Cargando Motor...</button>
-        <textarea id="log" readonly>Sistema ArUco iniciando...</textarea>
+        <button id="btnStart" disabled>Cargando OpenCV 4.8...</button>
+        <textarea id="log" readonly>Esperando librerías...</textarea>
     </div>
 </div>
 
@@ -68,15 +68,17 @@
     
     // Objetos OpenCV
     let cap = null;
-    let src = null;
-    let gray = null;
+    let src = null;  // 4 canales (RGBA) - Original de la cámara
+    let rgb = null;  // 3 canales (RGB)  - Para dibujar encima
+    let gray = null; // 1 canal (Gris)   - Para detectar
+    
     let detector = null;
     let markerIds = null;
     let markerCorners = null;
 
     function onCvLoaded() {
-        log("OpenCV 4.8.0 Listo.");
-        btnStart.innerText = "INICIAR ARUCO (FIX)";
+        log("OpenCV Cargado. Listo para arrancar.");
+        btnStart.innerText = "INICIAR ARUCO";
         btnStart.disabled = false;
         btnStart.onclick = startCamera;
     }
@@ -84,7 +86,6 @@
     async function startCamera() {
         btnStart.disabled = true;
         log("Iniciando cámara...");
-
         try {
             const constraints = { 
                 video: { facingMode: 'environment' }, 
@@ -93,7 +94,6 @@
             stream = await navigator.mediaDevices.getUserMedia(constraints);
             video.srcObject = stream;
             await video.play();
-            log("Video OK. Esperando buffer...");
             checkVideoReady();
         } catch (err) {
             log("ERROR CAMARA: " + err.message);
@@ -119,32 +119,29 @@
         canvas.height = video.videoHeight;
 
         cap = new cv.VideoCapture(video);
-        src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
-        gray = new cv.Mat();
         
-        // --- INICIALIZACIÓN PROBADA ---
+        // MATRICES:
+        src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4); // Cámara (RGBA)
+        rgb = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC3); // Dibujo (RGB)
+        gray = new cv.Mat(); // Detección (Gris)
+        
+        // CONFIGURACIÓN QUE SABEMOS QUE FUNCIONA:
         try {
-            log("Creando ArucoDetector (3 parámetros)...");
-
             let dictionary = cv.getPredefinedDictionary(cv.DICT_ARUCO_ORIGINAL);
             let params = new cv.aruco_DetectorParameters();
             let refineParams = new cv.aruco_RefineParameters(10, 3, true);
             
-            // Usamos DIRECTAMENTE el constructor que funcionó en tu log anterior
             detector = new cv.aruco_ArucoDetector(dictionary, params, refineParams);
-            
-            log("¡Detector Creado Exitosamente!");
+            log("Detector Inicializado Correctamente.");
 
         } catch (e) {
-            handleCvError(e);
+            log("ERROR INIT: " + e);
             return;
         }
         
         markerIds = new cv.Mat();
         markerCorners = new cv.MatVector();
-        // NOTA: No creamos 'rejected' aquí, no lo pasaremos para evitar el crash.
 
-        log("Iniciando Loop de Detección...");
         requestAnimationFrame(processFrame);
     }
 
@@ -154,55 +151,42 @@
         try {
             // Protección de tamaño
             if (video.videoWidth !== src.cols || video.videoHeight !== src.rows) {
-                video.width = video.videoWidth;
-                video.height = video.videoHeight;
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                src.delete();
-                gray.delete();
+                src.delete(); rgb.delete(); gray.delete();
+                video.width = video.videoWidth; video.height = video.videoHeight;
+                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
                 src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
+                rgb = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC3);
                 gray = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC1);
             }
 
+            // 1. Leer cámara (RGBA)
             cap.read(src);
+            
+            // 2. Crear versión Gris para ArUco
             cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+            
+            // 3. Crear versión RGB para Dibujar (SOLUCIÓN DEL ERROR)
+            // drawDetectedMarkers exige 3 canales, src tiene 4.
+            cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
 
-            // --- LLAMADA CRÍTICA ---
-            // Solo pasamos 3 argumentos. Omitimos 'rejected'.
-            // Esto suele solucionar el error numérico (memory access).
+            // 4. Detectar
             detector.detectMarkers(gray, markerCorners, markerIds);
 
+            // 5. Dibujar (Sobre 'rgb', NO sobre 'src')
             if (markerIds.rows > 0) {
-                cv.drawDetectedMarkers(src, markerCorners, markerIds, new cv.Scalar(0, 255, 0, 255));
+                // log("¡Marcador detectado!"); // Descomentar para ver en log
+                cv.drawDetectedMarkers(rgb, markerCorners, markerIds, new cv.Scalar(0, 255, 0));
             }
             
-            cv.imshow('canvasOutput', src);
+            // 6. Mostrar resultado
+            cv.imshow('canvasOutput', rgb);
 
             requestAnimationFrame(processFrame);
 
         } catch (err) {
-            // Decodificar el error numérico a texto real
-            handleCvError(err);
-            // Frenamos el loop para no saturar
-            streaming = false; 
-            log("Loop detenido por error.");
+            log("LOOP CRASH: " + err);
+            streaming = false;
         }
-    }
-
-    // Función para traducir el código de error numérico de C++
-    function handleCvError(err) {
-        let msg = "Error desconocido";
-        if (typeof err === 'number') {
-            try {
-                // Intentar obtener el mensaje de C++ desde el puntero
-                msg = cv.exceptionFromPtr(err).msg;
-            } catch (e) {
-                msg = "Excepción C++ (Puntero: " + err + ")";
-            }
-        } else {
-            msg = err;
-        }
-        log("ERROR FATAL: " + msg);
     }
 </script>
 </body>
