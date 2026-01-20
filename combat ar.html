@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v63 FINAL RULES</title>
+    <title>SQUAD COMMAND: v64 CRITICAL FIX</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -62,8 +62,12 @@
         .card.enemy { border-left: 4px solid var(--r); }
         .hp-bar { height: 4px; background: #333; margin-top: 5px; width: 100%; }
         .hp-fill { height: 100%; transition: width 0.3s; }
+        
         .tactic-row { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.7rem; border-top: 1px solid #333; padding-top: 5px; }
-        .mode-toggle { cursor: pointer; padding: 2px 5px; border: 1px solid #555; color: #888; }
+        .mode-toggle { 
+            cursor: pointer; padding: 2px 5px; border: 1px solid #555; color: #888; 
+            background: #000; font-family: monospace; font-size: 1rem; width: 45%; 
+        }
         .mode-toggle.selected { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.1); }
 
         #dice-overlay { 
@@ -157,7 +161,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v63 FINAL RULES</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v64 CRITICAL FIX</div>
         <div class="box"><textarea id="json-input" placeholder='PEGAR JSON AQUÍ'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem; color:#888;">MISIÓN PRINCIPAL</div>
@@ -216,8 +220,8 @@
                     </div>
                     <div>
                         <div class="tactic-row" id="my-tactics">
-                            <span id="btn-mode-open" class="mode-toggle selected" onclick="setMode('open', event)">⚔️</span>
-                            <span id="btn-mode-hidden" class="mode-toggle" onclick="setMode('hidden', event)">🛡️</span>
+                            <button type="button" id="btn-mode-open" class="mode-toggle selected" onclick="setMode('open', event)">⚔️</button>
+                            <button type="button" id="btn-mode-hidden" class="mode-toggle" onclick="setMode('hidden', event)">🛡️</button>
                         </div>
                         <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
                     </div>
@@ -347,15 +351,13 @@
         resetPassButtons(); coverActive = false;
     }
 
-    // --- REGLAS TÁCTICAS EXACTAS v63 ---
     function checkRoundOver() {
         if(isGameOver) return;
         const myValid = myUnits.filter(u => canUnitAct(u, myUnits, enemyUnits)).length;
         const enValid = enemyUnits.filter(u => canUnitAct(u, enemyUnits, myUnits)).length;
         
-        // Si nadie puede actuar, fin de ronda.
         if (myValid === 0 && enValid === 0) {
-            log("FIN DE RONDA (Todos Fatigados/Agotados)");
+            log("FIN DE RONDA (Sin acciones posibles)");
             publish({type:'ROUND_OVER'});
             resetRound();
             return true;
@@ -365,24 +367,15 @@
 
     function canUnitAct(unit, team, opponents) {
         if (!globalHP[unit.uid] || globalHP[unit.uid].c <= 0) return false;
-        if (unit.activations >= 2) return false; // Agotado = No actua
-        if (unit.activations === 0) return true; // Fresco = Siempre actua
+        if (unit.activations >= 2) return false;
+        if (unit.activations === 0) return true; // FRESH
         
-        // Lógica para Fatigado (1 activación):
-        // 1. No debe haber frescos en mi equipo
+        // FATIGADO:
         const hasFresh = team.some(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
         if (hasFresh) return false;
         
-        // 2. REGLA: Si el enemigo tiene activaciones (frescos) -> PUEDO
-        const enemyHasFresh = opponents.some(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
-        if (enemyHasFresh) return true;
-
-        // 3. REGLA: Si no tiene frescos, pero tiene MÁS tropas vivas que yo -> PUEDO
-        const myLiving = team.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
-        const enLiving = opponents.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
-        if (myLiving < enLiving) return true;
-
-        return false;
+        const enemyThreat = opponents.some(u => u.activations < 2 && globalHP[u.uid] && globalHP[u.uid].c > 0);
+        return enemyThreat;
     }
 
     function canSelectUnit(index) {
@@ -420,7 +413,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v63/${code}`;
+        TOPIC = `sqcmd/v64/${code}`;
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -458,7 +451,6 @@
                 showDiceOverlay(d.phase, d.dice, d.target, false); 
                 document.getElementById('dice-sub').innerText = `${d.uName} apuntando...`;
                 if(d.contextLog) log(`RIVAL: ${d.contextLog}`); 
-                else log("RIVAL APUNTANDO...");
             }
         }
         else if(d.type === 'REQ_DEFENSE') { pendingHits = d.hitsStruct; startDefensePhase(); }
@@ -511,6 +503,7 @@
         syncDiceToRival(me.name);
     }
 
+    // --- MATH FIX: CRITICAL HITS ---
     window.proceedPhase = function(e) {
         if(e) { e.preventDefault(); e.stopPropagation(); }
         if(dicePhase === 'ATTACK_ROLL') {
@@ -523,10 +516,29 @@
         else if(dicePhase === 'DEFENSE_ROLL') {
             const sv = parseInt(myUnits[myIdx].stats.sv.replace('+',''));
             const finalSv = coverActive ? Math.max(2, sv - 1) : sv;
-            const saves = activeDice.filter(d => d >= finalSv).length;
-            const dmg = Math.max(0, (pendingHits.normal + pendingHits.crit) - saves);
-            log(`DEFENSA: ${saves} SALVADOS. ${dmg} DAÑO.`);
-            applyDamage(dmg); closeDice(); publish({type: 'DAMAGE_RESOLVE', dmg: dmg}); 
+            
+            // MATH FIX:
+            let defCrits = activeDice.filter(d => d === 6).length;
+            let defNormals = activeDice.filter(d => d >= finalSv && d < 6).length;
+
+            let incCrits = pendingHits.crit;
+            let incNormals = pendingHits.normal;
+
+            // 1. Resolve Crits (Only Crit saves block Crits)
+            let blockedCrits = Math.min(incCrits, defCrits);
+            let totalDmgCrits = incCrits - blockedCrits;
+            
+            // 2. Extra Crits help block Normals
+            let extraDefCrits = defCrits - blockedCrits;
+            let totalDefNormals = defNormals + extraDefCrits;
+            
+            let blockedNormals = Math.min(incNormals, totalDefNormals);
+            let totalDmgNormals = incNormals - blockedNormals;
+            
+            let totalDmg = totalDmgCrits + totalDmgNormals;
+
+            log(`DEFENSA: ${blockedCrits} Crits, ${blockedNormals} Normal. ${totalDmg} DAÑO.`);
+            applyDamage(totalDmg); closeDice(); publish({type: 'DAMAGE_RESOLVE', dmg: totalDmg}); 
         }
     }
 
@@ -554,18 +566,26 @@
 
     function updateHUD() {
         if(!myUnits.length) return;
+        // FIX: In planning phase, allow browsing freely. Only auto-select in MY_TURN.
         if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit();
+        
         const me = myUnits[myIdx]; const en = enemyUnits[enIdx];
         document.getElementById('my-name').innerText = me.name;
         const card = document.getElementById('my-card'); card.className = "card my";
         if(me.activations === 1) card.classList.add('fatigued');
         if(me.activations >= 2) card.classList.add('exhausted');
         if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) card.classList.add('locked');
+        
         let statusText = "LISTO";
         if(me.activations===1) statusText = "FATIGADO (-1 Hit)";
         if(me.activations===2) statusText = "AGOTADO";
         document.getElementById('my-status-text').innerText = statusText;
         if(globalHP[me.uid]) document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
+        
+        // Planning Phase Mode Toggle
+        document.getElementById('btn-mode-open').className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
+        document.getElementById('btn-mode-hidden').className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
+
         document.getElementById('my-r').innerText = me.stats.r_atk;
         document.getElementById('my-m').innerText = me.stats.m_atk;
         document.getElementById('my-sv').innerText = me.stats.sv;
@@ -586,6 +606,21 @@
         document.getElementById('my-score').innerText = myVP;
         document.getElementById('enemy-score').innerText = enemyVP;
         document.getElementById('round-display').innerText = `RND ${currentRound}/${maxRounds}`;
+    }
+
+    // --- FIX: MODE SELECTION IN PLANNING ---
+    window.setMode = function(m, e) {
+        e.stopPropagation();
+        if(gameState === 'PLANNING') {
+            myUnits[myIdx].mode = m;
+            updateHUD();
+        }
+    }
+    window.nextMyUnit = () => {
+        // In Planning, cycle freely. In Combat, skip invalid units unless only invalid remain (unlikely via autoSelect).
+        myIdx = (myIdx + 1) % myUnits.length;
+        if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit();
+        updateHUD();
     }
 
     function checkWinCondition() { /* ... */ }
