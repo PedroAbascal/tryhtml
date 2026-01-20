@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ArUco Selector</title>
+    <title>ArUco Solid Select</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; font-family: monospace; overflow: hidden; }
         
@@ -16,27 +16,22 @@
         }
         canvas { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            object-fit: contain; z-index: 10; cursor: crosshair;
+            object-fit: contain; z-index: 10; cursor: pointer; /* Cursor de mano */
         }
 
         #controls {
-            height: 120px; background: #111; color: #0f0;
-            display: flex; flex-direction: column;
-            padding: 5px; box-sizing: border-box; z-index: 20; border-top: 1px solid #444;
+            height: 100px; background: #111; color: #fff;
+            display: flex; flex-direction: column; padding: 5px;
+            border-top: 1px solid #444; z-index: 20;
         }
         .btn-row { display: flex; gap: 5px; margin-bottom: 5px; }
         button {
-            flex: 1; padding: 10px; font-size: 14px; font-weight: bold;
+            flex: 1; padding: 12px; font-size: 14px; font-weight: bold;
             color: white; border: none; border-radius: 4px; cursor: pointer;
         }
         #btnStart { background: #28a745; }
         #btnClear { background: #dc3545; }
-        
-        textarea#log {
-            flex: 1; background: #000; color: #0f0; 
-            border: 1px solid #555; padding: 5px;
-            font-family: monospace; font-size: 11px; resize: none;
-        }
+        #status { font-size: 12px; color: #0f0; margin-top: 5px; text-align: center;}
     </style>
 </head>
 <body>
@@ -48,137 +43,111 @@
     </div>
     <div id="controls">
         <div class="btn-row">
-            <button id="btnStart" disabled>Cargando...</button>
-            <button id="btnClear">Limpiar Selección</button>
+            <button id="btnStart" disabled>Cargando OpenCV...</button>
+            <button id="btnClear">Limpiar Todo</button>
         </div>
-        <textarea id="log" readonly>Toca un marcador para seleccionarlo.</textarea>
+        <div id="status">Toca un marcador para cubrirlo/descubrirlo.</div>
     </div>
 </div>
 
 <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onCvLoaded()"></script>
 
 <script>
-    const logArea = document.getElementById('log');
-    function log(msg) {
-        console.log(msg);
-        let time = new Date().toLocaleTimeString();
-        logArea.value = `[${time}] ${msg}\n` + logArea.value; 
-    }
-
     let video = document.getElementById('videoInput');
     let canvas = document.getElementById('canvasOutput');
     let btnStart = document.getElementById('btnStart');
     let btnClear = document.getElementById('btnClear');
+    let statusText = document.getElementById('status');
     
     let stream = null;
     let streaming = false;
     
-    // OpenCV objects
     let cap, src, rgb, gray, detector, markerIds, markerCorners;
     
-    // --- LÓGICA DE SELECCIÓN ---
-    // Usamos un Set para guardar los IDs únicos seleccionados (ej: {12, 45})
+    // Almacén de seleccionados
     let selectedIds = new Set();
 
     function onCvLoaded() {
-        log("Sistema listo.");
         btnStart.innerText = "INICIAR CÁMARA";
         btnStart.disabled = false;
-        
         btnStart.onclick = startCamera;
         
-        // Botón para limpiar selección
         btnClear.onclick = () => {
             selectedIds.clear();
-            log("Selección limpiada.");
+            statusText.innerText = "Selección limpiada.";
         };
 
-        // EVENTO CLICK / TOUCH EN EL CANVAS
-        canvas.addEventListener('mousedown', handleCanvasClick);
-        canvas.addEventListener('touchstart', (e) => {
-            // Prevenir doble disparo en móviles y usar el primer dedo
-            if(e.cancelable) e.preventDefault(); 
-            handleCanvasClick(e.touches[0]);
-        }, {passive: false});
+        // Eventos táctiles y ratón unificados
+        ['mousedown', 'touchstart'].forEach(evt => 
+            canvas.addEventListener(evt, handleInput, {passive: false})
+        );
     }
 
-    function handleCanvasClick(e) {
+    function handleInput(e) {
         if (!markerCorners || markerIds.rows === 0) return;
+        if (e.type === 'touchstart') e.preventDefault(); // Evitar scroll/zoom
 
-        // 1. Obtener coordenadas ajustadas a la resolución real del video
+        // Coordenadas del clic/toque
         const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX || e.touches[0].clientX;
+        const clientY = e.clientY || e.touches[0].clientY;
+
+        // Escalar al tamaño real del video
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
-
-        // Posición del clic relativa al canvas visual, multiplicada por la escala interna
-        const clickX = (e.clientX - rect.left) * scaleX;
-        const clickY = (e.clientY - rect.top) * scaleY;
+        const clickX = (clientX - rect.left) * scaleX;
+        const clickY = (clientY - rect.top) * scaleY;
 
         const clickPoint = new cv.Point(clickX, clickY);
-        let clickedSomething = false;
 
-        // 2. Iterar sobre todos los marcadores detectados ACTUALMENTE
         for (let i = 0; i < markerIds.rows; i++) {
             let id = markerIds.data32S[i];
-            let corners = markerCorners.get(i); // Obtener contorno del marcador i
+            let corners = markerCorners.get(i); // Matriz del contorno
 
-            // 3. HIT TEST: ¿El punto está dentro del polígono?
-            // cv.pointPolygonTest devuelve > 0 si está dentro, < 0 si fuera.
+            // Hit Test
             if (cv.pointPolygonTest(corners, clickPoint, false) >= 0) {
-                
-                // Toggle (Si existe se borra, si no existe se agrega)
                 if (selectedIds.has(id)) {
                     selectedIds.delete(id);
-                    log(`Marcador ${id} Deseleccionado.`);
                 } else {
                     selectedIds.add(id);
-                    log(`Marcador ${id} SELECCIONADO.`);
                 }
-                clickedSomething = true;
+                statusText.innerText = `Marcadores seleccionados: ${selectedIds.size}`;
             }
         }
-        
-        // Limpieza de memoria temporal del punto
-        // (En JS puro pointPolygonTest suele manejar la memoria del punto auto, 
-        // pero es buena práctica no acumular objetos si fuera C++)
     }
 
     async function startCamera() {
         btnStart.disabled = true;
         try {
-            const constraints = { video: { facingMode: 'environment' }, audio: false };
-            stream = await navigator.mediaDevices.getUserMedia(constraints);
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment' }, 
+                audio: false 
+            });
             video.srcObject = stream;
             await video.play();
             checkVideoReady();
         } catch (err) {
-            log("Error Cámara: " + err.message);
+            alert("Error Cámara: " + err.message);
             btnStart.disabled = false;
         }
     }
 
     function checkVideoReady() {
-        if (video.videoWidth > 0) {
-            startProcessing();
-        } else {
-            requestAnimationFrame(checkVideoReady);
-        }
+        if (video.videoWidth > 0) startProcessing();
+        else requestAnimationFrame(checkVideoReady);
     }
 
     function startProcessing() {
         streaming = true;
-        
-        video.width = video.videoWidth;
-        video.height = video.videoHeight;
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        video.width = video.videoWidth; video.height = video.videoHeight;
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
 
         cap = new cv.VideoCapture(video);
         src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
         rgb = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC3);
         gray = new cv.Mat();
         
-        // Inicialización segura ArUco (v4.8.0)
+        // Init ArUco 4.8
         let dictionary = cv.getPredefinedDictionary(cv.DICT_ARUCO_ORIGINAL);
         let params = new cv.aruco_DetectorParameters();
         let refineParams = new cv.aruco_RefineParameters(10, 3, true);
@@ -196,50 +165,54 @@
         try {
             if (video.videoWidth !== src.cols) {
                 src.delete(); rgb.delete(); gray.delete();
-                video.width = video.videoWidth; video.height = video.videoHeight;
-                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-                src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
-                rgb = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC3);
-                gray = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC1);
+                startProcessing(); // Reiniciar si cambia tamaño
+                return;
             }
 
             cap.read(src);
             cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-            cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB); // Necesario para dibujar
+            cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
 
             detector.detectMarkers(gray, markerCorners, markerIds);
 
-            // --- LÓGICA DE DIBUJADO PERSONALIZADA ---
+            // --- FASE DE DIBUJADO ---
             if (markerIds.rows > 0) {
                 
-                // Primero dibujamos TODOS en VERDE (Color base)
-                // Usamos drawDetectedMarkers para pintar los ejes básicos
+                // 1. Dibujar contornos verdes para TODOS (guía visual base)
                 cv.drawDetectedMarkers(rgb, markerCorners, markerIds, new cv.Scalar(0, 255, 0));
 
-                // Luego dibujamos ENCIMA los SELECCIONADOS en ROJO
+                // 2. Dibujar RELLENO SÓLIDO para los SELECCIONADOS
                 for (let i = 0; i < markerIds.rows; i++) {
                     let id = markerIds.data32S[i];
-                    
+
                     if (selectedIds.has(id)) {
                         let corners = markerCorners.get(i);
                         
-                        // Dibujar contorno grueso Rojo
-                        // data32F contiene [x1, y1, x2, y2, x3, y3, x4, y4]
-                        let topLeft = new cv.Point(corners.data32F[0], corners.data32F[1]);
-                        let topRight = new cv.Point(corners.data32F[2], corners.data32F[3]);
-                        let bottomRight = new cv.Point(corners.data32F[4], corners.data32F[5]);
-                        let bottomLeft = new cv.Point(corners.data32F[6], corners.data32F[7]);
-
-                        let redColor = new cv.Scalar(255, 0, 0);
-                        let thickness = 4;
-
-                        cv.line(rgb, topLeft, topRight, redColor, thickness);
-                        cv.line(rgb, topRight, bottomRight, redColor, thickness);
-                        cv.line(rgb, bottomRight, bottomLeft, redColor, thickness);
-                        cv.line(rgb, bottomLeft, topLeft, redColor, thickness);
+                        // Convertir los puntos flotantes a enteros para fillConvexPoly
+                        // [x1, y1, x2, y2, x3, y3, x4, y4]
+                        let pointsArray = [
+                            corners.data32F[0], corners.data32F[1],
+                            corners.data32F[2], corners.data32F[3],
+                            corners.data32F[4], corners.data32F[5],
+                            corners.data32F[6], corners.data32F[7]
+                        ];
                         
-                        // Opcional: Escribir "SELECTED" encima
-                        cv.putText(rgb, "SEL", topLeft, cv.FONT_HERSHEY_SIMPLEX, 1.0, redColor, 2);
+                        // Crear matriz de puntos enteros (CV_32S)
+                        let polyPoints = cv.matFromArray(4, 1, cv.CV_32SC2, pointsArray);
+
+                        // COLOR SÓLIDO: Azul (formato RGB: R, G, B)
+                        // fillConvexPoly(imagen, puntos, color)
+                        cv.fillConvexPoly(rgb, polyPoints, new cv.Scalar(0, 120, 255));
+                        
+                        // (Opcional) Poner el ID en blanco encima del relleno para no perder la referencia
+                        let center = new cv.Point(
+                            (pointsArray[0] + pointsArray[4])/2, 
+                            (pointsArray[1] + pointsArray[5])/2
+                        );
+                        cv.putText(rgb, "ID:" + id, center, cv.FONT_HERSHEY_SIMPLEX, 0.8, new cv.Scalar(255, 255, 255), 2);
+
+                        // Importante: Liberar memoria de la matriz temporal
+                        polyPoints.delete();
                     }
                 }
             }
@@ -248,7 +221,8 @@
             requestAnimationFrame(processFrame);
 
         } catch (err) {
-            log("Loop error: " + err);
+            console.error(err);
+            requestAnimationFrame(processFrame);
         }
     }
 </script>
