@@ -189,4 +189,624 @@
                 <div id="round-display" style="font-size:0.8rem; font-weight:bold;">RND 1/4</div>
                 <div class="score-detail" id="mission-info">DOMINACION</div>
             </div>
-            <button type="button" id="btn-claim-secret" class="btn
+            <button type="button" id="btn-claim-secret" class="btn-small" style="display:none;" onclick="tryClaimSecret()">RECLAMAR SECRETA (+2)</button>
+        </div>
+        
+        <div class="log-area" id="combat-log"></div>
+
+        <div class="hud-bottom">
+            <div id="planning-controls" style="text-align:center; margin-bottom:10px;">
+                <button type="button" class="btn" id="btn-ready" onclick="commitPlanning()"><span>CONFIRMAR ÓRDENES</span></button>
+            </div>
+
+            <div class="unit-selector">
+                <div class="card my" onclick="nextMyUnit()" id="my-card">
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.6rem;">
+                            <span>YO</span> <span id="my-status-text" style="color:var(--gold)"></span>
+                        </div>
+                        <div id="my-name" style="font-weight:bold;">---</div>
+                        <div class="tags-container" id="my-tags"></div>
+                        <div class="stat-grid">
+                            <div class="stat-box"><span class="stat-label">RNG</span><span class="stat-val hl" id="my-r">--</span></div>
+                            <div class="stat-box"><span class="stat-label">MEL</span><span class="stat-val" id="my-m">--</span></div>
+                            <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="my-sv">--</span></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="tactic-row" id="my-tactics">
+                            <span id="btn-mode-open" class="mode-toggle selected" onclick="setMode('open', event)">⚔️</span>
+                            <span id="btn-mode-hidden" class="mode-toggle" onclick="setMode('hidden', event)">🛡️</span>
+                        </div>
+                        <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
+                    </div>
+                    <div id="my-ready-mark" class="ready-marker">LISTO</div>
+                </div>
+                
+                <div class="card enemy" onclick="nextEnemyUnit()" id="en-card">
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)">
+                            <span>RIVAL</span> <span id="en-mode-icon">❓</span>
+                        </div>
+                        <div id="enemy-name" style="font-weight:bold;">ESPERANDO...</div>
+                        <div class="tags-container" id="en-tags"></div>
+                        <div class="stat-grid">
+                            <div class="stat-box"><span class="stat-label">RNG</span><span class="stat-val" id="en-r">--</span></div>
+                            <div class="stat-box"><span class="stat-label">MEL</span><span class="stat-val" id="en-m">--</span></div>
+                            <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="en-sv">--</span></div>
+                        </div>
+                    </div>
+                    <div class="hp-bar"><div id="enemy-hp" class="hp-fill" style="background:var(--r)"></div></div>
+                    <div id="en-ready-mark" class="ready-marker">¡LISTO!</div>
+                </div>
+            </div>
+
+            <div id="combat-actions" style="display:flex; gap:5px; flex-wrap: wrap;">
+                <button type="button" class="btn" id="btn-combat-mode" style="width:40px; background:#333; color:#fff;" onclick="resetPassButtons(); switchMode()"><span>🔫</span></button>
+                <button type="button" class="btn" id="btn-pass-open" style="flex:1; background:#555; color:#fff;" onclick="tryPass('btn-pass-open')"><span>PASAR</span></button>
+                <button type="button" class="btn" id="btn-act" style="flex:2; background:var(--r); color:#fff;" onclick="resetPassButtons(); startActionPhase()"><span>DISPARAR</span></button>
+                <button type="button" class="btn btn-gear" id="btn-gear" style="flex:2; display:none;" onclick="useSpecialGear()"><span>ITEM</span></button>
+            </div>
+
+            <div id="ops-actions" class="ops-grid">
+                <button type="button" class="btn btn-op op-dash" onclick="resetPassButtons(); performOp('DASH')"><span>DASH</span></button>
+                <button type="button" class="btn btn-op op-mission" onclick="resetPassButtons(); performOp('MISION')"><span>MISIÓN (+1PV)</span></button>
+                <button type="button" id="btn-op-pass" class="btn btn-op op-pass" onclick="tryPass('btn-op-pass')"><span>PASAR</span></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dice-overlay">
+        <div class="dice-header" id="dice-title">FASE DE COMBATE</div>
+        <button type="button" id="btn-cover-toggle" style="display:none;" onclick="toggleCover()">COBERTURA: NO</button>
+        <div id="incoming-section" class="dice-section" style="display:none;">
+            <div class="dice-label"><span>AMENAZA ENTRANTE</span></div>
+            <div class="dice-container" id="incoming-pool"></div>
+        </div>
+        <div id="active-section" class="dice-section">
+            <div class="dice-label" id="active-label"><span>TUS DADOS</span></div>
+            <div class="dice-sub" id="dice-sub" style="font-size:0.6rem; color:#888;">TOCA UN DADO PARA RE-TIRAR</div>
+            <div class="dice-container" id="dice-pool"></div>
+        </div>
+        <div style="display:flex; gap:10px; width:90%;">
+            <button type="button" class="btn" id="btn-dice-main" onclick="proceedPhase(event)"><span>CONFIRMAR</span></button>
+        </div>
+    </div>
+
+<script>
+    const MECHANICS_DB = {
+        "grenade": { name: "GRANADA", icon: "💣", type: "ACTIVE", func: "THROW_GRENADE", oneUse: true },
+        "medkit":  { name: "MEDKIT",  icon: "💊", type: "ACTIVE", func: "USE_MEDKIT", oneUse: true },
+        "regen":   { name: "REGEN",   icon: "🩸", type: "AUTO",   func: "AUTO_REGEN" },
+        "stim":    { name: "ESTIM",   icon: "💉", type: "ACTIVE", func: "USE_STIM", oneUse: true },
+        "scope":   { name: "MIRA",    icon: "🎯", type: "PASSIVE" },
+        "stealth": { name: "SIGILO",  icon: "👻", type: "PASSIVE" },
+        "shield":  { name: "ESCUDO",  icon: "🔵", type: "PASSIVE" }
+    };
+
+    const BROKER = "broker.hivemq.com"; const PORT = 8884; 
+    const SECRET_POOL = ["ASESINATO", "INFILTRACION", "SEGURIDAD", "RECONOCIMIENTO"];
+    
+    let MY_ID = ""; let client=null, TOPIC="";
+    let myUnits=[], enemyUnits=[], globalHP={};
+    let initialEnemyCount = 0;
+    let myIdx=0, enIdx=0, combatMode='ranged'; 
+    let gameState = 'PLANNING'; let isGameOver = false;
+    let myVP = 0; let enemyVP = 0;
+    let secretMission = null; let secretClaimed = false;
+    let primaryMission = "DOMINACION"; let secondaryActive = false;
+    let maxRounds = 4; let currentRound = 1;
+    let dicePhase='IDLE', activeDice=[], diceTarget=0;
+    let pendingHits = { normal: 0, crit: 0 }; 
+    let iAmReady=false, enemyIsReady=false;
+    let myInitRoll = null, enemyInitRoll = null;
+    let consecutivePasses = 0; let passConfirm = null;
+    let pendingRequest = null; let coverActive = false; 
+
+    // --- INIT & SETUP ---
+    window.initSystem = function() {
+        console.log("Iniciando sistema...");
+        MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
+        const json = document.getElementById('json-input').value;
+        const code = document.getElementById('room-id').value.trim().toUpperCase();
+        maxRounds = parseInt(document.getElementById('round-select').value, 10);
+        primaryMission = document.getElementById('primary-mission').value;
+        secondaryActive = (document.getElementById('secondary-toggle').value === "SI");
+        
+        try {
+            const parsed = JSON.parse(json);
+            if(!parsed.squad) throw new Error("Falta la propiedad 'squad' en el JSON.");
+            
+            // Fix: Universal Array/Object Handler
+            const rawSquad = Array.isArray(parsed.squad) ? parsed.squad : Object.values(parsed.squad);
+            
+            myUnits = rawSquad.map(u => {
+                const unit = { ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', activations: 0, gearUsed: false, mechanics: [] };
+                if(u.gear && MECHANICS_DB[u.gear]) unit.mechanics.push(MECHANICS_DB[u.gear]);
+                if(u.ability && MECHANICS_DB[u.ability]) unit.mechanics.push(MECHANICS_DB[u.ability]);
+                return unit;
+            });
+
+            myUnits.forEach(u => { 
+                let hp = 1;
+                if(u.stats && u.stats.hp) hp = parseInt(u.stats.hp);
+                if(isNaN(hp)) hp=1; 
+                globalHP[u.uid] = {c:hp, m:hp}; 
+            });
+            
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            assignSecretMission(); 
+            updateMissionDisplay();
+            
+            navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+                .then(s=>document.getElementById('ar-feed').srcObject=s)
+                .catch(e=>console.log("No AR feed"));
+            
+            updateHUD(); 
+            startNetwork(code); 
+            log("SISTEMA ONLINE. ESPERANDO RIVAL...");
+            
+        } catch(e) { 
+            alert("ERROR CRÍTICO: " + e.message); 
+            console.error(e);
+        }
+    }
+
+    function returnToLobby() {
+        if(!isGameOver) return;
+        if(client) { try{ client.disconnect(); } catch(e){} client=null; }
+        document.getElementById('game-over-screen').classList.remove('show');
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('lobby-screen').classList.remove('hidden');
+        document.getElementById('combat-log').innerHTML = "";
+        isGameOver = false; myUnits = []; enemyUnits = []; globalHP = {};
+        myVP = 0; enemyVP = 0; currentRound = 1;
+        iAmReady = false; enemyIsReady = false;
+        resetPassButtons(); coverActive = false;
+    }
+
+    // --- TACTICAL LOGIC ENGINE (V60 FIX) ---
+    function checkRoundOver() {
+        if(isGameOver) return;
+        const myValid = myUnits.filter(u => canUnitAct(u, myUnits, enemyUnits)).length;
+        const enValid = enemyUnits.filter(u => canUnitAct(u, enemyUnits, myUnits)).length;
+        
+        if (myValid === 0 && enValid === 0) {
+            log("FIN DE RONDA (Sin acciones posibles)");
+            publish({type:'ROUND_OVER'});
+            resetRound();
+            return true;
+        }
+        return false;
+    }
+
+    function canUnitAct(unit, team, opponents) {
+        if (!globalHP[unit.uid] || globalHP[unit.uid].c <= 0) return false;
+        if (unit.activations >= 2) return false;
+        if (unit.activations === 0) return true;
+        
+        // Fatigado (1 activation):
+        const hasFresh = team.some(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
+        if (hasFresh) return false;
+        
+        const enemyThreat = opponents.some(u => u.activations < 2 && globalHP[u.uid] && globalHP[u.uid].c > 0);
+        return enemyThreat;
+    }
+
+    function canSelectUnit(index) {
+        if (!myUnits[index]) return false;
+        return canUnitAct(myUnits[index], myUnits, enemyUnits);
+    }
+
+    function autoSelectValidUnit() {
+        if (canSelectUnit(myIdx)) return;
+        
+        const freshIdx = myUnits.findIndex(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
+        if (freshIdx !== -1) { myIdx = freshIdx; return; }
+        
+        const tiredIdx = myUnits.findIndex((u, i) => canSelectUnit(i));
+        if (tiredIdx !== -1) myIdx = tiredIdx;
+    }
+
+    function setTurn(state, passes) {
+        gameState = state; consecutivePasses = passes;
+        const ind = document.getElementById('turn-indicator');
+        if(gameState === 'MY_TURN') checkAutoMechanics();
+
+        if(gameState === 'MY_TURN') {
+            if(checkRoundOver()) return;
+
+            ind.className = "turn-badge my-turn"; ind.innerText = "TU TURNO";
+            document.getElementById('combat-actions').style.opacity = "1";
+            document.getElementById('combat-actions').style.pointerEvents = "auto";
+            document.getElementById('ops-actions').style.pointerEvents = "auto";
+            
+            autoSelectValidUnit();
+            updateHUD(); 
+        } else {
+            ind.className = "turn-badge enemy-turn"; ind.innerText = "TURNO RIVAL";
+            document.getElementById('combat-actions').style.opacity = "0.5";
+            document.getElementById('combat-actions').style.pointerEvents = "none";
+            document.getElementById('ops-actions').style.pointerEvents = "none";
+        }
+        updateHUD();
+    }
+
+    // --- NETWORK ---
+    function startNetwork(code) {
+        TOPIC = `sqcmd/v60/${code}`;
+        client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
+        client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
+        client.onMessageArrived=onMessage;
+        client.connect({useSSL:true, onSuccess:()=>{ client.subscribe(TOPIC); publish({type:'JOIN_REQ', squad:myUnits, pMission:primaryMission}); }});
+    }
+
+    function onMessage(msg) {
+        if(isGameOver) return;
+        const d = JSON.parse(msg.payloadString);
+        if(d.sender === MY_ID) return;
+
+        if(d.type === 'REQ_SECRET') showConfirmModal(`RIVAL RECLAMA SECRETA: ${d.missionName}`, d);
+        else if(d.type === 'ACK_SECRET') executeSecretClaim();
+        else if(d.type === 'GEAR_EFFECT') {
+            log(`RIVAL USA ${d.gearName}: ${d.desc}`);
+            if(d.dmg) { applyDamage(d.dmg); log(`RECIBES ${d.dmg} DAÑO`, 'danger'); }
+        }
+        else if(d.type === 'JOIN_REQ' || d.type === 'JOIN_ACK') {
+            if(!enemyUnits.length) {
+                enemyUnits = d.squad; initialEnemyCount = enemyUnits.length;
+                if(d.type==='JOIN_REQ') publish({type:'JOIN_ACK', squad:myUnits, rounds:maxRounds, pMission:primaryMission}); 
+                else { maxRounds=d.rounds; updateMissionDisplay(); }
+                enemyUnits.forEach(u => { if(!globalHP[u.uid] && u.stats) globalHP[u.uid] = {c:parseInt(u.stats.hp)||1, m:parseInt(u.stats.hp)||1}; });
+                updateHUD(); log(`RIVAL CONECTADO.`);
+            }
+        }
+        else if(d.type === 'SCORE_UPDATE') { enemyVP = d.vp; updateHUD(); }
+        else if(d.type === 'READY') {
+            enemyUnits = d.squad; enemyIsReady = true; enemyInitRoll = d.roll;
+            document.getElementById('en-ready-mark').classList.add('show'); checkStartRound();
+        }
+        else if(d.type === 'DICE_SYNC') {
+            pendingHits = d.hitsStruct || { normal: 0, crit: 0 };
+            if(d.phase === 'ATTACK_ROLL') {
+                showDiceOverlay(d.phase, d.dice, d.target, false); 
+                document.getElementById('dice-sub').innerText = `${d.uName} apuntando...`;
+                log("RIVAL APUNTANDO...");
+            }
+        }
+        else if(d.type === 'REQ_DEFENSE') { pendingHits = d.hitsStruct; startDefensePhase(); }
+        else if(d.type === 'DAMAGE_RESOLVE') {
+            applyDamage(d.dmg); closeDice();
+            passTurn(0); 
+        }
+        else if(d.type === 'OP_ACTION') { if(gameState!=='PLANNING'){ log(`RIVAL: ${d.opType}`); setTurn('MY_TURN', 0); } }
+        else if(d.type === 'CHANGE_TURN') { if(gameState!=='PLANNING') setTurn('MY_TURN', d.passes || 0); }
+        else if(d.type === 'ROUND_OVER') resetRound();
+        else if(d.type === 'SYNC_SQUAD') { enemyUnits = d.squad; updateHUD(); }
+        else if(d.type === 'SYNC_HP') { 
+            const oldHP = {...globalHP}; globalHP = {...globalHP, ...d.state}; 
+            enemyUnits.forEach(u => {
+                if(oldHP[u.uid] && oldHP[u.uid].c > 0 && globalHP[u.uid].c <= 0) {
+                    let pts = getKillPoints(initialEnemyCount); myVP += pts;
+                    log(`ENEMIGO ABATIDO (+${pts} PV)`); publish({type:'SCORE_UPDATE', vp:myVP});
+                }
+            });
+            updateHUD(); 
+        }
+    }
+
+    // --- GAME ACTIONS ---
+    function passTurn(passes) {
+        const me = myUnits[myIdx];
+        if (me.activations < 2) me.activations++;
+        publish({type: 'SYNC_SQUAD', squad: myUnits});
+
+        if(passes >= 2) { 
+            publish({type:'ROUND_OVER'}); resetRound();
+        } else {
+            if(!checkRoundOver()) {
+                setTurn('ENEMY_TURN', passes);
+                publish({type: 'CHANGE_TURN', passes: passes});
+            }
+        }
+    }
+
+    window.performOp = function(op) {
+        if(gameState !== 'MY_TURN') return;
+        if(op === 'MISION') { myVP+=1; publish({type:'SCORE_UPDATE', vp:myVP}); log("MISION CUMPLIDA"); }
+        else log(op);
+        publish({type:'OP_ACTION', opType: op});
+        passTurn(0);
+    }
+
+    window.startActionPhase = function() {
+        if(gameState !== 'MY_TURN') return;
+        const me = myUnits[myIdx];
+        if(me.activations >= 2) { log("UNIDAD AGOTADA"); return; }
+        
+        dicePhase = 'ATTACK_ROLL';
+        let diceCount = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
+        
+        let target = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
+        if(me.activations === 1) { 
+            target++; 
+            log("FATIGA: +1 DIFICULTAD", "danger");
+        }
+        diceTarget = target;
+        
+        activeDice = Array(diceCount).fill(0).map(()=>Math.ceil(Math.random()*6));
+        showDiceOverlay('ATTACK_ROLL', activeDice, diceTarget, true);
+        syncDiceToRival(me.name);
+    }
+
+    window.proceedPhase = function(e) {
+        if(e) { e.preventDefault(); e.stopPropagation(); }
+        
+        if(dicePhase === 'ATTACK_ROLL') {
+            let hitsStruct = { normal: 0, crit: 0 };
+            activeDice.forEach(val => { if(val === 6) hitsStruct.crit++; else if(val >= diceTarget) hitsStruct.normal++; });
+            log(`IMPACTOS: ${hitsStruct.normal} N, ${hitsStruct.crit} Crit`);
+            publish({ type: 'REQ_DEFENSE', hitsStruct: hitsStruct, uName: myUnits[myIdx].name });
+            document.getElementById('btn-dice-main').style.display = 'none';
+        } 
+        else if(dicePhase === 'DEFENSE_ROLL') {
+            const sv = parseInt(myUnits[myIdx].stats.sv.replace('+',''));
+            const finalSv = coverActive ? Math.max(2, sv - 1) : sv;
+            
+            const saves = activeDice.filter(d => d >= finalSv).length;
+            const dmg = Math.max(0, (pendingHits.normal + pendingHits.crit) - saves);
+            
+            log(`DEFENSA: ${saves} SALVADOS. ${dmg} DAÑO.`);
+            applyDamage(dmg);
+            closeDice();
+            publish({type: 'DAMAGE_RESOLVE', dmg: dmg}); 
+        }
+    }
+
+    // --- UTILS & HELPERS ---
+    function updateHUD() {
+        if(!myUnits.length) return;
+        
+        if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit();
+
+        const me = myUnits[myIdx];
+        const en = enemyUnits[enIdx];
+
+        document.getElementById('my-name').innerText = me.name;
+        
+        const card = document.getElementById('my-card');
+        card.className = "card my";
+        if(me.activations === 1) card.classList.add('fatigued');
+        if(me.activations >= 2) card.classList.add('exhausted');
+        if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) card.classList.add('locked');
+
+        let statusText = "LISTO";
+        if(me.activations===1) statusText = "FATIGADO (-1 Hit)";
+        if(me.activations===2) statusText = "AGOTADO";
+        document.getElementById('my-status-text').innerText = statusText;
+
+        if(globalHP[me.uid]) {
+            document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
+        }
+        document.getElementById('my-r').innerText = me.stats.r_atk;
+        document.getElementById('my-m').innerText = me.stats.m_atk;
+        document.getElementById('my-sv').innerText = me.stats.sv;
+
+        const tagContainer = document.getElementById('my-tags');
+        tagContainer.innerHTML = '';
+        let showGearBtn = false;
+        let gearBtnText = "ITEM";
+        me.mechanics.forEach(m => {
+            let css = m.type === 'ACTIVE' ? "tag active-gear" : "tag passive";
+            if(m.oneUse && me.gearUsed) css += " used";
+            else if(m.type === 'ACTIVE' && !me.gearUsed && gameState === 'MY_TURN') { showGearBtn = true; gearBtnText = m.name; }
+            tagContainer.innerHTML += `<span class="${css}">${m.icon} ${m.name}</span>`;
+        });
+        const btnGear = document.getElementById('btn-gear');
+        if(showGearBtn) { btnGear.style.display='block'; btnGear.querySelector('span').innerText=gearBtnText; } else btnGear.style.display='none';
+
+        if(en && globalHP[en.uid]) {
+            document.getElementById('enemy-name').innerText = en.name;
+            document.getElementById('enemy-hp').style.width = (globalHP[en.uid].c/globalHP[en.uid].m*100)+"%";
+        }
+        document.getElementById('my-score').innerText = myVP;
+        document.getElementById('enemy-score').innerText = enemyVP;
+        document.getElementById('round-display').innerText = `RND ${currentRound}/${maxRounds}`;
+    }
+
+    function checkWinCondition() { /* ... */ }
+    
+    function checkAutoMechanics() {
+        const me = myUnits[myIdx];
+        if(!me || globalHP[me.uid].c <= 0) return;
+        me.mechanics.forEach(m => {
+            if(m.type === 'AUTO' && m.func === 'AUTO_REGEN') {
+                if(globalHP[me.uid].c < globalHP[me.uid].m) {
+                    globalHP[me.uid].c++;
+                    publish({type: 'SYNC_HP', state: globalHP});
+                    log(`REGEN: ${me.name} recupera 1 HP`);
+                    updateHUD();
+                }
+            }
+        });
+    }
+
+    function startDefensePhase() {
+        dicePhase = 'DEFENSE_ROLL';
+        const me = myUnits[myIdx];
+        const totalHits = pendingHits.normal + pendingHits.crit;
+        activeDice = Array(totalHits).fill(0).map(()=>Math.ceil(Math.random()*6));
+        diceTarget = parseInt(me.stats.sv.replace('+',''));
+        document.getElementById('btn-cover-toggle').style.display = 'block';
+        showDiceOverlay('DEFENSE_ROLL', activeDice, diceTarget, true);
+    }
+
+    function showDiceOverlay(phase, dice, target, isInteractive) {
+        const pool = document.getElementById('dice-pool');
+        document.getElementById('active-section').style.display = 'block';
+        pool.innerHTML = '';
+        document.getElementById('dice-title').innerText = phase==='ATTACK_ROLL' ? "ATAQUE" : "DEFENSA";
+        
+        dice.forEach((val, i) => {
+            const d = document.createElement('button'); d.type = "button"; d.className = 'die-btn';
+            d.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][val];
+            if(val === 6) d.classList.add('crit'); else if(val >= target) d.classList.add(phase==='ATTACK_ROLL'?'hit':'save-ok'); else d.classList.add(phase==='ATTACK_ROLL'?'miss':'save-fail');
+            if(isInteractive) d.onclick = (e) => instantReroll(e, i); else d.classList.add('locked');
+            pool.appendChild(d);
+        });
+        document.getElementById('dice-overlay').classList.add('show');
+        if(isInteractive) document.getElementById('btn-dice-main').style.display = 'block';
+    }
+
+    function syncDiceToRival(uName) { publish({type: 'DICE_SYNC', phase: dicePhase, dice: activeDice, target: diceTarget, uName: uName}); }
+    
+    function applyDamage(n) { 
+        if(n>0) {
+            document.getElementById('flash-fx').className = 'flash'; setTimeout(()=>document.getElementById('flash-fx').className='',300); 
+            globalHP[myUnits[myIdx].uid].c = Math.max(0, globalHP[myUnits[myIdx].uid].c - n);
+            publish({type: 'SYNC_HP', state: globalHP});
+            updateHUD();
+        }
+    }
+    
+    function log(t, type='info') { 
+        const c = document.getElementById('combat-log');
+        while(c.children.length>=6) c.lastChild.remove();
+        const el = document.createElement('div'); 
+        el.innerText = `> ${t}`; 
+        el.className = `log-entry ${type}`;
+        c.prepend(el); 
+        setTimeout(()=>el.remove(), 10000);
+    }
+    
+    function publish(p) { if(client){ p.sender=MY_ID; client.send(TOPIC, JSON.stringify(p)); } }
+    
+    function resetRound() {
+        if(isGameOver) return;
+        if(currentRound >= maxRounds) { checkWinCondition(); return; }
+        currentRound++; gameState = 'PLANNING'; iAmReady = false; enemyIsReady = false;
+        myUnits.forEach(u => { u.activations = 0; u.gearUsed = false; }); 
+        resetPassButtons();
+        document.getElementById('planning-controls').style.display = 'block';
+        document.getElementById('combat-actions').style.display = 'flex';
+        document.getElementById('turn-indicator').innerText = "PLANIFICACIÓN";
+        document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show'));
+        updateHUD(); log(`INICIO RONDA ${currentRound}`);
+    }
+
+    function instantReroll(e, index) {
+        if(e) { e.preventDefault(); e.stopPropagation(); }
+        const oldVal = activeDice[index];
+        const newVal = Math.ceil(Math.random() * 6);
+        activeDice[index] = newVal;
+        
+        const pool = document.getElementById('dice-pool');
+        if(pool.children[index]) {
+            const btn = pool.children[index];
+            const diceIcons = ['?','⚀','⚁','⚂','⚃','⚄','⚅'];
+            btn.innerText = diceIcons[newVal];
+            btn.className = 'die-btn rotating'; 
+            if(newVal === 6) btn.classList.add('crit');
+            else if(newVal >= diceTarget) btn.classList.add(dicePhase==='ATTACK_ROLL'?'hit':'save-ok');
+            else btn.classList.add(dicePhase==='ATTACK_ROLL'?'miss':'save-fail');
+            setTimeout(() => btn.classList.remove('rotating'), 200);
+        }
+        const diceIcons = ['?','⚀','⚁','⚂','⚃','⚄','⚅'];
+        log(`RE-TIRADA: ${diceIcons[oldVal]} -> ${diceIcons[newVal]}`);
+        syncDiceToRival(dicePhase==='ATTACK_ROLL' ? myUnits[myIdx].name : "DEFENSA");
+    }
+
+    window.useSpecialGear = function() {
+        if(gameState !== 'MY_TURN') return;
+        const me = myUnits[myIdx];
+        const item = me.mechanics.find(m => m.type === 'ACTIVE' && !me.gearUsed);
+        if(!item) return;
+
+        if(item.func === 'THROW_GRENADE') {
+            log(`GRANADA LANZADA!`);
+            publish({type: 'GEAR_EFFECT', gearName: 'GRANADA', desc: `BOOM! 3 Daño`, dmg: 3});
+            passTurn(0);
+        } else if(item.func === 'USE_MEDKIT') {
+            globalHP[me.uid].c = Math.min(globalHP[me.uid].m, globalHP[me.uid].c + 3);
+            publish({type: 'SYNC_HP', state: globalHP});
+            log("MEDKIT USADO"); updateHUD(); passTurn(0);
+        }
+        if(item.oneUse) { me.gearUsed = true; updateHUD(); }
+    }
+
+    window.tryPass = function(btnId) {
+        const btn = document.getElementById(btnId);
+        if (passConfirm === btnId) { performOp('PASAR'); resetPassButtons(); } 
+        else { resetPassButtons(); passConfirm = btnId; btn.innerText = "¿CONFIRMAR?"; btn.style.background = "var(--gold)"; btn.style.color = "#000"; }
+    }
+
+    window.resetPassButtons = function() {
+        passConfirm = null;
+        const b1 = document.getElementById('btn-pass-open'); b1.innerText = "PASAR"; b1.style.background = "#555"; b1.style.color = "#fff";
+        const b2 = document.getElementById('btn-op-pass'); b2.innerText = "PASAR"; b2.style.background = "#888"; b2.style.color = "#000";
+    }
+
+    window.nextMyUnit = () => {
+        let attempts = myUnits.length;
+        do {
+            myIdx = (myIdx + 1) % myUnits.length;
+            attempts--;
+        } while (!canSelectUnit(myIdx) && attempts > 0);
+        updateHUD();
+    }
+    
+    window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
+    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
+    window.closeDice=()=>{document.getElementById('dice-overlay').classList.remove('show');};
+    window.toggleCover = function() {
+        coverActive = !coverActive;
+        const btn = document.getElementById('btn-cover-toggle');
+        if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: SI (+1 SV)"; } 
+        else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; }
+    }
+    window.tryClaimSecret = function() {
+        if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return;
+        const btn = document.getElementById('btn-claim-secret');
+        btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5";
+        publish({type: 'REQ_SECRET', missionName: secretMission});
+    }
+    function executeSecretClaim() {
+        secretClaimed = true; myVP += 2; log(`SECRETA ACEPTADA (+2 PV)`);
+        document.getElementById('btn-claim-secret').style.display = 'none';
+        publish({type: 'SCORE_UPDATE', vp: myVP}); updateHUD();
+    }
+    function showConfirmModal(text, reqData) {
+        pendingRequest = reqData;
+        const modal = document.getElementById('confirm-modal');
+        document.getElementById('modal-msg').innerText = text;
+        modal.classList.add('show');
+    }
+    window.confirmRequest = function() {
+        document.getElementById('confirm-modal').classList.remove('show');
+        if(!pendingRequest) return;
+        if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); }
+        pendingRequest = null;
+    }
+    function assignSecretMission() { if(secondaryActive) secretMission = SECRET_POOL[Math.floor(Math.random()*SECRET_POOL.length)]; else secretMission = null; }
+    function updateMissionDisplay() { document.getElementById('mission-info').innerText = secondaryActive && secretMission ? `${primaryMission} + SEC` : primaryMission; }
+    function commitPlanning() {
+        if(gameState !== 'PLANNING') return;
+        iAmReady = true; myInitRoll = Math.ceil(Math.random()*100);
+        document.getElementById('planning-controls').style.display = 'none';
+        document.getElementById('my-ready-mark').classList.add('show');
+        publish({type: 'READY', squad: myUnits, roll: myInitRoll});
+        checkStartRound();
+    }
+    function checkStartRound() {
+        if(iAmReady && enemyIsReady) {
+            log(`INICIATIVA: YO ${myInitRoll} vs ${enemyInitRoll} RIV`);
+            gameState = (myInitRoll >= enemyInitRoll) ? 'MY_TURN' : 'ENEMY_TURN';
+            document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show'));
+            setTurn(gameState, 0);
+        }
+    }
+    function getKillPoints(total) { return total <= 4 ? 4 : (total <= 7 ? 3 : 1); }
+</script>
+</body>
+</html>
