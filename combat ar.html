@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v51 STABLE BASE</title>
+    <title>SQUAD COMMAND: v52 DEBUG MODE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -117,7 +117,6 @@
         .flash { animation: flashRed 0.3s; }
         @keyframes flashRed { 50% { background: rgba(255, 0, 0, 0.5); } }
         
-        /* LOG MEJORADO */
         .log-area { 
             position: absolute; top: 120px; left: 10px; width: 70%; 
             display: flex; flex-direction: column; 
@@ -192,7 +191,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v51 STABLE BASE</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v52 DEBUG MODE</div>
         
         <div class="box"><textarea id="json-input" placeholder='{"squad": [{"id":"1","name":"Trooper","stats":{"hp":"10"...},"gear":"grenade"}]}'></textarea></div>
         
@@ -316,8 +315,14 @@
     </div>
 
 <script>
+    // --- ESTO ES EL DETECTOR DE RECARGAS ---
+    window.addEventListener('beforeunload', (event) => {
+        event.preventDefault();
+        event.returnValue = "¡OJO! La página se está recargando. ¿Seguro?";
+        return "¡OJO! La página se está recargando. ¿Seguro?";
+    });
+
     // --- DEFINICIÓN DE EQUIPO/HABILIDADES ---
-    // Esta base de datos permite mapear el texto del JSON a iconos y reglas
     const MECHANICS_DB = {
         "grenade": { name: "GRANADA", icon: "💣", type: "ACTIVE", func: "THROW_GRENADE", oneUse: true },
         "medkit":  { name: "MEDKIT",  icon: "💊", type: "ACTIVE", func: "USE_MEDKIT", oneUse: true },
@@ -417,7 +422,7 @@
         updateHUD();
     }
 
-    // --- CORRECCIÓN CLAVE: PREVENT DEFAULT EN DADOS ---
+    // --- CORRECCION CRITICA: PREVENT DEFAULT EN DADOS ---
     function askReroll(e, index) {
         if(e) { e.preventDefault(); e.stopPropagation(); } // ESTO EVITA LA RECARGA
         if(waitingForAck) return;
