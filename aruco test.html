@@ -3,180 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ArUco Debug</title>
+    <title>ArUco Final Test</title>
     <style>
-        body { margin: 0; padding: 0; font-family: sans-serif; background: #222; color: white; display: flex; flex-direction: column; align-items: center; height: 100vh; }
+        body { margin: 0; background: #000; color: #0f0; font-family: monospace; display: flex; flex-direction: column; align-items: center; }
         
-        /* Contenedor de video */
-        #container { position: relative; width: 100%; max-width: 640px; margin-top: 10px; }
-        video { width: 100%; height: auto; display: none; } /* Oculto, procesamos en canvas */
-        canvas { width: 100%; height: auto; background: #333; }
-
-        /* Consola de errores en pantalla */
-        #console-log {
-            width: 90%; height: 100px; overflow-y: scroll;
-            background: #000; border: 1px solid #555;
-            font-family: monospace; font-size: 10px; padding: 5px;
-            margin-top: 10px; color: #0f0;
+        #container { position: relative; width: 100vw; height: 80vh; overflow: hidden; background: #222; }
+        
+        /* SOLUCIÓN: El video DEBE ocupar espacio y ser visible para el navegador, 
+           aunque lo ocultemos visualmente con opacidad y z-index */
+        video { 
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            object-fit: cover;
+            opacity: 0; /* Invisible al ojo, visible al navegador */
+            z-index: -1;
         }
 
-        /* Controles */
-        #controls { margin: 10px; z-index: 100; text-align: center; }
-        button {
-            padding: 15px 30px; font-size: 18px; background: #007bff; color: white;
-            border: none; border-radius: 8px; cursor: pointer;
+        canvas { 
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            object-fit: contain; 
+            z-index: 10;
         }
-        select { padding: 10px; font-size: 16px; margin-top: 10px; }
+
+        #controls { padding: 10px; z-index: 20; background: rgba(0,0,0,0.8); width: 100%; text-align: center; }
+        button { font-size: 1.2rem; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; margin-bottom: 10px; }
+        select { font-size: 1rem; padding: 5px; }
+        #log { font-size: 0.8rem; color: #ff0; height: 50px; overflow-y: auto; margin-top: 5px; border-top: 1px solid #555; }
     </style>
 </head>
 <body>
 
-    <div id="controls">
-        <button id="startBtn" onclick="initCamera()">INICIAR CÁMARA</button>
-        <br>
-        <select id="dictSelect">
-            <option value="4x4">Diccionario 4x4</option>
-            <option value="5x5">Diccionario 5x5</option>
-            <option value="ORIGINAL">Original</option>
-        </select>
-    </div>
+<div id="controls">
+    <button id="btnStart" onclick="startCamera()">ACTIVAR CÁMARA</button>
+    <br>
+    <select id="dictSelect">
+        <option value="4x4">Diccionario 4x4 (Rápido)</option>
+        <option value="5x5">Diccionario 5x5</option>
+        <option value="ORIGINAL">Original</option>
+    </select>
+    <div id="log">Esperando permiso...</div>
+</div>
 
-    <div id="container">
-        <video id="videoInput" playsinline webkit-playsinline></video>
-        <canvas id="canvasOutput"></canvas>
-    </div>
+<div id="container">
+    <video id="videoInput" playsinline webkit-playsinline muted autoplay></video>
+    <canvas id="canvasOutput"></canvas>
+</div>
 
-    <h3>Registro de Estado (Debug):</h3>
-    <div id="console-log">Esperando acción del usuario...</div>
+<script async src="https://docs.opencv.org/4.5.4/opencv.js" onload="onCvLoaded()"></script>
 
-    <script async src="https://docs.opencv.org/4.5.4/opencv.js" onload="onOpenCvReady()" type="text/javascript"></script>
+<script>
+    const logDiv = document.getElementById('log');
+    function log(msg) { logDiv.innerHTML = msg + "<br>" + logDiv.innerHTML; console.log(msg); }
 
-    <script>
-        // Utilidad de Log en pantalla
-        function log(msg) {
-            let c = document.getElementById('console-log');
-            let time = new Date().toLocaleTimeString();
-            c.innerHTML = `[${time}] ${msg}<br>` + c.innerHTML;
-            console.log(msg);
-        }
+    let video = document.getElementById('videoInput');
+    let canvas = document.getElementById('canvasOutput');
+    let ctx = canvas.getContext('2d');
+    let btnStart = document.getElementById('btnStart');
+    let select = document.getElementById('dictSelect');
 
-        let video = document.getElementById('videoInput');
-        let canvas = document.getElementById('canvasOutput');
-        let ctx = canvas.getContext('2d');
-        let startBtn = document.getElementById('startBtn');
-        let selector = document.getElementById('dictSelect');
+    let stream = null;
+    let cap = null;
+    let src = null;
+    let gray = null;
+    let dictionary = null;
+    let markerIds = null;
+    let markerCorners = null;
+    let params = null;
+    let isCvLoaded = false;
+    let dictMap = {};
 
-        let stream = null;
-        let streaming = false;
-        let openCVReady = false;
-
-        // Variables OpenCV
-        let cap, src, gray, dictionary, markerIds, markerCorners, params;
-        let dictMap = {};
-
-        function onOpenCvReady() {
-            log("OpenCV.js cargado correctamente.");
-            openCVReady = true;
-            
-            // Definir diccionarios
-            dictMap = {
-                "4x4": cv.DICT_4X4_250,
-                "5x5": cv.DICT_5X5_250,
-                "ORIGINAL": cv.DICT_ARUCO_ORIGINAL
-            };
-        }
-
-        async function initCamera() {
-            if (!openCVReady) {
-                log("Error: OpenCV aún no ha cargado. Espera un segundo.");
-                return;
-            }
-
-            // Ocultar botón para evitar doble click
-            startBtn.style.display = 'none';
-            log("Solicitando permisos de cámara...");
-
-            try {
-                // Constraints simplificados para máxima compatibilidad
-                const constraints = {
-                    video: {
-                        facingMode: 'environment' // Intenta trasera, si falla usa cualquiera
-                    },
-                    audio: false
-                };
-
-                stream = await navigator.mediaDevices.getUserMedia(constraints);
-                log("Permiso concedido. Configurando stream...");
-
-                video.srcObject = stream;
-                video.play();
-                
-                video.onloadedmetadata = function() {
-                    log(`Cámara lista: ${video.videoWidth}x${video.videoHeight}`);
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    startProcessing();
-                };
-
-            } catch (err) {
-                log("ERROR FATAL DE CÁMARA: " + err.name + " - " + err.message);
-                log("Asegúrate de estar en HTTPS y permitir acceso.");
-                startBtn.style.display = 'block'; // Mostrar botón de nuevo
-                startBtn.innerText = "Reintentar";
-            }
-        }
-
-        function startProcessing() {
-            if (streaming) return;
-            streaming = true;
-            log("Iniciando bucle de detección ArUco...");
-
-            cap = new cv.VideoCapture(video);
-            src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
-            gray = new cv.Mat();
-            
-            // Inicializar ArUco
-            updateDictionary();
-            
-            params = new cv.aruco_DetectorParameters();
-            markerIds = new cv.Mat();
-            markerCorners = new cv.MatVector();
-
-            requestAnimationFrame(processVideo);
-        }
-
-        function updateDictionary() {
-            if(dictionary) dictionary.delete();
-            dictionary = new cv.aruco_Dictionary(dictMap[selector.value]);
-            log("Diccionario activo: " + selector.value);
-        }
-
-        selector.onchange = function() {
-            if(streaming) updateDictionary();
+    function onCvLoaded() {
+        isCvLoaded = true;
+        log("OpenCV Cargado. Pulsa Activar.");
+        dictMap = {
+            "4x4": cv.DICT_4X4_250,
+            "5x5": cv.DICT_5X5_250,
+            "ORIGINAL": cv.DICT_ARUCO_ORIGINAL
         };
+    }
 
-        function processVideo() {
-            if (!streaming) return;
-            try {
+    async function startCamera() {
+        if (!isCvLoaded) return log("Espera a que cargue OpenCV...");
+        
+        btnStart.style.display = 'none'; // Ocultar botón
+        
+        try {
+            // Pedimos cualquier cámara trasera
+            const constraints = { 
+                video: { 
+                    facingMode: 'environment'
+                }, 
+                audio: false 
+            };
+            
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = stream;
+            
+            // Forzamos play explícitamente
+            await video.play();
+
+            log("Stream recibido. Esperando datos de video...");
+            
+            // Esperar a que el video tenga dimensiones reales
+            video.addEventListener('canplay', () => {
+                // Ajustar canvas al tamaño real del video capturado
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                log(`Resolución nativa: ${video.videoWidth}x${video.videoHeight}`);
+                
+                startProcessing();
+            });
+
+        } catch (err) {
+            log("ERROR: " + err.message);
+            btnStart.style.display = 'inline-block';
+        }
+    }
+
+    function startProcessing() {
+        // Inicializar objetos de OpenCV una sola vez
+        cap = new cv.VideoCapture(video);
+        src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
+        gray = new cv.Mat();
+        
+        updateDictionary(); // Crear diccionario inicial
+        
+        params = new cv.aruco_DetectorParameters();
+        markerIds = new cv.Mat();
+        markerCorners = new cv.MatVector();
+        
+        requestAnimationFrame(processFrame);
+    }
+
+    function updateDictionary() {
+        if (dictionary) dictionary.delete();
+        dictionary = new cv.aruco_Dictionary(dictMap[select.value]);
+        log("Diccionario: " + select.value);
+    }
+    
+    // Evento cambio de selector
+    select.onchange = updateDictionary;
+
+    function processFrame() {
+        try {
+            // IMPORTANTE: Verificar que el video tiene datos y no es ancho 0
+            if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
+                
+                // 1. Leer frame del video al Mat src
                 cap.read(src);
-                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
 
-                // Detección
+                // 2. Convertir a gris
+                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+
+                // 3. Detectar
                 cv.detectMarkers(gray, dictionary, markerCorners, markerIds, params);
 
-                // Dibujar
-                cv.imshow('canvasOutput', src);
-
+                // 4. Dibujar sobre la imagen original (src)
                 if (markerIds.rows > 0) {
                     cv.drawDetectedMarkers(src, markerCorners, markerIds, new cv.Scalar(0, 255, 0, 255));
-                    cv.imshow('canvasOutput', src);
                 }
 
-                requestAnimationFrame(processVideo);
-            } catch (err) {
-                log("Error en loop: " + err);
+                // 5. Mostrar en el canvas
+                cv.imshow('canvasOutput', src);
             }
+            
+            // Repetir ciclo
+            requestAnimationFrame(processFrame);
+
+        } catch (err) {
+            log("Error Loop: " + err);
+            // Si falla, intentamos seguir en el siguiente frame
+            requestAnimationFrame(processFrame);
         }
-    </script>
+    }
+</script>
 </body>
 </html>
