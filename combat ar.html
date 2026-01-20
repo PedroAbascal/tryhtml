@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v61 STABLE</title>
+    <title>SQUAD COMMAND: v62 POLISHED</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -40,7 +40,8 @@
         .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; flex-direction: column; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); pointer-events: auto; width: 100%; box-sizing: border-box;}
         .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px; }
         .score-board { font-size: 1.2rem; font-weight: bold; color: #fff; text-shadow: 0 0 10px var(--c); letter-spacing: 2px; }
-        
+        .score-detail { font-size: 0.6rem; color: #888; text-transform: uppercase; }
+
         .turn-badge { border: 2px solid #555; padding: 5px 15px; font-weight: bold; background: #000; color: #555; text-transform: uppercase; font-size: 0.8rem; transition: 0.3s; }
         .turn-badge.planning { border-color: var(--gold); color: var(--gold); }
         .turn-badge.my-turn { border-color: var(--g); color: var(--g); box-shadow: 0 0 15px var(--g); transform: scale(1.1); }
@@ -156,7 +157,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v61 STABLE</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v62 POLISHED</div>
         <div class="box"><textarea id="json-input" placeholder='PEGAR JSON AQUÍ'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem; color:#888;">MISIÓN PRINCIPAL</div>
@@ -303,9 +304,7 @@
     let consecutivePasses = 0; let passConfirm = null;
     let pendingRequest = null; let coverActive = false; 
 
-    // --- INIT & SETUP ---
     window.initSystem = function() {
-        console.log("Iniciando sistema...");
         MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
         const json = document.getElementById('json-input').value;
         const code = document.getElementById('room-id').value.trim().toUpperCase();
@@ -316,41 +315,23 @@
         try {
             const parsed = JSON.parse(json);
             if(!parsed.squad) throw new Error("Falta la propiedad 'squad' en el JSON.");
-            
-            // Fix: Universal Array/Object Handler
             const rawSquad = Array.isArray(parsed.squad) ? parsed.squad : Object.values(parsed.squad);
-            
             myUnits = rawSquad.map(u => {
                 const unit = { ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', activations: 0, gearUsed: false, mechanics: [] };
                 if(u.gear && MECHANICS_DB[u.gear]) unit.mechanics.push(MECHANICS_DB[u.gear]);
                 if(u.ability && MECHANICS_DB[u.ability]) unit.mechanics.push(MECHANICS_DB[u.ability]);
                 return unit;
             });
-
             myUnits.forEach(u => { 
-                let hp = 1;
-                if(u.stats && u.stats.hp) hp = parseInt(u.stats.hp);
-                if(isNaN(hp)) hp=1; 
+                let hp = 1; if(u.stats && u.stats.hp) hp = parseInt(u.stats.hp); if(isNaN(hp)) hp=1; 
                 globalHP[u.uid] = {c:hp, m:hp}; 
             });
-            
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
-            assignSecretMission(); 
-            updateMissionDisplay();
-            
-            navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
-                .then(s=>document.getElementById('ar-feed').srcObject=s)
-                .catch(e=>console.log("No AR feed"));
-            
-            updateHUD(); 
-            startNetwork(code); 
-            log("SISTEMA ONLINE. ESPERANDO RIVAL...");
-            
-        } catch(e) { 
-            alert("ERROR CRÍTICO: " + e.message); 
-            console.error(e);
-        }
+            assignSecretMission(); updateMissionDisplay();
+            navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>console.log("No AR"));
+            updateHUD(); startNetwork(code); log("SISTEMA ONLINE. ESPERANDO RIVAL...");
+        } catch(e) { alert("ERROR CRÍTICO: " + e.message); }
     }
 
     function returnToLobby() {
@@ -366,12 +347,13 @@
         resetPassButtons(); coverActive = false;
     }
 
-    // --- TACTICAL LOGIC ENGINE (V60 FIX) ---
+    // --- TACTICAL LOGIC REFINED ---
     function checkRoundOver() {
         if(isGameOver) return;
         const myValid = myUnits.filter(u => canUnitAct(u, myUnits, enemyUnits)).length;
         const enValid = enemyUnits.filter(u => canUnitAct(u, enemyUnits, myUnits)).length;
         
+        // CORRECCION: Si nadie puede actuar, la ronda termina.
         if (myValid === 0 && enValid === 0) {
             log("FIN DE RONDA (Sin acciones posibles)");
             publish({type:'ROUND_OVER'});
@@ -384,14 +366,18 @@
     function canUnitAct(unit, team, opponents) {
         if (!globalHP[unit.uid] || globalHP[unit.uid].c <= 0) return false;
         if (unit.activations >= 2) return false;
-        if (unit.activations === 0) return true;
+        if (unit.activations === 0) return true; // FRESH siempre puede
         
-        // Fatigado (1 activation):
+        // FATIGADO (1 Activation): Solo si NO hay frescos Y soy UNDERDOG numérico
         const hasFresh = team.some(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
         if (hasFresh) return false;
         
-        const enemyThreat = opponents.some(u => u.activations < 2 && globalHP[u.uid] && globalHP[u.uid].c > 0);
-        return enemyThreat;
+        // Conteo de vivos para UNDERDOG
+        const myLiving = team.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
+        const enLiving = opponents.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
+        
+        if (myLiving >= enLiving) return false; // Si tengo igual o más tropas, no puedo reusar.
+        return true;
     }
 
     function canSelectUnit(index) {
@@ -401,10 +387,8 @@
 
     function autoSelectValidUnit() {
         if (canSelectUnit(myIdx)) return;
-        
         const freshIdx = myUnits.findIndex(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
         if (freshIdx !== -1) { myIdx = freshIdx; return; }
-        
         const tiredIdx = myUnits.findIndex((u, i) => canSelectUnit(i));
         if (tiredIdx !== -1) myIdx = tiredIdx;
     }
@@ -416,14 +400,11 @@
 
         if(gameState === 'MY_TURN') {
             if(checkRoundOver()) return;
-
             ind.className = "turn-badge my-turn"; ind.innerText = "TU TURNO";
             document.getElementById('combat-actions').style.opacity = "1";
             document.getElementById('combat-actions').style.pointerEvents = "auto";
             document.getElementById('ops-actions').style.pointerEvents = "auto";
-            
-            autoSelectValidUnit();
-            updateHUD(); 
+            autoSelectValidUnit(); updateHUD(); 
         } else {
             ind.className = "turn-badge enemy-turn"; ind.innerText = "TURNO RIVAL";
             document.getElementById('combat-actions').style.opacity = "0.5";
@@ -433,9 +414,8 @@
         updateHUD();
     }
 
-    // --- NETWORK ---
     function startNetwork(code) {
-        TOPIC = `sqcmd/v60/${code}`;
+        TOPIC = `sqcmd/v62/${code}`;
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -472,14 +452,12 @@
             if(d.phase === 'ATTACK_ROLL') {
                 showDiceOverlay(d.phase, d.dice, d.target, false); 
                 document.getElementById('dice-sub').innerText = `${d.uName} apuntando...`;
-                log("RIVAL APUNTANDO...");
+                if(d.contextLog) log(`RIVAL: ${d.contextLog}`); // LOG LIMPIO
+                else log("RIVAL APUNTANDO...");
             }
         }
         else if(d.type === 'REQ_DEFENSE') { pendingHits = d.hitsStruct; startDefensePhase(); }
-        else if(d.type === 'DAMAGE_RESOLVE') {
-            applyDamage(d.dmg); closeDice();
-            passTurn(0); 
-        }
+        else if(d.type === 'DAMAGE_RESOLVE') { applyDamage(d.dmg); closeDice(); passTurn(0); }
         else if(d.type === 'OP_ACTION') { if(gameState!=='PLANNING'){ log(`RIVAL: ${d.opType}`); setTurn('MY_TURN', 0); } }
         else if(d.type === 'CHANGE_TURN') { if(gameState!=='PLANNING') setTurn('MY_TURN', d.passes || 0); }
         else if(d.type === 'ROUND_OVER') resetRound();
@@ -496,19 +474,13 @@
         }
     }
 
-    // --- GAME ACTIONS ---
     function passTurn(passes) {
         const me = myUnits[myIdx];
         if (me.activations < 2) me.activations++;
         publish({type: 'SYNC_SQUAD', squad: myUnits});
-
-        if(passes >= 2) { 
-            publish({type:'ROUND_OVER'}); resetRound();
-        } else {
-            if(!checkRoundOver()) {
-                setTurn('ENEMY_TURN', passes);
-                publish({type: 'CHANGE_TURN', passes: passes});
-            }
+        if(passes >= 2) { publish({type:'ROUND_OVER'}); resetRound(); } 
+        else {
+            if(!checkRoundOver()) { setTurn('ENEMY_TURN', passes); publish({type: 'CHANGE_TURN', passes: passes}); }
         }
     }
 
@@ -524,17 +496,11 @@
         if(gameState !== 'MY_TURN') return;
         const me = myUnits[myIdx];
         if(me.activations >= 2) { log("UNIDAD AGOTADA"); return; }
-        
         dicePhase = 'ATTACK_ROLL';
         let diceCount = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
-        
         let target = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
-        if(me.activations === 1) { 
-            target++; 
-            log("FATIGA: +1 DIFICULTAD", "danger");
-        }
+        if(me.activations === 1) { target++; log("FATIGA: +1 DIFICULTAD", "danger"); }
         diceTarget = target;
-        
         activeDice = Array(diceCount).fill(0).map(()=>Math.ceil(Math.random()*6));
         showDiceOverlay('ATTACK_ROLL', activeDice, diceTarget, true);
         syncDiceToRival(me.name);
@@ -542,7 +508,6 @@
 
     window.proceedPhase = function(e) {
         if(e) { e.preventDefault(); e.stopPropagation(); }
-        
         if(dicePhase === 'ATTACK_ROLL') {
             let hitsStruct = { normal: 0, crit: 0 };
             activeDice.forEach(val => { if(val === 6) hitsStruct.crit++; else if(val >= diceTarget) hitsStruct.normal++; });
@@ -553,50 +518,54 @@
         else if(dicePhase === 'DEFENSE_ROLL') {
             const sv = parseInt(myUnits[myIdx].stats.sv.replace('+',''));
             const finalSv = coverActive ? Math.max(2, sv - 1) : sv;
-            
             const saves = activeDice.filter(d => d >= finalSv).length;
             const dmg = Math.max(0, (pendingHits.normal + pendingHits.crit) - saves);
-            
             log(`DEFENSA: ${saves} SALVADOS. ${dmg} DAÑO.`);
-            applyDamage(dmg);
-            closeDice();
-            publish({type: 'DAMAGE_RESOLVE', dmg: dmg}); 
+            applyDamage(dmg); closeDice(); publish({type: 'DAMAGE_RESOLVE', dmg: dmg}); 
         }
     }
 
-    // --- UTILS & HELPERS ---
+    function instantReroll(e, index) {
+        if(e) { e.preventDefault(); e.stopPropagation(); }
+        const oldVal = activeDice[index];
+        const newVal = Math.ceil(Math.random() * 6);
+        activeDice[index] = newVal;
+        const pool = document.getElementById('dice-pool');
+        if(pool.children[index]) {
+            const btn = pool.children[index];
+            const diceIcons = ['?','⚀','⚁','⚂','⚃','⚄','⚅'];
+            btn.innerText = diceIcons[newVal];
+            btn.className = 'die-btn rotating'; 
+            if(newVal === 6) btn.classList.add('crit');
+            else if(newVal >= diceTarget) btn.classList.add(dicePhase==='ATTACK_ROLL'?'hit':'save-ok');
+            else btn.classList.add(dicePhase==='ATTACK_ROLL'?'miss':'save-fail');
+            setTimeout(() => btn.classList.remove('rotating'), 200);
+        }
+        const diceIcons = ['?','⚀','⚁','⚂','⚃','⚄','⚅'];
+        const logMsg = `RE-TIRA: ${diceIcons[oldVal]} -> ${diceIcons[newVal]}`;
+        log(logMsg);
+        publish({type: 'DICE_SYNC', phase: dicePhase, dice: activeDice, target: diceTarget, uName: myUnits[myIdx].name, contextLog: logMsg});
+    }
+
     function updateHUD() {
         if(!myUnits.length) return;
-        
         if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit();
-
-        const me = myUnits[myIdx];
-        const en = enemyUnits[enIdx];
-
+        const me = myUnits[myIdx]; const en = enemyUnits[enIdx];
         document.getElementById('my-name').innerText = me.name;
-        
-        const card = document.getElementById('my-card');
-        card.className = "card my";
+        const card = document.getElementById('my-card'); card.className = "card my";
         if(me.activations === 1) card.classList.add('fatigued');
         if(me.activations >= 2) card.classList.add('exhausted');
         if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) card.classList.add('locked');
-
         let statusText = "LISTO";
         if(me.activations===1) statusText = "FATIGADO (-1 Hit)";
         if(me.activations===2) statusText = "AGOTADO";
         document.getElementById('my-status-text').innerText = statusText;
-
-        if(globalHP[me.uid]) {
-            document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
-        }
+        if(globalHP[me.uid]) document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
         document.getElementById('my-r').innerText = me.stats.r_atk;
         document.getElementById('my-m').innerText = me.stats.m_atk;
         document.getElementById('my-sv').innerText = me.stats.sv;
-
-        const tagContainer = document.getElementById('my-tags');
-        tagContainer.innerHTML = '';
-        let showGearBtn = false;
-        let gearBtnText = "ITEM";
+        const tagContainer = document.getElementById('my-tags'); tagContainer.innerHTML = '';
+        let showGearBtn = false; let gearBtnText = "ITEM";
         me.mechanics.forEach(m => {
             let css = m.type === 'ACTIVE' ? "tag active-gear" : "tag passive";
             if(m.oneUse && me.gearUsed) css += " used";
@@ -605,7 +574,6 @@
         });
         const btnGear = document.getElementById('btn-gear');
         if(showGearBtn) { btnGear.style.display='block'; btnGear.querySelector('span').innerText=gearBtnText; } else btnGear.style.display='none';
-
         if(en && globalHP[en.uid]) {
             document.getElementById('enemy-name').innerText = en.name;
             document.getElementById('enemy-hp').style.width = (globalHP[en.uid].c/globalHP[en.uid].m*100)+"%";
@@ -616,7 +584,6 @@
     }
 
     function checkWinCondition() { /* ... */ }
-    
     function checkAutoMechanics() {
         const me = myUnits[myIdx];
         if(!me || globalHP[me.uid].c <= 0) return;
@@ -631,7 +598,6 @@
             }
         });
     }
-
     function startDefensePhase() {
         dicePhase = 'DEFENSE_ROLL';
         const me = myUnits[myIdx];
@@ -641,13 +607,11 @@
         document.getElementById('btn-cover-toggle').style.display = 'block';
         showDiceOverlay('DEFENSE_ROLL', activeDice, diceTarget, true);
     }
-
     function showDiceOverlay(phase, dice, target, isInteractive) {
         const pool = document.getElementById('dice-pool');
         document.getElementById('active-section').style.display = 'block';
         pool.innerHTML = '';
         document.getElementById('dice-title').innerText = phase==='ATTACK_ROLL' ? "ATAQUE" : "DEFENSA";
-        
         dice.forEach((val, i) => {
             const d = document.createElement('button'); d.type = "button"; d.className = 'die-btn';
             d.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][val];
@@ -658,154 +622,33 @@
         document.getElementById('dice-overlay').classList.add('show');
         if(isInteractive) document.getElementById('btn-dice-main').style.display = 'block';
     }
-
     function syncDiceToRival(uName) { publish({type: 'DICE_SYNC', phase: dicePhase, dice: activeDice, target: diceTarget, uName: uName}); }
-    
-    function applyDamage(n) { 
-        if(n>0) {
-            document.getElementById('flash-fx').className = 'flash'; setTimeout(()=>document.getElementById('flash-fx').className='',300); 
-            globalHP[myUnits[myIdx].uid].c = Math.max(0, globalHP[myUnits[myIdx].uid].c - n);
-            publish({type: 'SYNC_HP', state: globalHP});
-            updateHUD();
-        }
-    }
-    
-    function log(t, type='info') { 
-        const c = document.getElementById('combat-log');
-        while(c.children.length>=6) c.lastChild.remove();
-        const el = document.createElement('div'); 
-        el.innerText = `> ${t}`; 
-        el.className = `log-entry ${type}`;
-        c.prepend(el); 
-        setTimeout(()=>el.remove(), 10000);
-    }
-    
+    function applyDamage(n) { if(n>0){ document.getElementById('flash-fx').className='flash'; setTimeout(()=>document.getElementById('flash-fx').className='',300); globalHP[myUnits[myIdx].uid].c=Math.max(0,globalHP[myUnits[myIdx].uid].c-n); publish({type:'SYNC_HP',state:globalHP}); updateHUD(); } }
+    function log(t, type='info') { const c = document.getElementById('combat-log'); while(c.children.length>=6) c.lastChild.remove(); const el = document.createElement('div'); el.innerText = `> ${t}`; el.className = `log-entry ${type}`; c.prepend(el); setTimeout(()=>el.remove(), 10000); }
     function publish(p) { if(client){ p.sender=MY_ID; client.send(TOPIC, JSON.stringify(p)); } }
-    
-    function resetRound() {
-        if(isGameOver) return;
-        if(currentRound >= maxRounds) { checkWinCondition(); return; }
-        currentRound++; gameState = 'PLANNING'; iAmReady = false; enemyIsReady = false;
-        myUnits.forEach(u => { u.activations = 0; u.gearUsed = false; }); 
-        resetPassButtons();
-        document.getElementById('planning-controls').style.display = 'block';
-        document.getElementById('combat-actions').style.display = 'flex';
-        document.getElementById('turn-indicator').innerText = "PLANIFICACIÓN";
-        document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show'));
-        updateHUD(); log(`INICIO RONDA ${currentRound}`);
-    }
-
-    function instantReroll(e, index) {
-        if(e) { e.preventDefault(); e.stopPropagation(); }
-        const oldVal = activeDice[index];
-        const newVal = Math.ceil(Math.random() * 6);
-        activeDice[index] = newVal;
-        
-        const pool = document.getElementById('dice-pool');
-        if(pool.children[index]) {
-            const btn = pool.children[index];
-            const diceIcons = ['?','⚀','⚁','⚂','⚃','⚄','⚅'];
-            btn.innerText = diceIcons[newVal];
-            btn.className = 'die-btn rotating'; 
-            if(newVal === 6) btn.classList.add('crit');
-            else if(newVal >= diceTarget) btn.classList.add(dicePhase==='ATTACK_ROLL'?'hit':'save-ok');
-            else btn.classList.add(dicePhase==='ATTACK_ROLL'?'miss':'save-fail');
-            setTimeout(() => btn.classList.remove('rotating'), 200);
-        }
-        const diceIcons = ['?','⚀','⚁','⚂','⚃','⚄','⚅'];
-        log(`RE-TIRADA: ${diceIcons[oldVal]} -> ${diceIcons[newVal]}`);
-        syncDiceToRival(dicePhase==='ATTACK_ROLL' ? myUnits[myIdx].name : "DEFENSA");
-    }
-
+    function resetRound() { if(isGameOver) return; if(currentRound>=maxRounds) return; currentRound++; gameState='PLANNING'; iAmReady=false; enemyIsReady=false; myUnits.forEach(u=>{u.activations=0;u.gearUsed=false;}); resetPassButtons(); document.getElementById('planning-controls').style.display='block'; document.getElementById('combat-actions').style.display='flex'; document.getElementById('turn-indicator').innerText='PLANIFICACIÓN'; document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show')); updateHUD(); log(`INICIO RONDA ${currentRound}`); }
     window.useSpecialGear = function() {
         if(gameState !== 'MY_TURN') return;
-        const me = myUnits[myIdx];
-        const item = me.mechanics.find(m => m.type === 'ACTIVE' && !me.gearUsed);
+        const me = myUnits[myIdx]; const item = me.mechanics.find(m => m.type === 'ACTIVE' && !me.gearUsed);
         if(!item) return;
-
-        if(item.func === 'THROW_GRENADE') {
-            log(`GRANADA LANZADA!`);
-            publish({type: 'GEAR_EFFECT', gearName: 'GRANADA', desc: `BOOM! 3 Daño`, dmg: 3});
-            passTurn(0);
-        } else if(item.func === 'USE_MEDKIT') {
-            globalHP[me.uid].c = Math.min(globalHP[me.uid].m, globalHP[me.uid].c + 3);
-            publish({type: 'SYNC_HP', state: globalHP});
-            log("MEDKIT USADO"); updateHUD(); passTurn(0);
-        }
+        if(item.func === 'THROW_GRENADE') { log(`GRANADA LANZADA!`); publish({type: 'GEAR_EFFECT', gearName: 'GRANADA', desc: `BOOM! 3 Daño`, dmg: 3}); passTurn(0); } 
+        else if(item.func === 'USE_MEDKIT') { globalHP[me.uid].c = Math.min(globalHP[me.uid].m, globalHP[me.uid].c + 3); publish({type: 'SYNC_HP', state: globalHP}); log("MEDKIT USADO"); updateHUD(); passTurn(0); }
         if(item.oneUse) { me.gearUsed = true; updateHUD(); }
     }
-
-    window.tryPass = function(btnId) {
-        const btn = document.getElementById(btnId);
-        if (passConfirm === btnId) { performOp('PASAR'); resetPassButtons(); } 
-        else { resetPassButtons(); passConfirm = btnId; btn.innerText = "¿CONFIRMAR?"; btn.style.background = "var(--gold)"; btn.style.color = "#000"; }
-    }
-
-    window.resetPassButtons = function() {
-        passConfirm = null;
-        const b1 = document.getElementById('btn-pass-open'); b1.innerText = "PASAR"; b1.style.background = "#555"; b1.style.color = "#fff";
-        const b2 = document.getElementById('btn-op-pass'); b2.innerText = "PASAR"; b2.style.background = "#888"; b2.style.color = "#000";
-    }
-
-    window.nextMyUnit = () => {
-        let attempts = myUnits.length;
-        do {
-            myIdx = (myIdx + 1) % myUnits.length;
-            attempts--;
-        } while (!canSelectUnit(myIdx) && attempts > 0);
-        updateHUD();
-    }
-    
+    window.tryPass = function(btnId) { const btn = document.getElementById(btnId); if (passConfirm === btnId) { performOp('PASAR'); resetPassButtons(); } else { resetPassButtons(); passConfirm = btnId; btn.innerText = "¿CONFIRMAR?"; btn.style.background = "var(--gold)"; btn.style.color = "#000"; } }
+    window.resetPassButtons = function() { passConfirm = null; const b1 = document.getElementById('btn-pass-open'); b1.innerText = "PASAR"; b1.style.background = "#555"; b1.style.color = "#fff"; const b2 = document.getElementById('btn-op-pass'); b2.innerText = "PASAR"; b2.style.background = "#888"; b2.style.color = "#000"; }
     window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
     window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
     window.closeDice=()=>{document.getElementById('dice-overlay').classList.remove('show');};
-    window.toggleCover = function() {
-        coverActive = !coverActive;
-        const btn = document.getElementById('btn-cover-toggle');
-        if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: SI (+1 SV)"; } 
-        else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; }
-    }
-    window.tryClaimSecret = function() {
-        if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return;
-        const btn = document.getElementById('btn-claim-secret');
-        btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5";
-        publish({type: 'REQ_SECRET', missionName: secretMission});
-    }
-    function executeSecretClaim() {
-        secretClaimed = true; myVP += 2; log(`SECRETA ACEPTADA (+2 PV)`);
-        document.getElementById('btn-claim-secret').style.display = 'none';
-        publish({type: 'SCORE_UPDATE', vp: myVP}); updateHUD();
-    }
-    function showConfirmModal(text, reqData) {
-        pendingRequest = reqData;
-        const modal = document.getElementById('confirm-modal');
-        document.getElementById('modal-msg').innerText = text;
-        modal.classList.add('show');
-    }
-    window.confirmRequest = function() {
-        document.getElementById('confirm-modal').classList.remove('show');
-        if(!pendingRequest) return;
-        if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); }
-        pendingRequest = null;
-    }
+    window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: SI (+1 SV)"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
+    window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
+    function executeSecretClaim() { secretClaimed = true; myVP += 2; log(`SECRETA ACEPTADA (+2 PV)`); document.getElementById('btn-claim-secret').style.display = 'none'; publish({type: 'SCORE_UPDATE', vp: myVP}); updateHUD(); }
+    function showConfirmModal(text, reqData) { pendingRequest = reqData; const modal = document.getElementById('confirm-modal'); document.getElementById('modal-msg').innerText = text; modal.classList.add('show'); }
+    window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
     function assignSecretMission() { if(secondaryActive) secretMission = SECRET_POOL[Math.floor(Math.random()*SECRET_POOL.length)]; else secretMission = null; }
     function updateMissionDisplay() { document.getElementById('mission-info').innerText = secondaryActive && secretMission ? `${primaryMission} + SEC` : primaryMission; }
-    function commitPlanning() {
-        if(gameState !== 'PLANNING') return;
-        iAmReady = true; myInitRoll = Math.ceil(Math.random()*100);
-        document.getElementById('planning-controls').style.display = 'none';
-        document.getElementById('my-ready-mark').classList.add('show');
-        publish({type: 'READY', squad: myUnits, roll: myInitRoll});
-        checkStartRound();
-    }
-    function checkStartRound() {
-        if(iAmReady && enemyIsReady) {
-            log(`INICIATIVA: YO ${myInitRoll} vs ${enemyInitRoll} RIV`);
-            gameState = (myInitRoll >= enemyInitRoll) ? 'MY_TURN' : 'ENEMY_TURN';
-            document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show'));
-            setTurn(gameState, 0);
-        }
-    }
+    function commitPlanning() { if(gameState !== 'PLANNING') return; iAmReady = true; myInitRoll = Math.ceil(Math.random()*100); document.getElementById('planning-controls').style.display = 'none'; document.getElementById('my-ready-mark').classList.add('show'); publish({type: 'READY', squad: myUnits, roll: myInitRoll}); checkStartRound(); }
+    function checkStartRound() { if(iAmReady && enemyIsReady) { log(`INICIATIVA: YO ${myInitRoll} vs ${enemyInitRoll} RIV`); gameState = (myInitRoll >= enemyInitRoll) ? 'MY_TURN' : 'ENEMY_TURN'; document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show')); setTurn(gameState, 0); } }
     function getKillPoints(total) { return total <= 4 ? 4 : (total <= 7 ? 3 : 1); }
 </script>
 </body>
