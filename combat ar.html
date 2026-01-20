@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v69 DMG FIX</title>
+    <title>SQUAD COMMAND: v70 FRIENDLY FIRE FIX</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -159,7 +159,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v69 WEAPON DMG</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v70 FF FIX</div>
         <div class="box"><textarea id="json-input" placeholder='PEGAR JSON AQUÍ'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem; color:#888;">MISIÓN PRINCIPAL</div>
@@ -300,12 +300,12 @@
     let primaryMission = "DOMINACION"; let secondaryActive = false;
     let maxRounds = 4; let currentRound = 1;
     let dicePhase='IDLE', activeDice=[], diceTarget=0;
-    let pendingHits = { normal: 0, crit: 0, dmgValue: 1 }; // Added dmgValue
+    let pendingHits = { normal: 0, crit: 0, dmgValue: 1 };
     let iAmReady=false, enemyIsReady=false;
     let myInitRoll = null, enemyInitRoll = null;
     let consecutivePasses = 0; let passConfirm = null;
     let pendingRequest = null; let coverActive = false; 
-    let currentWeaponDmg = 1; // Store active attack damage
+    let currentWeaponDmg = 1; 
 
     window.initSystem = function() {
         MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
@@ -424,7 +424,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v69/${code}`;
+        TOPIC = `sqcmd/v70/${code}`;
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -457,7 +457,6 @@
             document.getElementById('en-ready-mark').classList.add('show'); checkStartRound();
         }
         else if(d.type === 'DICE_SYNC') {
-            // Note: dmgValue is not synced in real-time re-rolls, but sent in REQ_DEFENSE
             if(d.phase === 'ATTACK_ROLL') {
                 showDiceOverlay(d.phase, d.dice, d.target, false); 
                 document.getElementById('dice-sub').innerText = `${d.uName} apuntando...`;
@@ -465,10 +464,15 @@
             }
         }
         else if(d.type === 'REQ_DEFENSE') { 
-            pendingHits = d.hitsStruct; // Contains .normal, .crit, and .dmgValue
+            pendingHits = d.hitsStruct;
             startDefensePhase(); 
         }
-        else if(d.type === 'DAMAGE_RESOLVE') { applyDamage(d.dmg); closeDice(); passTurn(0); }
+        else if(d.type === 'DAMAGE_RESOLVE') { 
+            // CRITICAL FIX: Do not apply damage here. Just log and pass turn.
+            log(`ATAQUE EXITOSO: RIVAL RECIBIÓ ${d.dmg} DAÑO`, 'success'); 
+            closeDice(); 
+            passTurn(0); 
+        }
         else if(d.type === 'OP_ACTION') { if(gameState!=='PLANNING'){ log(`RIVAL: ${d.opType}`); setTurn('MY_TURN', 0); } }
         else if(d.type === 'CHANGE_TURN') { if(gameState!=='PLANNING') setTurn('MY_TURN', d.passes || 0); }
         else if(d.type === 'ROUND_OVER') resetRound();
@@ -509,12 +513,10 @@
         if(me.activations >= 2) { log("UNIDAD AGOTADA"); return; }
         dicePhase = 'ATTACK_ROLL';
         
-        // Parse Stats and Damage
         let diceCount = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
         let target = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
         let dmgRaw = combatMode==='ranged' ? me.stats.r_dmg : me.stats.m_dmg;
         
-        // Default damage to 1 if missing or 0
         currentWeaponDmg = parseInt(dmgRaw);
         if(isNaN(currentWeaponDmg) || currentWeaponDmg === 0) currentWeaponDmg = 1;
 
@@ -539,27 +541,23 @@
         else if(dicePhase === 'DEFENSE_ROLL') {
             const sv = parseInt(myUnits[myIdx].stats.sv.replace('+',''));
             
-            // MATH UPDATE v68/v69: Fixed Defense + Damage Multiplier
             let defCrits = activeDice.filter(d => d === 6).length;
             let defNormals = activeDice.filter(d => d >= sv && d < 6).length;
 
-            if (coverActive) {
-                defNormals++;
-                log("COBERTURA: +1 SALVACIÓN AUTOMÁTICA");
-            }
+            if (coverActive) { defNormals++; log("COBERTURA: +1 SALVACIÓN"); }
 
             let incCrits = pendingHits.crit;
             let incNormals = pendingHits.normal;
             let incDmgPerHit = pendingHits.dmgValue || 1;
 
             let blockedCrits = Math.min(incCrits, defCrits);
-            let totalDmgCritsHits = incCrits - blockedCrits; // Unblocked Crit Hits
+            let totalDmgCritsHits = incCrits - blockedCrits; 
             
             let extraDefCrits = defCrits - blockedCrits;
             let totalDefNormals = defNormals + extraDefCrits;
             
             let blockedNormals = Math.min(incNormals, totalDefNormals);
-            let totalDmgNormalsHits = incNormals - blockedNormals; // Unblocked Normal Hits
+            let totalDmgNormalsHits = incNormals - blockedNormals; 
             
             let totalUnblockedHits = totalDmgCritsHits + totalDmgNormalsHits;
             let totalDmg = totalUnblockedHits * incDmgPerHit;
@@ -567,7 +565,9 @@
             log(`DEFENSA: Bloqueas ${blockedCrits} Crits, ${blockedNormals} Normal.`);
             log(`RECIBES ${totalUnblockedHits} Impactos x ${incDmgPerHit} Daño = ${totalDmg} TOTAL`, 'danger');
             
-            applyDamage(totalDmg); closeDice(); publish({type: 'DAMAGE_RESOLVE', dmg: totalDmg}); 
+            applyDamage(totalDmg); 
+            closeDice(); 
+            publish({type: 'DAMAGE_RESOLVE', dmg: totalDmg}); 
         }
     }
 
@@ -638,7 +638,6 @@
         document.getElementById('round-display').innerText = `RND ${currentRound}/${maxRounds}`;
     }
 
-    // --- Helpers ---
     window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; updateHUD(); } }
     window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); updateHUD(); }
     window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
