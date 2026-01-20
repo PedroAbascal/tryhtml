@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v55 LAG BREAKER</title>
+    <title>SQUAD COMMAND: v56 INSTANT ACTION</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -29,7 +29,6 @@
             margin-top: 5px; pointer-events: auto; touch-action: manipulation; position: relative;
         }
         .btn * { pointer-events: none; } 
-        .btn.wait { background: #333; color: #888; border: 1px solid #555; animation: pulse 1s infinite; cursor: default; pointer-events: none; }
         
         .btn-small { font-size: 0.7rem; padding: 5px; width: auto; display: inline-block; clip-path: none; border: 1px solid var(--gold); background: #000; color: var(--gold); cursor: pointer; pointer-events: auto; }
 
@@ -88,16 +87,17 @@
         #dice-overlay.show { transform: translateY(0); }
         .dice-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
         
-        /* DADOS COMO BOTONES SEGUROS */
         .die-btn { 
             background: transparent; border: none; font-size: 3.5rem; cursor: pointer; 
-            transition: transform 0.2s; position:relative; padding: 0; margin: 0;
+            transition: transform 0.1s; position:relative; padding: 0; margin: 0;
             appearance: none; -webkit-appearance: none;
         }
         .die-btn:focus { outline: none; }
         .die-btn:active { transform: scale(0.9); }
+        .die-btn.rotating { animation: spin 0.2s ease-out; }
+        @keyframes spin { 0% { transform: rotate(0deg) scale(0.8); } 100% { transform: rotate(360deg) scale(1); } }
         
-        .die-btn.crit { color: var(--gold); text-shadow: 0 0 25px var(--gold); animation: pop 0.2s; }
+        .die-btn.crit { color: var(--gold); text-shadow: 0 0 25px var(--gold); }
         .die-btn.hit { color: var(--g); text-shadow: 0 0 20px var(--g); }
         .die-btn.miss { color: #444; }
         .die-btn.save-ok { color: var(--c); text-shadow: 0 0 20px var(--c); }
@@ -105,10 +105,8 @@
         
         .die-btn.incoming-crit { color: var(--gold); text-shadow: 0 0 15px var(--gold); pointer-events: none; }
         .die-btn.incoming-hit { color: var(--c); text-shadow: 0 0 10px var(--c); pointer-events: none; }
-        .die-btn.pending { color: var(--gold); animation: pulse 0.5s infinite; cursor: wait; pointer-events: none; opacity: 0.7; }
         .die-btn.locked { opacity: 0.7; cursor: default; pointer-events: none; }
         
-        /* BOTÓN TOGGLE COBERTURA (TYPE BUTTON) */
         #btn-cover-toggle {
             background: #000; border: 2px solid #444; color: #666; 
             padding: 8px 20px; font-family: monospace; font-weight: bold; 
@@ -198,7 +196,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v55 LAG BREAKER</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v56 INSTANT ACTION</div>
         
         <div class="box"><textarea id="json-input" placeholder='{"squad": [{"id":"1","name":"Trooper","stats":{"hp":"10"...},"gear":"grenade"}]}'></textarea></div>
         
@@ -313,7 +311,7 @@
         </div>
         <div id="active-section" class="dice-section">
             <div class="dice-label" id="active-label"><span>TUS DADOS</span></div>
-            <div class="dice-sub" id="dice-sub">Tirando...</div>
+            <div class="dice-sub" id="dice-sub" style="font-size:0.6rem; color:#888;">TOCA UN DADO PARA RE-TIRAR</div>
             <div class="dice-container" id="dice-pool"></div>
         </div>
         <div style="display:flex; gap:10px; width:90%;">
@@ -360,16 +358,7 @@
 
     let pendingRequest = null;
     let waitingForAck = false; 
-    let diceRerollIndex = -1;
     let coverActive = false; 
-    let ackTimeout = null; // Para el seguro anti-lag
-
-    // --- DETECTOR DE SALIDA (PARA DEBUG) ---
-    window.addEventListener('beforeunload', (event) => {
-        // Descomenta si quieres ver la alerta de salida
-        // event.preventDefault();
-        // event.returnValue = "";
-    });
 
     function returnToLobby() {
         if(!isGameOver) return;
@@ -385,7 +374,6 @@
         iAmReady = false; enemyIsReady = false;
         resetPassButtons();
         waitingForAck = false;
-        diceRerollIndex = -1;
         coverActive = false;
     }
 
@@ -431,47 +419,35 @@
         updateHUD();
     }
 
-    // --- NUEVO: SISTEMA DE REROLL "LAG BREAKER" ---
-    function askReroll(e, index) {
+    // --- NUEVO SISTEMA DE RE-TIRADA INMEDIATA ---
+    // Ya no pide permiso. Lo haces y avisa.
+    function instantReroll(e, index) {
         if(e) { e.preventDefault(); e.stopPropagation(); }
-        if(waitingForAck) return;
         
-        diceRerollIndex = index;
-        waitingForAck = true;
+        // 1. Calcular nuevo valor localmente
+        const newVal = Math.ceil(Math.random() * 6);
+        activeDice[index] = newVal;
         
+        // 2. Actualizar UI inmediatamente
         const pool = document.getElementById('dice-pool');
         if(pool.children[index]) {
-            pool.children[index].className = 'die-btn pending';
-            pool.children[index].innerText = "⏳";
+            const btn = pool.children[index];
+            const icon = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][newVal];
+            btn.innerText = icon;
+            btn.className = 'die-btn rotating'; // Animación visual
+            
+            // Re-aplicar color
+            if(newVal === 6) btn.classList.add('crit');
+            else if(newVal >= diceTarget) btn.classList.add(dicePhase==='ATTACK_ROLL'?'hit':'save-ok');
+            else btn.classList.add(dicePhase==='ATTACK_ROLL'?'miss':'save-fail');
+            
+            // Eliminar clase de animación luego
+            setTimeout(() => btn.classList.remove('rotating'), 200);
         }
         
-        log("PIDIENDO RE-TIRADA...", "info");
-        publish({type: 'REQ_REROLL'});
-
-        // --- SAFETY: SI EN 3 SEGUNDOS NO RESPONDEN, FORZAMOS ---
-        if(ackTimeout) clearTimeout(ackTimeout);
-        ackTimeout = setTimeout(() => {
-            if(waitingForAck) {
-                log("SIN RESPUESTA: FORZANDO TIRADA.", "danger");
-                executeReroll(true); // Forzado localmente
-            }
-        }, 3000);
-    }
-
-    function executeReroll(forced = false) {
-        if(ackTimeout) clearTimeout(ackTimeout); // Cancelar timeout
-        
-        if(diceRerollIndex === -1) return;
-        const pool = document.getElementById('dice-pool');
-        
-        activeDice[diceRerollIndex] = Math.ceil(Math.random()*6); 
-        syncDiceToRival(dicePhase==='ATTACK_ROLL' ? myUnits[myIdx].name : "DEFENSA"); 
-        showDiceOverlay(dicePhase, activeDice, diceTarget, true); 
-        
-        if(!forced) log("RE-TIRADA AUTORIZADA", "success");
-        
-        diceRerollIndex = -1;
-        waitingForAck = false;
+        // 3. Avisar al rival "He cambiado este dado"
+        log("DADO RE-TIRADO");
+        syncDiceToRival(dicePhase==='ATTACK_ROLL' ? myUnits[myIdx].name : "DEFENSA");
     }
 
     function showConfirmModal(text, reqData) {
@@ -485,7 +461,7 @@
         document.getElementById('confirm-modal').classList.remove('show');
         if(!pendingRequest) return;
         if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); }
-        else if(pendingRequest.type === 'REQ_REROLL') { publish({type: 'ACK_REROLL'}); log(`Re-tirada rival aceptada.`); }
+        // NOTA: Ya no hay ACK_REROLL porque la re-tirada no requiere permiso
         pendingRequest = null;
     }
 
@@ -547,7 +523,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v55/${code}`; 
+        TOPIC = `sqcmd/v56/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -564,8 +540,6 @@
 
         if(d.type === 'REQ_SECRET') showConfirmModal(`RIVAL RECLAMA SECRETA: ${d.missionName}\n¿CONFIRMAR?`, d);
         else if(d.type === 'ACK_SECRET') executeSecretClaim();
-        else if(d.type === 'REQ_REROLL') showConfirmModal(`RIVAL PIDE RE-TIRAR\n¿CONFIRMAR?`, d);
-        else if(d.type === 'ACK_REROLL') executeReroll(false); // Confirmado por rival
         
         else if(d.type === 'GEAR_EFFECT') {
             log(`RIVAL USA ${d.gearName}: ${d.desc}`);
@@ -605,6 +579,9 @@
                 showDiceOverlay(d.phase, d.dice, d.target, false); 
                 document.getElementById('dice-sub').innerText = `${d.uName} apuntando...`;
                 log("RIVAL APUNTANDO...");
+            } else if (d.phase === 'DEFENSE_ROLL') {
+                // Si el rival está re-tirando defensas, podríamos verlas, pero principalmente nos importa cuando termina.
+                // Podríamos actualizar la vista si quisiéramos ver sus dados en tiempo real.
             }
         }
         else if(d.type === 'REQ_DEFENSE') { pendingHits = d.hitsStruct; startDefensePhase(); }
@@ -799,7 +776,7 @@
 
     window.proceedPhase = function(e) {
         if(e) { e.preventDefault(); e.stopPropagation(); }
-        if(waitingForAck) return;
+        // Sin bloqueos de espera.
 
         if(dicePhase === 'ATTACK_ROLL') {
             let hitsStruct = { normal: 0, crit: 0 };
@@ -860,6 +837,10 @@
     window.nextEnemyUnit=()=>{if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD();};
     window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
     window.closeDice=()=>{document.getElementById('dice-overlay').classList.remove('show');};
+    window.enableControls = (enable) => {
+        // Helper para habilitar/deshabilitar controles si fuera necesario.
+        // En esta versión "instantánea", confiamos en la UI.
+    }
     
     function startDefensePhase() {
         dicePhase = 'DEFENSE_ROLL';
@@ -912,7 +893,7 @@
             
             if(isInteractive) { 
                 d.onclick = (e) => { 
-                    askReroll(e, i); 
+                    instantReroll(e, i); 
                 }; 
             } else d.classList.add('locked');
             pool.appendChild(d);
