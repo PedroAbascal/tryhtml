@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ArUco Final Victory</title>
+    <title>ArUco Selector</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; font-family: monospace; overflow: hidden; }
         
@@ -16,19 +16,22 @@
         }
         canvas { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            object-fit: contain; z-index: 10;
+            object-fit: contain; z-index: 10; cursor: crosshair;
         }
 
         #controls {
-            height: 140px; background: #111; color: #0f0;
+            height: 120px; background: #111; color: #0f0;
             display: flex; flex-direction: column;
             padding: 5px; box-sizing: border-box; z-index: 20; border-top: 1px solid #444;
         }
+        .btn-row { display: flex; gap: 5px; margin-bottom: 5px; }
         button {
-            padding: 10px; font-size: 16px; font-weight: bold;
-            background: #28a745; color: white; border: none; 
-            border-radius: 4px; margin-bottom: 5px; cursor: pointer;
+            flex: 1; padding: 10px; font-size: 14px; font-weight: bold;
+            color: white; border: none; border-radius: 4px; cursor: pointer;
         }
+        #btnStart { background: #28a745; }
+        #btnClear { background: #dc3545; }
+        
         textarea#log {
             flex: 1; background: #000; color: #0f0; 
             border: 1px solid #555; padding: 5px;
@@ -44,8 +47,11 @@
         <canvas id="canvasOutput"></canvas>
     </div>
     <div id="controls">
-        <button id="btnStart" disabled>Cargando OpenCV 4.8...</button>
-        <textarea id="log" readonly>Esperando librerías...</textarea>
+        <div class="btn-row">
+            <button id="btnStart" disabled>Cargando...</button>
+            <button id="btnClear">Limpiar Selección</button>
+        </div>
+        <textarea id="log" readonly>Toca un marcador para seleccionarlo.</textarea>
     </div>
 </div>
 
@@ -62,48 +68,97 @@
     let video = document.getElementById('videoInput');
     let canvas = document.getElementById('canvasOutput');
     let btnStart = document.getElementById('btnStart');
+    let btnClear = document.getElementById('btnClear');
     
     let stream = null;
     let streaming = false;
     
-    // Objetos OpenCV
-    let cap = null;
-    let src = null;  // 4 canales (RGBA) - Original de la cámara
-    let rgb = null;  // 3 canales (RGB)  - Para dibujar encima
-    let gray = null; // 1 canal (Gris)   - Para detectar
+    // OpenCV objects
+    let cap, src, rgb, gray, detector, markerIds, markerCorners;
     
-    let detector = null;
-    let markerIds = null;
-    let markerCorners = null;
+    // --- LÓGICA DE SELECCIÓN ---
+    // Usamos un Set para guardar los IDs únicos seleccionados (ej: {12, 45})
+    let selectedIds = new Set();
 
     function onCvLoaded() {
-        log("OpenCV Cargado. Listo para arrancar.");
-        btnStart.innerText = "INICIAR ARUCO";
+        log("Sistema listo.");
+        btnStart.innerText = "INICIAR CÁMARA";
         btnStart.disabled = false;
+        
         btnStart.onclick = startCamera;
+        
+        // Botón para limpiar selección
+        btnClear.onclick = () => {
+            selectedIds.clear();
+            log("Selección limpiada.");
+        };
+
+        // EVENTO CLICK / TOUCH EN EL CANVAS
+        canvas.addEventListener('mousedown', handleCanvasClick);
+        canvas.addEventListener('touchstart', (e) => {
+            // Prevenir doble disparo en móviles y usar el primer dedo
+            if(e.cancelable) e.preventDefault(); 
+            handleCanvasClick(e.touches[0]);
+        }, {passive: false});
+    }
+
+    function handleCanvasClick(e) {
+        if (!markerCorners || markerIds.rows === 0) return;
+
+        // 1. Obtener coordenadas ajustadas a la resolución real del video
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        // Posición del clic relativa al canvas visual, multiplicada por la escala interna
+        const clickX = (e.clientX - rect.left) * scaleX;
+        const clickY = (e.clientY - rect.top) * scaleY;
+
+        const clickPoint = new cv.Point(clickX, clickY);
+        let clickedSomething = false;
+
+        // 2. Iterar sobre todos los marcadores detectados ACTUALMENTE
+        for (let i = 0; i < markerIds.rows; i++) {
+            let id = markerIds.data32S[i];
+            let corners = markerCorners.get(i); // Obtener contorno del marcador i
+
+            // 3. HIT TEST: ¿El punto está dentro del polígono?
+            // cv.pointPolygonTest devuelve > 0 si está dentro, < 0 si fuera.
+            if (cv.pointPolygonTest(corners, clickPoint, false) >= 0) {
+                
+                // Toggle (Si existe se borra, si no existe se agrega)
+                if (selectedIds.has(id)) {
+                    selectedIds.delete(id);
+                    log(`Marcador ${id} Deseleccionado.`);
+                } else {
+                    selectedIds.add(id);
+                    log(`Marcador ${id} SELECCIONADO.`);
+                }
+                clickedSomething = true;
+            }
+        }
+        
+        // Limpieza de memoria temporal del punto
+        // (En JS puro pointPolygonTest suele manejar la memoria del punto auto, 
+        // pero es buena práctica no acumular objetos si fuera C++)
     }
 
     async function startCamera() {
         btnStart.disabled = true;
-        log("Iniciando cámara...");
         try {
-            const constraints = { 
-                video: { facingMode: 'environment' }, 
-                audio: false 
-            };
+            const constraints = { video: { facingMode: 'environment' }, audio: false };
             stream = await navigator.mediaDevices.getUserMedia(constraints);
             video.srcObject = stream;
             await video.play();
             checkVideoReady();
         } catch (err) {
-            log("ERROR CAMARA: " + err.message);
+            log("Error Cámara: " + err.message);
             btnStart.disabled = false;
         }
     }
 
     function checkVideoReady() {
-        if (video.videoWidth > 0 && video.videoHeight > 0) {
-            log(`Resolución: ${video.videoWidth}x${video.videoHeight}`);
+        if (video.videoWidth > 0) {
             startProcessing();
         } else {
             requestAnimationFrame(checkVideoReady);
@@ -119,25 +174,15 @@
         canvas.height = video.videoHeight;
 
         cap = new cv.VideoCapture(video);
+        src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
+        rgb = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC3);
+        gray = new cv.Mat();
         
-        // MATRICES:
-        src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4); // Cámara (RGBA)
-        rgb = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC3); // Dibujo (RGB)
-        gray = new cv.Mat(); // Detección (Gris)
-        
-        // CONFIGURACIÓN QUE SABEMOS QUE FUNCIONA:
-        try {
-            let dictionary = cv.getPredefinedDictionary(cv.DICT_ARUCO_ORIGINAL);
-            let params = new cv.aruco_DetectorParameters();
-            let refineParams = new cv.aruco_RefineParameters(10, 3, true);
-            
-            detector = new cv.aruco_ArucoDetector(dictionary, params, refineParams);
-            log("Detector Inicializado Correctamente.");
-
-        } catch (e) {
-            log("ERROR INIT: " + e);
-            return;
-        }
+        // Inicialización segura ArUco (v4.8.0)
+        let dictionary = cv.getPredefinedDictionary(cv.DICT_ARUCO_ORIGINAL);
+        let params = new cv.aruco_DetectorParameters();
+        let refineParams = new cv.aruco_RefineParameters(10, 3, true);
+        detector = new cv.aruco_ArucoDetector(dictionary, params, refineParams);
         
         markerIds = new cv.Mat();
         markerCorners = new cv.MatVector();
@@ -149,8 +194,7 @@
         if (!streaming) return;
 
         try {
-            // Protección de tamaño
-            if (video.videoWidth !== src.cols || video.videoHeight !== src.rows) {
+            if (video.videoWidth !== src.cols) {
                 src.delete(); rgb.delete(); gray.delete();
                 video.width = video.videoWidth; video.height = video.videoHeight;
                 canvas.width = video.videoWidth; canvas.height = video.videoHeight;
@@ -159,33 +203,52 @@
                 gray = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC1);
             }
 
-            // 1. Leer cámara (RGBA)
             cap.read(src);
-            
-            // 2. Crear versión Gris para ArUco
             cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-            
-            // 3. Crear versión RGB para Dibujar (SOLUCIÓN DEL ERROR)
-            // drawDetectedMarkers exige 3 canales, src tiene 4.
-            cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
+            cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB); // Necesario para dibujar
 
-            // 4. Detectar
             detector.detectMarkers(gray, markerCorners, markerIds);
 
-            // 5. Dibujar (Sobre 'rgb', NO sobre 'src')
+            // --- LÓGICA DE DIBUJADO PERSONALIZADA ---
             if (markerIds.rows > 0) {
-                // log("¡Marcador detectado!"); // Descomentar para ver en log
+                
+                // Primero dibujamos TODOS en VERDE (Color base)
+                // Usamos drawDetectedMarkers para pintar los ejes básicos
                 cv.drawDetectedMarkers(rgb, markerCorners, markerIds, new cv.Scalar(0, 255, 0));
+
+                // Luego dibujamos ENCIMA los SELECCIONADOS en ROJO
+                for (let i = 0; i < markerIds.rows; i++) {
+                    let id = markerIds.data32S[i];
+                    
+                    if (selectedIds.has(id)) {
+                        let corners = markerCorners.get(i);
+                        
+                        // Dibujar contorno grueso Rojo
+                        // data32F contiene [x1, y1, x2, y2, x3, y3, x4, y4]
+                        let topLeft = new cv.Point(corners.data32F[0], corners.data32F[1]);
+                        let topRight = new cv.Point(corners.data32F[2], corners.data32F[3]);
+                        let bottomRight = new cv.Point(corners.data32F[4], corners.data32F[5]);
+                        let bottomLeft = new cv.Point(corners.data32F[6], corners.data32F[7]);
+
+                        let redColor = new cv.Scalar(255, 0, 0);
+                        let thickness = 4;
+
+                        cv.line(rgb, topLeft, topRight, redColor, thickness);
+                        cv.line(rgb, topRight, bottomRight, redColor, thickness);
+                        cv.line(rgb, bottomRight, bottomLeft, redColor, thickness);
+                        cv.line(rgb, bottomLeft, topLeft, redColor, thickness);
+                        
+                        // Opcional: Escribir "SELECTED" encima
+                        cv.putText(rgb, "SEL", topLeft, cv.FONT_HERSHEY_SIMPLEX, 1.0, redColor, 2);
+                    }
+                }
             }
             
-            // 6. Mostrar resultado
             cv.imshow('canvasOutput', rgb);
-
             requestAnimationFrame(processFrame);
 
         } catch (err) {
-            log("LOOP CRASH: " + err);
-            streaming = false;
+            log("Loop error: " + err);
         }
     }
 </script>
