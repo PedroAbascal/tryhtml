@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v52 DEBUG MODE</title>
+    <title>SQUAD COMMAND: v53 BUTTON DICE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -22,6 +22,8 @@
         textarea { width: 100%; height: 60px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; }
         input, select { background: #000; border: 2px solid var(--gold); color: var(--gold); padding: 10px; font-family: monospace; width: 100%; text-align: center; font-size: 1rem; letter-spacing: 2px; margin: 5px 0; text-transform: uppercase; }
         
+        /* ESTILO BOTONES (GLOBAL) */
+        button { font-family: 'Courier New', monospace; text-transform: uppercase; }
         .btn { 
             background: var(--c); color: #000; border: none; padding: 15px; width: 100%; 
             font-weight: bold; cursor: pointer; font-size: 1rem; 
@@ -33,14 +35,13 @@
         
         .btn-small { font-size: 0.7rem; padding: 5px; width: auto; display: inline-block; clip-path: none; border: 1px solid var(--gold); background: #000; color: var(--gold); cursor: pointer; pointer-events: auto; }
 
-        /* ESTILOS DE GEAR/ITEMS (Nuevos en v51) */
         .btn-gear { 
             background: #fff !important; color: #000 !important; border: 2px solid var(--gold) !important; 
             box-shadow: 0 0 10px var(--gold); animation: pulseGold 2s infinite; 
         }
         @keyframes pulseGold { 0% { box-shadow: 0 0 5px var(--gold); } 50% { box-shadow: 0 0 15px var(--gold); } 100% { box-shadow: 0 0 5px var(--gold); } }
 
-        /* TAGS VISUALES */
+        /* TAGS */
         .tags-container { display:flex; flex-wrap:wrap; gap:2px; margin-top:4px; }
         .tag { font-size: 0.55rem; padding: 2px 4px; border-radius: 2px; text-transform: uppercase; font-weight: bold; border: 1px solid #444; }
         .tag.active-gear { background: var(--gold); color: #000; border-color: #fff; }
@@ -52,8 +53,6 @@
         .op-dash { background: var(--c); }
         .op-mission { background: var(--gold); }
         .op-pass { background: #888; color: #000; transition: 0.2s; }
-
-        @keyframes pulse { 50% { opacity: 0.5; } }
 
         .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; flex-direction: column; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); pointer-events: auto; width: 100%; box-sizing: border-box;}
         .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px; }
@@ -91,22 +90,32 @@
         }
         #dice-overlay.show { transform: translateY(0); }
         .dice-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
-        .die { font-size: 3.5rem; cursor: pointer; transition: transform 0.2s; position:relative; }
-        .die.crit { color: var(--gold); text-shadow: 0 0 25px var(--gold); animation: pop 0.2s; }
-        .die.hit { color: var(--g); text-shadow: 0 0 20px var(--g); }
-        .die.miss { color: #444; }
-        .die.save-ok { color: var(--c); text-shadow: 0 0 20px var(--c); }
-        .die.save-fail { color: var(--r); opacity: 0.8; }
-        .die.incoming-crit { color: var(--gold); text-shadow: 0 0 15px var(--gold); pointer-events: none; }
-        .die.incoming-hit { color: var(--c); text-shadow: 0 0 10px var(--c); pointer-events: none; }
-        .die.pending { color: var(--gold); animation: pulse 0.5s infinite; cursor: wait; pointer-events: none; opacity: 0.7; }
-        .die.locked { opacity: 0.7; cursor: default; }
+        
+        /* DADOS COMO BOTONES SEGUROS */
+        .die-btn { 
+            background: transparent; border: none; font-size: 3.5rem; cursor: pointer; 
+            transition: transform 0.2s; position:relative; padding: 0; margin: 0;
+            appearance: none; -webkit-appearance: none;
+        }
+        .die-btn:focus { outline: none; }
+        .die-btn:active { transform: scale(0.9); }
+        
+        .die-btn.crit { color: var(--gold); text-shadow: 0 0 25px var(--gold); animation: pop 0.2s; }
+        .die-btn.hit { color: var(--g); text-shadow: 0 0 20px var(--g); }
+        .die-btn.miss { color: #444; }
+        .die-btn.save-ok { color: var(--c); text-shadow: 0 0 20px var(--c); }
+        .die-btn.save-fail { color: var(--r); opacity: 0.8; }
+        
+        .die-btn.incoming-crit { color: var(--gold); text-shadow: 0 0 15px var(--gold); pointer-events: none; }
+        .die-btn.incoming-hit { color: var(--c); text-shadow: 0 0 10px var(--c); pointer-events: none; }
+        .die-btn.pending { color: var(--gold); animation: pulse 0.5s infinite; cursor: wait; pointer-events: none; opacity: 0.7; }
+        .die-btn.locked { opacity: 0.7; cursor: default; pointer-events: none; }
         
         #btn-cover-toggle {
             background: #000; border: 2px solid #444; color: #666; 
             padding: 8px 20px; font-family: monospace; font-weight: bold; 
             cursor: pointer; margin-bottom: 10px; width: 80%; text-align: center;
-            transition: 0.2s; pointer-events: auto; /* IMPORTANTE */
+            transition: 0.2s; pointer-events: auto;
         }
         #btn-cover-toggle.active {
             background: rgba(0, 242, 255, 0.1); border-color: var(--c); color: var(--c);
@@ -191,7 +200,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v52 DEBUG MODE</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v53 BUTTON DICE</div>
         
         <div class="box"><textarea id="json-input" placeholder='{"squad": [{"id":"1","name":"Trooper","stats":{"hp":"10"...},"gear":"grenade"}]}'></textarea></div>
         
@@ -315,14 +324,6 @@
     </div>
 
 <script>
-    // --- ESTO ES EL DETECTOR DE RECARGAS ---
-    window.addEventListener('beforeunload', (event) => {
-        event.preventDefault();
-        event.returnValue = "¡OJO! La página se está recargando. ¿Seguro?";
-        return "¡OJO! La página se está recargando. ¿Seguro?";
-    });
-
-    // --- DEFINICIÓN DE EQUIPO/HABILIDADES ---
     const MECHANICS_DB = {
         "grenade": { name: "GRANADA", icon: "💣", type: "ACTIVE", func: "THROW_GRENADE", oneUse: true },
         "medkit":  { name: "MEDKIT",  icon: "💊", type: "ACTIVE", func: "USE_MEDKIT", oneUse: true },
@@ -363,7 +364,9 @@
     let diceRerollIndex = -1;
     let coverActive = false; 
 
+    // --- SEGURO ANTI-RESETEO ACCIDENTAL ---
     function returnToLobby() {
+        if(!isGameOver) return; // Solo funciona si el juego terminó
         if(client) { try{ client.disconnect(); } catch(e){} client=null; }
         document.getElementById('game-over-screen').classList.remove('show');
         document.getElementById('game-screen').classList.add('hidden');
@@ -422,16 +425,19 @@
         updateHUD();
     }
 
-    // --- CORRECCION CRITICA: PREVENT DEFAULT EN DADOS ---
-    function askReroll(e, index) {
-        if(e) { e.preventDefault(); e.stopPropagation(); } // ESTO EVITA LA RECARGA
+    // --- MANEJO DE DADOS (CLIC DELEGADO) ---
+    // Usamos esta función para manejar los clics sin que el DOM haga cosas raras
+    function handleDieClick(index) {
         if(waitingForAck) return;
         diceRerollIndex = index;
         waitingForAck = true;
         const pool = document.getElementById('dice-pool');
+        
+        // Visual feedback
         if(pool.children[index]) {
-            pool.children[index].className = 'die pending';
-            pool.children[index].innerText = "⏳";
+            const btn = pool.children[index];
+            btn.className = 'die-btn pending';
+            btn.innerText = "⏳";
         }
         publish({type: 'REQ_REROLL'});
     }
@@ -439,15 +445,14 @@
     function executeReroll() {
         if(diceRerollIndex === -1) return;
         const pool = document.getElementById('dice-pool');
-        const dieEl = pool.children[diceRerollIndex];
-        dieEl.className = 'die rolling';
-        setTimeout(() => { 
-            activeDice[diceRerollIndex] = Math.ceil(Math.random()*6); 
-            syncDiceToRival(dicePhase==='ATTACK_ROLL' ? myUnits[myIdx].name : "DEFENSA"); 
-            showDiceOverlay(dicePhase, activeDice, diceTarget, true); 
-            diceRerollIndex = -1;
-            waitingForAck = false;
-        }, 300);
+        
+        // Simular rodada
+        activeDice[diceRerollIndex] = Math.ceil(Math.random()*6); 
+        syncDiceToRival(dicePhase==='ATTACK_ROLL' ? myUnits[myIdx].name : "DEFENSA"); 
+        showDiceOverlay(dicePhase, activeDice, diceTarget, true); 
+        
+        diceRerollIndex = -1;
+        waitingForAck = false;
     }
 
     function showConfirmModal(text, reqData) {
@@ -490,10 +495,8 @@
             if(!parsed.squad) throw new Error("JSON Inválido");
             const raw = Object.values(parsed.squad);
             
-            // --- PARSEAR SIN TOCAR STATS ---
             myUnits = raw.map(u => {
                 const unit = { ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', acted: false, reacted: false, mechanics: [] };
-                // Map Gear/Ability
                 if(u.gear && MECHANICS_DB[u.gear]) unit.mechanics.push(MECHANICS_DB[u.gear]);
                 if(u.ability && MECHANICS_DB[u.ability]) unit.mechanics.push(MECHANICS_DB[u.ability]);
                 unit.gearUsed = false;
@@ -525,7 +528,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v51/${code}`; 
+        TOPIC = `sqcmd/v53/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -839,7 +842,6 @@
     window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
     window.closeDice=()=>{document.getElementById('dice-overlay').classList.remove('show');};
     
-    // --- FUNCIÓN CLAVE: DEFENSE PHASE + SAFETY ---
     function startDefensePhase() {
         dicePhase = 'DEFENSE_ROLL';
         const me = myUnits[myIdx];
@@ -870,8 +872,8 @@
             activeLbl.querySelector('span').innerText = "TUS DADOS";
             incomingSec.style.display = 'flex'; 
             coverBtn.style.display = 'block'; 
-            for(let i=0; i<pendingHits.crit; i++) incomingPool.innerHTML += '<div class="die incoming-crit">★</div>';
-            for(let i=0; i<pendingHits.normal; i++) incomingPool.innerHTML += '<div class="die incoming-hit">★</div>';
+            for(let i=0; i<pendingHits.crit; i++) incomingPool.innerHTML += '<div class="die-btn incoming-crit">★</div>';
+            for(let i=0; i<pendingHits.normal; i++) incomingPool.innerHTML += '<div class="die-btn incoming-hit">★</div>';
         } else {
             coverBtn.style.display = 'none'; 
             tit.innerText = "ATAQUE"; tit.style.color = "var(--r)";
@@ -882,14 +884,20 @@
         btn.style.display = isInteractive ? 'block' : 'none';
         
         dice.forEach((val, i) => {
-            const d = document.createElement('div'); d.className = 'die';
+            // USAMOS BUTTON EXPLICITO PARA EVITAR RECARGAS
+            const d = document.createElement('button'); 
+            d.type = "button"; // CLAVE
+            d.className = 'die-btn';
             d.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][val];
+            
             if(val === 6) d.classList.add('crit'); else if(val >= target) d.classList.add(phase==='ATTACK_ROLL'?'hit':'save-ok'); else d.classList.add(phase==='ATTACK_ROLL'?'miss':'save-fail');
             
-            // --- CORRECCIÓN CRÍTICA: PASAR EL EVENTO Y DETENERLO ---
             if(isInteractive) { 
-                d.onclick = (e) => {
-                    askReroll(e, i); // <-- Pasamos el evento 'e'
+                // EVENT DELEGATION CLAVE
+                d.onclick = (e) => { 
+                    e.preventDefault(); 
+                    e.stopPropagation();
+                    handleDieClick(i); 
                 }; 
             } else d.classList.add('locked');
             pool.appendChild(d);
@@ -914,16 +922,13 @@
         
         document.getElementById('my-name').innerText = me.name;
         document.getElementById('my-r').innerText = `${me.stats.r_atk}d (${me.stats.r_hit})`;
-        document.getElementById('my-r').className = combatMode==='ranged' ? 'stat-val hl' : 'stat-val';
         document.getElementById('my-m').innerText = `${me.stats.m_atk}d (${me.stats.m_hit})`;
-        document.getElementById('my-m').className = combatMode==='melee' ? 'stat-val hl' : 'stat-val';
         document.getElementById('my-sv').innerText = `${me.stats.sv}`;
         document.getElementById('my-hp').style.width = (globalHP[me.uid].c / globalHP[me.uid].m * 100) + "%";
         
         document.getElementById('btn-mode-open').className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
         document.getElementById('btn-mode-hidden').className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
 
-        // Render Tags & Buttons
         const tagContainer = document.getElementById('my-tags');
         tagContainer.innerHTML = '';
         let showGearBtn = false;
