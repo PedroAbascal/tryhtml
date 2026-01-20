@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v56 INSTANT ACTION</title>
+    <title>SQUAD COMMAND: v57 EXPLICIT LOGS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -122,6 +122,7 @@
         .flash { animation: flashRed 0.3s; }
         @keyframes flashRed { 50% { background: rgba(255, 0, 0, 0.5); } }
         
+        /* LOG MEJORADO */
         .log-area { 
             position: absolute; top: 120px; left: 10px; width: 70%; 
             display: flex; flex-direction: column; 
@@ -196,7 +197,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v56 INSTANT ACTION</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v57 EXPLICIT LOGS</div>
         
         <div class="box"><textarea id="json-input" placeholder='{"squad": [{"id":"1","name":"Trooper","stats":{"hp":"10"...},"gear":"grenade"}]}'></textarea></div>
         
@@ -320,7 +321,6 @@
     </div>
 
 <script>
-    // --- DATABASE ---
     const MECHANICS_DB = {
         "grenade": { name: "GRANADA", icon: "💣", type: "ACTIVE", func: "THROW_GRENADE", oneUse: true },
         "medkit":  { name: "MEDKIT",  icon: "💊", type: "ACTIVE", func: "USE_MEDKIT", oneUse: true },
@@ -419,34 +419,35 @@
         updateHUD();
     }
 
-    // --- NUEVO SISTEMA DE RE-TIRADA INMEDIATA ---
-    // Ya no pide permiso. Lo haces y avisa.
+    // --- SISTEMA DE RE-TIRADA INSTANTÁNEA (SIN LAG) ---
     function instantReroll(e, index) {
         if(e) { e.preventDefault(); e.stopPropagation(); }
         
-        // 1. Calcular nuevo valor localmente
+        // 1. Calcular nuevo valor
+        const oldVal = activeDice[index];
         const newVal = Math.ceil(Math.random() * 6);
         activeDice[index] = newVal;
         
-        // 2. Actualizar UI inmediatamente
+        // 2. Actualizar UI
         const pool = document.getElementById('dice-pool');
         if(pool.children[index]) {
             const btn = pool.children[index];
-            const icon = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][newVal];
-            btn.innerText = icon;
-            btn.className = 'die-btn rotating'; // Animación visual
+            const diceIcons = ['?','⚀','⚁','⚂','⚃','⚄','⚅'];
+            btn.innerText = diceIcons[newVal];
+            btn.className = 'die-btn rotating'; // Animación
             
-            // Re-aplicar color
             if(newVal === 6) btn.classList.add('crit');
             else if(newVal >= diceTarget) btn.classList.add(dicePhase==='ATTACK_ROLL'?'hit':'save-ok');
             else btn.classList.add(dicePhase==='ATTACK_ROLL'?'miss':'save-fail');
             
-            // Eliminar clase de animación luego
             setTimeout(() => btn.classList.remove('rotating'), 200);
         }
         
-        // 3. Avisar al rival "He cambiado este dado"
-        log("DADO RE-TIRADO");
+        // 3. LOG EXPLICITO
+        const diceIcons = ['?','⚀','⚁','⚂','⚃','⚄','⚅'];
+        log(`RE-TIRADA (DADO ${index+1}): ${diceIcons[oldVal]} ➔ ${diceIcons[newVal]}`);
+
+        // 4. Sincronizar sin esperar
         syncDiceToRival(dicePhase==='ATTACK_ROLL' ? myUnits[myIdx].name : "DEFENSA");
     }
 
@@ -461,7 +462,6 @@
         document.getElementById('confirm-modal').classList.remove('show');
         if(!pendingRequest) return;
         if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); }
-        // NOTA: Ya no hay ACK_REROLL porque la re-tirada no requiere permiso
         pendingRequest = null;
     }
 
@@ -579,9 +579,6 @@
                 showDiceOverlay(d.phase, d.dice, d.target, false); 
                 document.getElementById('dice-sub').innerText = `${d.uName} apuntando...`;
                 log("RIVAL APUNTANDO...");
-            } else if (d.phase === 'DEFENSE_ROLL') {
-                // Si el rival está re-tirando defensas, podríamos verlas, pero principalmente nos importa cuando termina.
-                // Podríamos actualizar la vista si quisiéramos ver sus dados en tiempo real.
             }
         }
         else if(d.type === 'REQ_DEFENSE') { pendingHits = d.hitsStruct; startDefensePhase(); }
@@ -997,6 +994,12 @@
     
     function log(t, type='info') { 
         const container = document.getElementById('combat-log');
+        
+        // LIMITAR LOGS A 6
+        while (container.children.length >= 6) {
+            container.lastChild.remove();
+        }
+
         const el = document.createElement('div');
         el.innerText = `> ${t}`;
         let cssType = type;
@@ -1006,7 +1009,7 @@
         }
         el.className = `log-entry ${cssType}`;
         container.prepend(el); 
-        setTimeout(() => { el.classList.add('fade-out'); setTimeout(() => el.remove(), 500); }, 10000);
+        setTimeout(() => { el.classList.add('fade-out'); setTimeout(() => el.remove(), 500); }, 10000); // 10 Segundos
     }
 </script>
 </body>
