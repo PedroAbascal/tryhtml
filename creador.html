@@ -3,562 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD FORGE: Dual Profile</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
+    <title>ArUco Original Minimal</title>
     <style>
-        :root {
-            --neon-cyan: #00f2ff;
-            --neon-gold: #ffcc00;
-            --neon-red: #ff0055;
-            --neon-green: #00ff99;
-            --neon-purple: #bc13fe;
-            --dark-bg: #0d1117;
-            --card-bg: #161b22;
-            --input-bg: #050505;
-            --text-main: #c9d1d9;
-            --text-muted: #8b949e;
+        /* Reset y diseño base para pantalla completa móvil */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: monospace; }
+
+        /* Capa de interfaz superior (botón y logs) */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; z-index: 100;
+            background: rgba(0, 0, 0, 0.5); padding: 10px; box-sizing: border-box;
+            color: #0f0; pointer-events: none; /* Permitir clicks pasen abajo excepto en botones */
         }
 
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
-            background-color: var(--dark-bg);
-            color: var(--text-main);
-            margin: 0;
-            padding: 10px;
-            padding-bottom: 120px;
-        }
-
-        h1 { color: var(--neon-cyan); font-size: 1.5rem; text-align: center; margin-bottom: 5px; letter-spacing: 2px; text-transform: uppercase; }
-        .subtitle { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-
-        /* UI COMPONENTS */
-        .budget-container { position: sticky; top: 0; background: var(--dark-bg); z-index: 100; padding-bottom: 10px; border-bottom: 1px solid #333; margin-bottom: 20px; }
-        .budget-bar-bg { background: #30363d; height: 12px; border-radius: 10px; overflow: hidden; border: 1px solid #444; }
-        .budget-fill { height: 100%; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple)); width: 0%; transition: width 0.3s; }
-        .budget-text { display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 5px; color: var(--neon-cyan); }
-
-        .card { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid #30363d; }
-        .card-header { border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; color: var(--neon-gold); font-weight: bold; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
-
-        label { display: block; color: var(--neon-cyan); font-size: 0.7rem; margin-bottom: 4px; text-transform: uppercase; font-weight: bold; margin-top: 10px; opacity: 0.8; }
-        select, input, textarea { width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid #333; color: white; border-radius: 6px; font-size: 1rem; outline: none; box-sizing: border-box; }
-        
-        /* TAGS & EXPORT */
-        .tag-area { min-height: 40px; margin-top: 10px; }
-        .tag-container { display: flex; flex-wrap: wrap; gap: 8px; }
-        .tag { background: rgba(0, 242, 255, 0.1); color: var(--neon-cyan); padding: 4px 10px; border-radius: 15px; font-size: 0.7rem; cursor: pointer; border: 1px solid var(--neon-cyan); }
-        .export-area { margin-top: 10px; display: none; }
-        .code-block { font-family: monospace; font-size: 0.8rem; background: #000; padding: 10px; border: 1px solid #333; color: var(--neon-green); width: 100%; box-sizing: border-box; height: 80px; }
-
-        /* --- NEW STATS GRID (3 ROWS) --- */
-        .stats-matrix { 
-            display: grid; 
-            grid-template-columns: 20px 1fr 1fr 1fr; /* Icon + 3 Cols */
-            gap: 5px; 
-            margin-top: 20px; 
-            background: #000; 
-            padding: 10px; 
-            border-radius: 8px; 
-            border: 1px solid #333;
-            align-items: center;
+        /* Botón visible e interactivo */
+        #btnStart {
+            pointer-events: auto; 
+            display: block; width: 100%; padding: 15px; 
+            background: #0066cc; color: white; border: none; font-size: 18px; border-radius: 8px;
+            margin-bottom: 10px;
         }
         
-        .matrix-row-icon { font-size: 1.2rem; text-align: center; opacity: 0.7; }
-        .stat-box { text-align: center; padding: 5px; background: #0e1218; border-radius: 4px; border: 1px solid #222; }
-        .stat-val { display: block; font-size: 1.1rem; font-weight: bold; color: white; }
-        .stat-lbl { font-size: 0.6rem; color: var(--text-muted); letter-spacing: 1px; }
+        /* Área de registro de debug */
+        #debug-log { max-height: 100px; overflow-y: auto; font-size: 12px; }
 
-        .stat-ranged .stat-val { color: var(--neon-cyan); }
-        .stat-melee .stat-val { color: var(--neon-red); }
-        .stat-def .stat-val { color: var(--neon-green); }
-        .stat-cost .stat-val { color: var(--neon-gold); }
-        
-        .disabled-stat { opacity: 0.3; }
+        /* Contenedor de video/canvas */
+        #container { position: relative; width: 100%; height: 100%; }
 
-        .btn-add { width: 100%; padding: 14px; background: var(--neon-cyan); border: none; border-radius: 8px; font-weight: bold; margin-top: 15px; cursor: pointer; }
-        .btn-ai { width: 100%; padding: 10px; margin-top: 10px; background: var(--neon-green); border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: #000; }
-        .unit-item { background: #0d1117; padding: 10px; margin-bottom: 8px; border-radius: 6px; border-left: 4px solid #555; display:flex; justify-content:space-between; align-items:center; font-size: 0.9rem;}
-        .btn-del { background:none; border:1px solid #ff0055; color:#ff0055; padding:2px 8px; cursor:pointer; }
+        /* Video: Invisible pero activo para que el navegador lo renderice */
+        #videoInput {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; opacity: 0.01; z-index: 1;
+        }
+
+        /* Canvas: Visible encima del video, donde dibujamos */
+        #canvasOutput {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 2;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="budget-container">
-        <h1>SQUAD FORGE</h1>
-        <div class="subtitle">DUAL COMBAT PROFILE SYSTEM</div>
-        <div class="budget-bar-bg"><div id="budget-fill" class="budget-fill"></div></div>
-        <div class="budget-text"><span>PRESUPUESTO</span><span><span id="pts-current">0</span> / 100 PTS</span></div>
-    </div>
-
-    <div class="card" id="card-ai" style="border-color: var(--neon-green);">
-        <div class="card-header" style="color: var(--neon-green);">⚡ IA TÁCTICA</div>
-        <textarea id="ai-desc" rows="2" placeholder="Ej: Orko con gran hacha..."></textarea>
-        <div class="tag-area"><div class="tag-container" id="smart-tags"></div></div>
-        <button class="btn-ai" onclick="analizarDescripcion()">GENERAR</button>
-    </div>
-
-    <div class="card" style="border-color: var(--neon-cyan);">
-        <div class="card-header">FORJA DE OPERATIVO</div>
-        
-        <div style="display:flex; gap:10px;">
-            <div style="flex:1"><label>ID</label><select id="u-id"></select></div>
-            <div style="flex:3"><label>Nombre</label><input type="text" id="u-name" value="Operativo"></div>
-        </div>
-
-        <label>1. Especie (Stats Base)</label><select id="u-species" onchange="calc()"></select>
-        <label>2. Rol (Modificadores)</label><select id="u-role" onchange="calc()"></select>
-        <label style="color:var(--neon-purple)">3. Habilidad</label><select id="u-ability" onchange="calc()"></select>
-        
-        <label>4. Armamento Principal</label>
-        <select id="u-weapon" onchange="calc()"></select>
-        <span id="info-weap" class="helper-text"></span>
-
-        <div style="display:flex; gap:10px; margin-top:5px;">
-            <div style="flex:1"><label>Peana</label><select id="u-base" onchange="calc()"></select></div>
-            <div style="flex:1"><label>Equipo</label><select id="u-gear" onchange="calc()"></select></div>
-        </div>
-
-        <div class="stats-matrix">
-            <div class="matrix-row-icon">🔫</div>
-            <div class="stat-box stat-ranged" id="box-rng-atk"><span class="stat-val" id="r-atk">-</span><span class="stat-lbl">ATK</span></div>
-            <div class="stat-box stat-ranged" id="box-rng-hit"><span class="stat-val" id="r-hit">-</span><span class="stat-lbl">HIT</span></div>
-            <div class="stat-box stat-ranged" id="box-rng-dmg"><span class="stat-val" id="r-dmg">-</span><span class="stat-lbl">DMG</span></div>
-
-            <div class="matrix-row-icon">⚔️</div>
-            <div class="stat-box stat-melee"><span class="stat-val" id="m-atk">-</span><span class="stat-lbl">ATK</span></div>
-            <div class="stat-box stat-melee"><span class="stat-val" id="m-hit">-</span><span class="stat-lbl">HIT</span></div>
-            <div class="stat-box stat-melee"><span class="stat-val" id="m-dmg">-</span><span class="stat-lbl">DMG</span></div>
-
-            <div class="matrix-row-icon">🛡️</div>
-            <div class="stat-box stat-def"><span class="stat-val" id="d-hp">-</span><span class="stat-lbl">VIDA</span></div>
-            <div class="stat-box stat-def"><span class="stat-val" id="d-sv">-</span><span class="stat-lbl">SAVE</span></div>
-            <div class="stat-box stat-cost"><span class="stat-val" id="d-cost">-</span><span class="stat-lbl">PTS</span></div>
-        </div>
-
-        <button class="btn-add" onclick="addUnit()">AÑADIR</button>
-    </div>
-
-    <div class="card">
-        <div class="card-header">COMANDO</div>
-        <div id="squad-list"></div>
-        <button onclick="toggleExport()" style="width:100%; margin-top:10px; background:#333; color:white; border:1px dashed #555; padding:8px;">⬇️ EXPORTAR / QR</button>
-        <div id="export-panel" class="export-area">
-            <textarea id="export-code" class="code-block" readonly></textarea>
-            <div id="qrcode" style="margin-top:10px; background:white; padding:10px; display:inline-block;"></div>
-        </div>
-    </div>
+<div id="ui-layer">
+    <button id="btnStart" disabled>Cargando OpenCV...</button>
+    <div id="debug-log">Estado inicial.</div>
 </div>
 
+<div id="container">
+    <video id="videoInput" playsinline webkit-playsinline autoplay muted></video>
+    <canvas id="canvasOutput"></canvas>
+</div>
+
+<script async src="https://docs.opencv.org/4.5.4/opencv.js" onload="onOpenCvReady()"></script>
+
 <script>
-    // --- DATABASE ACTUALIZADA (CON MELEE BASE) ---
-    const DB = {
-        species: {
-            // baseMelee: { A, HitMod (vs WS), D } -> Stats de "Puños"
-            human: { name: "Guardia", bs: 4, ws: 4, hp: 7, sv: 5, cost: 0, color: "#ffcc00", baseMelee: {A:3, D:2} },
-            astartes: { name: "Astartes", bs: 3, ws: 3, hp: 11, sv: 3, cost: 8, color: "#00f2ff", baseMelee: {A:4, D:3} }, // Puños fuertes
-            ork: { name: "Orko", bs: 5, ws: 3, hp: 10, sv: 5, cost: 3, color: "#00ff99", baseMelee: {A:4, D:3} },
-            eldar: { name: "Aeldari", bs: 3, ws: 4, hp: 8, sv: 4, cost: 4, color: "#bc13fe", baseMelee: {A:3, D:2} },
-            necron: { name: "Necrón", bs: 3, ws: 3, hp: 10, sv: 3, cost: 6, color: "#ccc", baseMelee: {A:3, D:3} },
-            tyranid: { name: "Tiránido", bs: 4, ws: 3, hp: 9, sv: 5, cost: 3, color: "#ff0055", baseMelee: {A:4, D:3} } // Garras naturales
-        },
-       roles: {
-            // --- Básicos (Coste 0-1) ---
-            trooper: { name: "Guerrero", cost: 0, modA: 0, modHit: 0, modHP: 0 },
-            scout:   { name: "Explorador", cost: 1, modA: -1, modHit: -1, modHP: -1 }, // Poca vida y daño, pero preciso
-        
-            // --- Infantería (Coste 2) ---
-            assault: { name: "Asalto", cost: 2, modA: 1, modHit: 0, modHP: 1 }, 
-            hunter:  { name: "Cazador", cost: 2, modA: 1, modHit: 0, modHP: -1 }, // Más ofensivo que el asalto, menos vida
-        
-            // --- Especialistas (Coste 3) ---
-            sniper:  { name: "Franco", cost: 3, modA: 0, modHit: -1, modHP: -1 },
-            medic:   { name: "Médico", cost: 3, modA: -1, modHit: 0, modHP: 2 }, // Aguanta bien, poco daño
-            guard:   { name: "Escudo", cost: 3, modA: -1, modHit: 0, modHP: 3 }, // Tanque barato, puro HP
-            berserk: { name: "Frenético", cost: 3, modA: 2, modHit: 1, modHP: 0 }, // Mucho daño, mala puntería
-        
-            // --- Élites (Coste 4-5) ---
-            heavy:   { name: "Artillero", cost: 4, modA: 0, modHit: 0, modHP: 2 },
-            assassin:{ name: "Asesino", cost: 4, modA: 2, modHit: -2, modHP: -2 }, // Muy letal y preciso, muere de un golpe
-            leader:  { name: "Líder", cost: 5, modA: 1, modHit: -1, modHP: 3 },
-            flamer:  { name: "Incendiario", cost: 5, modA: 2, modHit: 0, modHP: 1 }, // Daño alto y consistente
-        
-            // --- Pesados (Coste 6+) ---
-            tank:    { name: "Blindado", cost: 6, modA: 1, modHit: 1, modHP: 5 }, // Una muralla de vida
-            mech:    { name: "Mecha", cost: 8, modA: 3, modHit: 0, modHP: 4 }  // Unidad definitiva
-},
-      abilities: {
-            // --- Básicas ---
-            none:     { name: "-", cost: 0, modA: 0, modHit: 0, modHP: 0, modSV: 0 },
-        
-            // --- Ofensivas (Puntería y Daño) ---
-            scope:    { name: "Mira Láser",     cost: 3, modHit: -1 }, // Puntería simple
-            targeter: { name: "Visor Táctico",  cost: 5, modHit: -2 }, // Puntería de élite
-            ammo:     { name: "Munición AP",    cost: 4, modA: 2, modHit: 0 }, // Puro daño extra
-            rage:     { name: "Furia Ciega",    cost: 2, modA: 3, modHit: 1, modSV: 1 }, // Mucho daño, pero fallas más y te cubres menos
-        
-            // --- Defensivas (Vida y Evasión) ---
-            armor:    { name: "Placas",         cost: 2, modHP: 2 }, // Vida simple
-            shield:   { name: "Campo de Fuerza",cost: 5, modHP: 1, modSV: -2 }, // Poca vida, mucha evasión
-            reflex:   { name: "Reflejos",       cost: 3, modSV: -1 }, // Evasión simple (como Stealth pero más barato/distinto sabor)
-            regen:    { name: "Regeneración",   cost: 6, modHP: 5, modSV: 0 }, // Tanque de carne puro
-        
-            // --- Tácticas y Mixtas ---
-            stim:     { name: "Estimulantes",   cost: 2, modA: 1, modHP: -1, modSV: 0 }, // Daño a cambio de vida (Droga de combate)
-            exo:      { name: "Exoesqueleto",   cost: 7, modA: 1, modHP: 3, modSV: -1 }, // Un poco de todo, muy caro
-            scanner:  { name: "Escáner",        cost: 3, modHit: -1, modSV: 0 }, // Menos costoso que Voz de Mando, individual
-            jetpack:  { name: "Propulsores",    cost: 4, modSV: -1, modHit: 0, modHP: 0 }, // Movilidad (interpretado como evasión)
-        
-            // --- Las tuyas originales (para referencia) ---
-            voice:    { name: "Voz de Mando",   cost: 5, modHit: -1 },
-            frenzy:   { name: "Frenesí",        cost: 3, modA: 2, modSV: 1 },
-            stealth:  { name: "Sigilo",         cost: 4, modSV: -1 },
-            bionics:  { name: "Biónica",        cost: 3, modHP: 4 }
-},
-       armas: {
-    // --- RANGED (Disparo) ---
-    // Básicas y Ligeras
-    pistol:     { name: "Pistola",      cost: 0, A: 3, D: 3, type: "Ranged" }, // Opción "gratis" más débil
-    autogun:    { name: "Rifle Automático",   cost: 1, A: 5, D: 3, type: "Ranged" }, // Mejora barata del Lasgun (más disparos)
-    shotgun:    { name: "Escopeta",     cost: 2, A: 3, D: 5, type: "Ranged" }, // Pocos tiros, alto daño corto alcance
-    
-    // Especiales
-    flamer:     { name: "Lanzallamas",  cost: 3, A: 8, D: 2, type: "Ranged" }, // Muchos impactos (A), daño bajo (D). Mata-hordas
-    grenade_l:  { name: "Lanzagranad.", cost: 3, A: 2, D: 5, type: "Ranged" }, // Daño explosivo medio
-    
-    // Pesadas / Anti-Tanque
-    rocket:     { name: "Lanzamisiles", cost: 5, A: 1, D: 9, type: "Ranged" }, // Un solo tiro (A1), daño masivo (D9)
-    melta:      { name: "Fusil Fusión", cost: 4, A: 2, D: 7, type: "Ranged" }, // Anti-blindaje rango corto
-    railgun:    { name: "Cañón Riel",   cost: 6, A: 2, D: 8, type: "Ranged" }, // Francotirador pesado anti-vehículos
-
-    // Tus originales (para referencia/copiar todo junto)
-    lasgun:     { name: "Rifle Láser",  cost: 0, A: 4, D: 3, type: "Ranged" },
-    bolter:     { name: "Bólter",       cost: 2, A: 4, D: 4, type: "Ranged" },
-    plasma:     { name: "Plasma",       cost: 4, A: 4, D: 6, type: "Ranged" },
-    minigun:    { name: "Cañón Rotatorio",   cost: 5, A: 6, D: 4, type: "Ranged" },
-    sniper:     { name: "Rifle Precisión",  cost: 3, A: 3, D: 5, type: "Ranged" },
-
-    // --- MELEE (Cuerpo a cuerpo) ---
-    // Básicas
-    staff:      { name: "Bastón",       cost: 0, A: 3, D: 4, type: "Melee" }, // Alternativa defensiva gratis
-    spear:      { name: "Lanza",        cost: 1, A: 4, D: 4, type: "Melee" }, // Mejora barata de daño
-    axe:        { name: "Hacha",        cost: 2, A: 3, D: 5, type: "Melee" }, // Pega duro pero es lenta (menos A)
-    
-    // Avanzadas
-    hammer:     { name: "Martillo",  cost: 5, A: 2, D: 8, type: "Melee" }, // Difícil de acertar, daño brutal
-    fist:       { name: "Puño de Combate", cost: 4, A: 3, D: 7, type: "Melee" }, // Versión equilibrada del martillo
-    dualblade:  { name: "Dagas Dobles", cost: 3, A: 7, D: 2, type: "Melee" }, // Lluvia de ataques, poco daño individual
-    whip:       { name: "Látigo",    cost: 3, A: 5, D: 3, type: "Melee" }, // Rango medio, daño bajo
-
-    // Tus originales
-    knife:      { name: "Cuchillo C.",  cost: 0, A: 4, D: 3, type: "Melee" },
-    chainsword: { name: "Espada Sierra",cost: 2, A: 5, D: 4, type: "Melee" },
-    powerw:     { name: "Arma Energía", cost: 4, A: 4, D: 6, type: "Melee" },
-    claws:      { name: "Garras",       cost: 3, A: 6, D: 4, type: "Melee" }
-},
-        peanas: {
-            25: { name: "25mm", hpMod: 0, svMod: 0, dmgMod: 0, cost: 0 },
-            32: { name: "32mm", hpMod: 3, svMod: 0, dmgMod: 0, cost: 2 },
-            40: { name: "40mm", hpMod: 6, svMod: -1, dmgMod: 1, cost: 5 }
-        },
-      
-        gear: {
-            // --- Básicos ---
-            none:    { name: "-", cost: 0, type: "passive", uses: 0, val: 0 },
-            
-           // --- SUPERVIVENCIA (Curación y Defensa) ---
-    medkit:  { 
-        name: "Botiquín", cost: 3, 
-        type: "heal", uses: 1, target: "ally", val: 4, // Cura 4 HP a un aliado
-        desc: "Restaura vida a una unidad a 3 pulgadas."
-    },
-    shield:  { 
-        name: "Escudo Energía", cost: 4, modSV: -1, // Modificador estático
-        type: "passive", uses: 0, target: "self", val: 0,
-        desc: "Otorga Salvación Invulnerable de 4+."
-    },
-    armor:   { 
-        name: "Placas Extra", cost: 3, modHP: 1, // Modificador estático
-        type: "passive", uses: 0, target: "self", val: 0,
-        desc: "+1 Herida permanente."
-    },
-
-    // --- OFENSIVOS (Ataques y Daño) ---
-    granada: { 
-        name: "Granada Frag", cost: 2, 
-        type: "attack", uses: 1, target: "area", val: 5, // 5 de Daño
-        desc: "Ataque indirecto de área, Daño 5."
-    },
-    ammo:    { 
-        name: "Munición AP", cost: 2, modA: 0, // No cambia stats base visibles
-        type: "buff", uses: 1, target: "self", val: 1, // Reroll o +1 Daño un turno
-        desc: "Un uso: +1 Daño a todos los disparos de esta fase."
-    },
-    scope:   { 
-        name: "Mira Táctica", cost: 2, modHit: -1, // Modificador estático
-        type: "passive", uses: 0, target: "self", val: 0,
-        desc: "+1 a Impactar en disparos."
-    },
-
-    // --- UTILIDAD Y TÁCTICA ---
-    stim:    { 
-        name: "Estimulante", cost: 1, modA: 1, modHP: -1, // Stat base modificado (berserker)
-        type: "buff", uses: 1, target: "self", val: 2, // +2 Movimiento al activar
-        desc: "+2 Movimiento este turno, sufres 1 herida al final."
-    },
-    scanner: { 
-        name: "Escáner", cost: 3, 
-        type: "utility", uses: 2, target: "enemy", val: 0, 
-        desc: "Ignora cobertura del objetivo seleccionado."
-    },
-    smoke:   { 
-        name: "Granada Humo", cost: 2, 
-        type: "utility", uses: 1, target: "area", val: -1, // -1 a impactar enemigo
-        desc: "Crea área de cobertura ligera."
-    },
-    jetpack: { 
-        name: "Propulsores", cost: 5, 
-        type: "active", uses: 0, target: "self", val: 12, // Mueve 12 pulgadas
-        desc: "Permite movimiento vertical y 'Vuelo'."
+    // --- UTILIDADES DE LOG ---
+    const debugDiv = document.getElementById('debug-log');
+    function log(msg) {
+        console.log(msg);
+        debugDiv.innerHTML = `> ${msg}<br>` + debugDiv.innerHTML;
     }
-        },
-    };
 
-    let state = { squad: {}, pts: 0 };
-    const DEFAULT_TAGS = ["Humano", "Astartes", "Orko", "Líder", "Plasma", "Sierra"];
+    // --- VARIABLES GLOBALES ---
+    let video = document.getElementById('videoInput');
+    let canvas = document.getElementById('canvasOutput');
+    let btnStart = document.getElementById('btnStart');
+    let stream = null;
+    let streaming = false;
+    
+    // Variables de OpenCV (se inicializarán más tarde)
+    let cap, src, gray, dictionary, markerIds, markerCorners, params;
 
-    window.onload = function() {
-        fillSel('u-id', Array.from({length:16},(_,i)=>({k:i+1,v:"#"+(i+1)})));
-        fillSelObj('u-species', DB.species);
-        fillSelObj('u-role', DB.roles);
-        fillSelObj('u-ability', DB.abilities); 
-        fillSelObj('u-weapon', DB.armas);
-        fillSelObj('u-base', DB.peanas);
-        fillSelObj('u-gear', DB.gear);
-        renderTags(DEFAULT_TAGS);
-        document.getElementById('ai-desc').addEventListener('input', handleAI);
-        load(); calc();
-    };
+    // 1. Se ejecuta cuando OpenCV descarga por completo
+    function onOpenCvReady() {
+        log("OpenCV.js cargado. Pulsa Iniciar.");
+        btnStart.innerText = "INICIAR CÁMARA (ArUco Original)";
+        btnStart.disabled = false;
+        btnStart.onclick = startCameraFlow;
+    }
 
-    // --- CÁLCULO DUAL ---
-    function calc() {
-        const S = DB.species[document.getElementById('u-species').value];
-        const R = DB.roles[document.getElementById('u-role').value];
-        const AB = DB.abilities[document.getElementById('u-ability').value];
-        const W = DB.armas[document.getElementById('u-weapon').value];
-        const B = DB.peanas[document.getElementById('u-base').value];
-        //const G = DB.gear[document.getElementById('u-gear').value];
+    // 2. Flujo de inicio de cámara
+    async function startCameraFlow() {
+        btnStart.style.display = 'none'; // Ocultar botón
+        log("Solicitando permisos de cámara...");
 
-        // 1. PERFIL RANGO (Solo si el arma es Ranged)
-        let r_atk="-", r_hit="-", r_dmg="-";
-        let hasGun = (W.type === 'Ranged');
-        let G = DB.gear[document.getElementById('u-gear').value];
-        
-        if (hasGun) {
-            let gearHit = (document.getElementById('u-gear').value === 'scope') ? -1 : 0;
-            let hitVal = S.bs + R.modHit + (AB.modHit||0) + (G.modHit||0);
-            if(hitVal<2) hitVal=2; if(hitVal>6) hitVal=6;
+        try {
+            // Pedir cámara trasera. Si falla, pedirá cualquiera.
+            const constraints = { 
+                video: { facingMode: { ideal: 'environment' } }, 
+                audio: false 
+            };
             
-            r_atk = W.A + R.modA; // El rol puede dar mas disparos? Asumamos que rol Assault da melee, Heavy no esta definido modA. Lo simplificamos: modA afecta a todo? Generalmente si.
-            r_hit = hitVal + "+";
-            r_dmg = W.D + B.dmgMod; 
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = stream;
             
-            document.getElementById('box-rng-atk').classList.remove('disabled-stat');
-            document.getElementById('box-rng-hit').classList.remove('disabled-stat');
-            document.getElementById('box-rng-dmg').classList.remove('disabled-stat');
+            // Forzar reproducción explícita (necesario en algunos móviles)
+            await video.play();
+            log("Cámara activa. Esperando flujo de datos...");
+            
+            // INICIO DEL POLLING: Comprobar activamente si el video ya tiene dimensiones
+            checkForVideoData();
+
+        } catch (err) {
+            log("ERROR CRÍTICO: " + err.name + " - " + err.message);
+            log("Asegúrate de usar HTTPS.");
+            btnStart.style.display = 'block'; btnStart.innerText = "Reintentar";
+        }
+    }
+
+    // 3. Bucle de espera activa (Polling)
+    function checkForVideoData() {
+        if (video.videoWidth > 0 && video.videoHeight > 0) {
+            // ¡Tenemos video!
+            log(`Dimensiones recibidas: ${video.videoWidth}x${video.videoHeight}`);
+            // Ajustar canvas al tamaño real del video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Iniciar el procesamiento de OpenCV
+            initOpenCVObjects();
         } else {
-            document.getElementById('box-rng-atk').classList.add('disabled-stat');
-            document.getElementById('box-rng-hit').classList.add('disabled-stat');
-            document.getElementById('box-rng-dmg').classList.add('disabled-stat');
+            log("Esperando dimensiones del video...");
+            // Si aún es 0x0, volver a intentar en el siguiente frame
+            requestAnimationFrame(checkForVideoData);
         }
-
-        // 2. PERFIL MELEE (Siempre activo)
-        // Si el arma comprada es Melee, usa sus stats.
-        // Si no (es Ranged), usa stats base de especie.
-        let baseM = S.baseMelee;
-        let isMeleeWeapon = (W.type === 'Melee');
-        
-        let m_base_A = isMeleeWeapon ? W.A : baseM.A;
-        let m_base_D = isMeleeWeapon ? W.D : baseM.D;
-        
-        // Modificadores Globales (Rol, Habilidad, Peana)
-        let final_m_A = m_base_A + R.modA + (AB.modA||0) + (G.modA||0);
-        let final_m_D = m_base_D + B.dmgMod + (AB.modDmg||0);
-        if(document.getElementById('u-species').value === 'ork') final_m_D += 1; // Orko bonus
-
-        // Hit Melee
-        let hitM = S.ws + R.modHit + (AB.modHit||0); // Asumimos modHit afecta WS también
-        if(hitM<2) hitM=2; if(hitM>6) hitM=6;
-
-        // 3. DEFENSA
-        let hp = S.hp + R.modHP + B.hpMod + (AB.modHP||0) + (G.modHP||0);
-        let sv = S.sv + B.svMod + (AB.modSV||0) + (G.modSV||0);
-        if(document.getElementById('u-gear').value === 'shield') sv -= 1;
-        if(sv<2) sv=2; if(sv>6) sv=6;
-
-        // 4. COSTO
-        let cost = S.cost + R.cost + AB.cost + W.cost + B.cost + G.cost;
-
-        // RENDER
-        document.getElementById('r-atk').innerText = r_atk;
-        document.getElementById('r-hit').innerText = r_hit;
-        document.getElementById('r-dmg').innerText = r_dmg;
-
-        document.getElementById('m-atk').innerText = final_m_A;
-        document.getElementById('m-hit').innerText = hitM + "+";
-        document.getElementById('m-dmg').innerText = final_m_D;
-
-        document.getElementById('d-hp').innerText = hp;
-        document.getElementById('d-sv').innerText = sv + "+";
-        document.getElementById('d-cost').innerText = cost;
-
-        // INFO TEXT
-        let weapDesc = hasGun ? `Disparo (${W.name})` : `Combate (${W.name})`;
-        if(hasGun) weapDesc += ` + CQC Básico`;
-        document.getElementById('info-weap').innerText = weapDesc;
     }
 
-    // --- LISTA & DATA ---
-    function addUnit() {
-        // 1. Validar coste
-        const cost = parseInt(document.getElementById('d-cost').innerText);
-        if(state.pts + cost > 100) return alert("¡Límite excedido!");
+    // 4. Inicializar objetos de OpenCV (Solo una vez)
+    function initOpenCVObjects() {
+        streaming = true;
+        log("Inicializando ArUco (Diccionario ORIGINAL)...");
 
-        // 2. Obtener datos del Equipo seleccionado
-        const gearKey = document.getElementById('u-gear').value;
-        const gearData = DB.gear[gearKey];
+        // Capturador de video
+        cap = new cv.VideoCapture(video);
+        // Matrices para almacenar imágenes
+        src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
+        gray = new cv.Mat();
+        
+        // CONFIGURACIÓN ARUCO: SOLO ORIGINAL
+        dictionary = new cv.aruco_Dictionary(cv.DICT_ARUCO_ORIGINAL);
+        params = new cv.aruco_DetectorParameters();
+        
+        // Variables para resultados
+        markerIds = new cv.Mat();
+        markerCorners = new cv.MatVector();
 
-        // 3. Construir el objeto Unidad
-        const u = {
-            id: document.getElementById('u-id').value,
-            name: document.getElementById('u-name').value,
-            spec: document.getElementById('u-species').value,
-            role: document.getElementById('u-role').value,
-            ability: document.getElementById('u-ability').value,
-            weap: document.getElementById('u-weapon').value,
+        log("Todo listo. Procesando frames.");
+        requestAnimationFrame(processVideoLoop);
+    }
+
+    // 5. Bucle principal de procesamiento (se ejecuta en cada frame)
+    function processVideoLoop() {
+        if (!streaming) return;
+
+        try {
+            // Leer frame del video al Mat 'src'
+            cap.read(src);
             
-            // --- NUEVO: GUARDAMOS EL EQUIPO Y SUS DATOS DE JUEGO ---
-            gear: gearKey, 
-            gameplay: {
-                type: gearData.type || "passive", // Si no tiene tipo, es pasivo
-                uses: gearData.uses || 0,         // Para descontar en el futuro
-                val: gearData.val || 0,           // Valor de curación/daño
-                target: gearData.target || "self" // A quién afecta
-            },
-            // -------------------------------------------------------
+            // Convertir a escala de grises (necesario para detección)
+            cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-            stats: { 
-                r_atk: document.getElementById('r-atk').innerText, 
-                r_hit: document.getElementById('r-hit').innerText, 
-                r_dmg: document.getElementById('r-dmg').innerText,
-                m_atk: document.getElementById('m-atk').innerText, 
-                m_hit: document.getElementById('m-hit').innerText, 
-                m_dmg: document.getElementById('m-dmg').innerText,
-                hp: document.getElementById('d-hp').innerText, 
-                sv: document.getElementById('d-sv').innerText 
-            },
-            cost: cost
-        };
+            // DETECTAR MARCADORES
+            cv.detectMarkers(gray, dictionary, markerCorners, markerIds, params);
 
-        // 4. Guardar y renderizar
-        state.squad[u.id] = u; 
-        save();
-    }
+            // Si se detecta algo, dibujar los resultados en 'src'
+            if (markerIds.rows > 0) {
+                // Color verde (RGBA: 0, 255, 0, 255)
+                cv.drawDetectedMarkers(src, markerCorners, markerIds, new cv.Scalar(0, 255, 0, 255));
+            }
 
-    function removeUnit(id) { delete state.squad[id]; save(); }
-    function save(){ localStorage.setItem('sq_dual', JSON.stringify(state)); renderList(); }
-    function load(){ const d=localStorage.getItem('sq_dual'); if(d){ state=JSON.parse(d); renderList(); } }
+            // Mostrar la imagen procesada ('src') en el canvas visible
+            cv.imshow('canvasOutput', src);
 
-    function renderList() {
-        const l = document.getElementById('squad-list'); l.innerHTML = ""; let t=0;
-        Object.values(state.squad).sort((a,b)=>a.id-b.id).forEach(u => {
-            t+=u.cost;
-            let rngStr = (u.stats.r_atk !== '-') ? `🔫 ${u.stats.r_atk}A / ${u.stats.r_dmg}D` : '';
-             let gearStr = "";
-                if (u.gear && u.gear !== 'none') {
-                    // Busca el nombre bonito en la DB
-                    let gearName = DB.gear[u.gear].name;
-                    // Si tiene usos (ej: granada), muéstralos entre paréntesis
-                    let usesStr = (u.gameplay.uses > 0) ? `(x${u.gameplay.uses})` : '';
-                    gearStr = `📦 ${gearName} ${usesStr}`;
-                }
-               l.innerHTML += `
-                    <div class="unit-item" style="border-left-color:${DB.species[u.spec].color}">
-                        <div>
-                            <strong style="color:white">#${u.id} ${u.name}</strong> 
-                            <small style="color:#aaa">(${DB.species[u.spec].name} ${DB.roles[u.role].name})</small><br>
-                            <div style="margin-top:2px; font-size:0.8rem; color:var(--neon-cyan)">
-                                ${rngStr} ⚔️ ${u.stats.m_atk}A / ${u.stats.m_dmg}D <br>
-                                <span style="color:var(--neon-green)">${gearStr}</span> </div>
-                        </div>
-                        <div style="text-align:right">
-                            <span style="color:var(--neon-gold); font-weight:bold">${u.cost} pts</span>
-                            <button class="btn-del" onclick="removeUnit('${u.id}')">X</button>
-                        </div>
-                    </div>`;
-        });
-        state.pts=t; document.getElementById('pts-current').innerText = t;
-        document.getElementById('budget-fill').style.width = Math.min(t,100)+"%";
-        if(document.getElementById('export-panel').style.display==='block') toggleExport();
-    }
-
-    // --- UTILS (Selects, AI, Export) ---
-    function fillSel(id,arr){const s=document.getElementById(id); arr.forEach(x=>{let o=document.createElement('option');o.value=x.k;o.innerText=x.v;s.appendChild(o)});}
-    function fillSelObj(id,obj){const s=document.getElementById(id); for(let k in obj){let o=document.createElement('option');o.value=k;o.innerText=obj[k].name;s.appendChild(o)}}
-    
-    // AI Parser Simplificado
-    function handleAI(e){
-        const val = e.target.value.toLowerCase();
-        let tags = [];
-        if(val.includes("ork")) tags.push("Orko", "Frenesí", "Sierra");
-        if(val.includes("marine")) tags.push("Astartes", "Bólter", "Líder");
-        if(val.includes("lider")) tags.push("Voz Mando", "Arma Energía");
-        if(tags.length === 0) tags = DEFAULT_TAGS;
-        renderTags([...new Set(tags)]);
-    }
-    function renderTags(tags){
-        const c = document.getElementById('smart-tags'); c.innerHTML="";
-        tags.forEach(t=>{ let s=document.createElement('span'); s.className='tag'; s.innerText=t; s.onclick=()=>{let a=document.getElementById('ai-desc'); a.value+=" "+t; handleAI({target:a})}; c.appendChild(s); });
-    }
-    function analizarDescripcion(){
-        let t = document.getElementById('ai-desc').value.toLowerCase();
-        const set = (id,v)=>{ let el=document.getElementById(id); if(el.querySelector(`option[value="${v}"]`)) el.value=v; };
-        
-        if(t.includes('marine')) set('u-species','astartes');
-        else if(t.includes('ork')) set('u-species','ork');
-        else if(t.includes('elfo')) set('u-species','eldar');
-        else if(t.includes('necron')) set('u-species','necron');
-        
-        if(t.includes('lider')) set('u-role','leader');
-        else if(t.includes('franco')) set('u-role','sniper');
-        
-        if(t.includes('espada')||t.includes('sierra')) set('u-weapon','chainsword');
-        else if(t.includes('plasma')) set('u-weapon','plasma');
-        else if(t.includes('bolter')) set('u-weapon','bolter');
-        else if(t.includes('energia')) set('u-weapon','powerw');
-        
-        calc();
-    }
-
-    function toggleExport(){
-        let p = document.getElementById('export-panel');
-        p.style.display = (p.style.display==='block')?'none':'block';
-        if(p.style.display==='block'){
-            document.getElementById('export-code').value = JSON.stringify(state);
-            document.getElementById('qrcode').innerHTML="";
-            new QRCode(document.getElementById('qrcode'), {text:JSON.stringify(state), width:100, height:100});
+        } catch (err) {
+            console.error("Error en loop:", err);
+            // No detenemos el bucle, solo logueamos el error
         }
+
+        // Solicitar el siguiente frame
+        requestAnimationFrame(processVideoLoop);
     }
 </script>
 </body>
-
 </html>
-
-
-
-
-
-
-
