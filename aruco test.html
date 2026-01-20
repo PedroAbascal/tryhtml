@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ArUco Medición</title>
+    <title>ArUco Círculos 25mm</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; font-family: sans-serif; overflow: hidden; }
         
@@ -19,7 +19,7 @@
             object-fit: contain; z-index: 10;
         }
 
-        /* PANEL DE CONTROL SUPERIOR */
+        /* BARRA SUPERIOR */
         #top-bar {
             background: rgba(0,0,0,0.8); color: white;
             padding: 10px; z-index: 20; border-bottom: 1px solid #444;
@@ -27,11 +27,10 @@
         }
         .row { display: flex; justify-content: space-between; align-items: center; }
         
-        /* Estilos del Slider */
         input[type=range] { flex: 1; margin: 0 10px; }
-        .label-val { font-family: monospace; color: #0f0; min-width: 50px; text-align: right; }
+        .label-val { font-family: monospace; color: #0f0; min-width: 60px; text-align: right; }
 
-        /* Botones inferiores */
+        /* BOTONES INFERIORES */
         #controls {
             height: 80px; background: #111;
             display: flex; gap: 5px; padding: 5px; z-index: 20;
@@ -40,15 +39,16 @@
             flex: 1; padding: 10px; font-size: 14px; font-weight: bold;
             color: white; border: none; border-radius: 4px; cursor: pointer;
         }
-        #btnMode { background: #007bff; } /* Azul */
-        #btnClear { background: #dc3545; } /* Rojo */
+        #btnMode { background: #007bff; } 
+        #btnClear { background: #dc3545; }
         
-        /* Indicador de resultado flotante */
+        /* POPUP DE RESULTADO */
         #measure-result {
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7); color: #FFD700;
-            padding: 5px 10px; border-radius: 5px; font-size: 18px; 
-            font-weight: bold; z-index: 15; display: none; border: 1px solid #FFD700;
+            background: rgba(0, 0, 0, 0.8); color: #FFD700;
+            padding: 8px 15px; border-radius: 20px; font-size: 18px; 
+            font-weight: bold; z-index: 15; display: none; border: 2px solid #FFD700;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
         }
     </style>
 </head>
@@ -57,13 +57,13 @@
 <div id="container">
     <div id="top-bar">
         <div class="row">
-            <span>Tamaño Marcador:</span>
+            <span>Tamaño REAL Marcador:</span>
             <span id="lblSize" class="label-val">25mm</span>
         </div>
         <div class="row">
             <span>1mm</span>
-            <input type="range" id="slideSize" min="1" max="50" step="1" value="25">
-            <span>50mm</span>
+            <input type="range" id="slideSize" min="10" max="100" step="1" value="25">
+            <span>100mm</span>
         </div>
     </div>
 
@@ -74,8 +74,8 @@
     </div>
 
     <div id="controls">
-        <button id="btnMode" disabled>Cargando OpenCV...</button>
-        <button id="btnClear">Limpiar / Reset</button>
+        <button id="btnMode" disabled>Cargando Motor...</button>
+        <button id="btnClear">Limpiar</button>
     </div>
 </div>
 
@@ -90,55 +90,47 @@
     let lblSize = document.getElementById('lblSize');
     let resultBox = document.getElementById('measure-result');
     
-    // Variables de Estado
     let stream = null;
     let streaming = false;
-    let isMeasureMode = false; // False = Selección Múltiple, True = Medir 2 Puntos
-    let realMarkerSizeMM = 25; // Default 1 pulgada aprox
+    let isMeasureMode = false; 
+    let realMarkerSizeMM = 25; // Tamaño físico del marcador (Definido por usuario)
+    const TARGET_CIRCLE_MM = 25; // Tamaño fijo del dibujo deseado
     
     // OpenCV objects
     let cap, src, rgb, gray, detector, markerIds, markerCorners;
-    
-    // Selección
-    let selectedIds = new Set(); // Guardará los IDs seleccionados
+    let selectedIds = new Set(); 
 
     function onCvLoaded() {
         btnMode.innerText = "Modo: SELECCIÓN";
         btnMode.disabled = false;
-
-        // INICIAR CÁMARA AUTOMÁTICAMENTE
         startCamera();
         
-        // Listener Slider
         slideSize.oninput = (e) => {
             realMarkerSizeMM = parseInt(e.target.value);
             lblSize.innerText = realMarkerSizeMM + "mm";
         };
 
-        // Listener Botón Modo
         btnMode.onclick = () => {
             isMeasureMode = !isMeasureMode;
-            selectedIds.clear(); // Limpiar al cambiar de modo
+            selectedIds.clear(); 
             resultBox.style.display = 'none';
             
             if (isMeasureMode) {
                 btnMode.innerText = "Modo: REGLA (2 Puntos)";
-                btnMode.style.background = "#FFD700"; // Dorado
+                btnMode.style.background = "#FFD700"; 
                 btnMode.style.color = "#000";
             } else {
                 btnMode.innerText = "Modo: SELECCIÓN";
-                btnMode.style.background = "#007bff"; // Azul
+                btnMode.style.background = "#007bff"; 
                 btnMode.style.color = "#FFF";
             }
         };
 
-        // Listener Limpiar
         btnClear.onclick = () => {
             selectedIds.clear();
             resultBox.style.display = 'none';
         };
 
-        // Eventos Touch/Click
         ['mousedown', 'touchstart'].forEach(evt => 
             canvas.addEventListener(evt, handleInput, {passive: false})
         );
@@ -158,7 +150,6 @@
 
         let clickedId = -1;
 
-        // Buscar qué marcador se tocó
         for (let i = 0; i < markerIds.rows; i++) {
             let id = markerIds.data32S[i];
             let corners = markerCorners.get(i);
@@ -170,18 +161,13 @@
 
         if (clickedId !== -1) {
             if (isMeasureMode) {
-                // LÓGICA MODO REGLA (Solo permite 2)
                 if (selectedIds.has(clickedId)) {
-                    selectedIds.delete(clickedId); // Deseleccionar
+                    selectedIds.delete(clickedId);
                 } else {
-                    if (selectedIds.size >= 2) {
-                        // Si ya hay 2, borramos todo y seleccionamos el nuevo
-                        selectedIds.clear();
-                    }
+                    if (selectedIds.size >= 2) selectedIds.clear();
                     selectedIds.add(clickedId);
                 }
             } else {
-                // LÓGICA MODO SELECCIÓN (Infinitos)
                 if (selectedIds.has(clickedId)) selectedIds.delete(clickedId);
                 else selectedIds.add(clickedId);
             }
@@ -191,15 +177,13 @@
     async function startCamera() {
         try {
             stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: 'environment' }, 
-                audio: false 
+                video: { facingMode: 'environment' }, audio: false 
             });
             video.srcObject = stream;
             await video.play();
             checkVideoReady();
         } catch (err) {
             console.error(err);
-            alert("Error: " + err.message);
         }
     }
 
@@ -244,67 +228,68 @@
 
             detector.detectMarkers(gray, markerCorners, markerIds);
             
-            // Dibujar base verde
+            // Dibujar contornos verdes sutiles siempre para guiar
             if (markerIds.rows > 0) cv.drawDetectedMarkers(rgb, markerCorners, markerIds, new cv.Scalar(0, 255, 0));
 
-            // Arrays para guardar datos de los marcadores seleccionados para calcular distancia luego
             let selectedCenters = [];
-            let selectedPerimeters = [];
+            let pxPerMM_Factor = 0; // Para guardar la escala promedio
 
-            // Bucle de dibujado y recolección de datos
             for (let i = 0; i < markerIds.rows; i++) {
                 let id = markerIds.data32S[i];
 
                 if (selectedIds.has(id)) {
-                    let c = markerCorners.get(i); // Corners Mat
-                    let arr = c.data32F; // [x1,y1, x2,y2, ...]
+                    let c = markerCorners.get(i);
+                    let arr = c.data32F;
                     
-                    // 1. Dibujar Resaltado (Azul o Dorado según modo)
-                    let color = isMeasureMode ? new cv.Scalar(0, 215, 255) : new cv.Scalar(255, 0, 0); // Dorado vs Azul
-                    let polyPoints = cv.matFromArray(4, 1, cv.CV_32SC2, [
-                        arr[0], arr[1], arr[2], arr[3], arr[4], arr[5], arr[6], arr[7]
-                    ]);
-                    cv.fillConvexPoly(rgb, polyPoints, color);
-                    polyPoints.delete();
-
-                    // 2. Calcular Centro
+                    // 1. Calcular Centro
                     let centerX = (arr[0]+arr[2]+arr[4]+arr[6])/4;
                     let centerY = (arr[1]+arr[3]+arr[5]+arr[7])/4;
-                    selectedCenters.push({x: centerX, y: centerY});
+                    let centerPoint = new cv.Point(centerX, centerY);
 
-                    // 3. Calcular Perímetro (para estimar escala)
-                    // cv.arcLength(curve, closed)
-                    let perim = cv.arcLength(c, true);
-                    selectedPerimeters.push(perim);
+                    // 2. Calcular Escala (Píxeles vs Realidad)
+                    let perimeterPx = cv.arcLength(c, true);
+                    let sidePx = perimeterPx / 4; 
+                    
+                    // Ratio: Cuántos píxeles es 1 mm en la realidad actual
+                    let pxPerMM = sidePx / realMarkerSizeMM;
+                    
+                    // Guardamos para el cálculo de distancia luego
+                    pxPerMM_Factor = pxPerMM; 
+
+                    // 3. Calcular radio visual para 25mm
+                    // Si quiero representar 25mm, multiplico 25 por mi factor de px/mm
+                    // Dividimos por 2 porque drawCircle pide radio, no diámetro.
+                    let radiusPx = (TARGET_CIRCLE_MM / 2) * pxPerMM;
+
+                    // 4. Dibujar Círculo Sólido
+                    let color = isMeasureMode ? new cv.Scalar(0, 215, 255) : new cv.Scalar(255, 0, 0); // Amarillo o Azul
+                    
+                    // -1 indica relleno
+                    cv.circle(rgb, centerPoint, Math.round(radiusPx), color, -1);
+                    
+                    // Escribir ID (centrado)
+                    cv.putText(rgb, ""+id, new cv.Point(centerX - 10, centerY + 5), 
+                        cv.FONT_HERSHEY_SIMPLEX, 0.6, new cv.Scalar(255,255,255), 2);
+
+                    selectedCenters.push({x: centerX, y: centerY});
                 }
             }
 
-            // --- LÓGICA DE MEDICIÓN ---
+            // --- MEDICIÓN DE DISTANCIA ---
             if (isMeasureMode && selectedCenters.length === 2) {
                 let p1 = selectedCenters[0];
                 let p2 = selectedCenters[1];
 
-                // 1. Distancia en PIXELES
                 let distPx = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-
-                // 2. Calcular factor de escala (Píxeles por MM)
-                // Usamos el promedio del tamaño aparente de ambos marcadores para reducir error de perspectiva
-                let avgPerim = (selectedPerimeters[0] + selectedPerimeters[1]) / 2;
-                let avgSidePx = avgPerim / 4; // Lado promedio en píxeles
                 
-                // Regla de tres: avgSidePx equivale a realMarkerSizeMM
-                let pixelsPerMM = avgSidePx / realMarkerSizeMM;
+                // Usamos el último factor calculado (asumimos que la cámara está paralela y el factor es similar)
+                // Ojo: Si los marcadores están a distancias muy distintas, esto tiene margen de error.
+                let distMM = distPx / pxPerMM_Factor;
 
-                // 3. Distancia REAL
-                let distMM = distPx / pixelsPerMM;
-
-                // 4. Dibujar línea y texto
                 cv.line(rgb, new cv.Point(p1.x, p1.y), new cv.Point(p2.x, p2.y), new cv.Scalar(0, 0, 255), 3);
                 
-                // Actualizar interfaz HTML
                 resultBox.style.display = 'block';
-                resultBox.innerText = `Distancia: ${distMM.toFixed(1)} mm`;
-
+                resultBox.innerText = `${distMM.toFixed(1)} mm`;
             } else {
                 resultBox.style.display = 'none';
             }
@@ -318,4 +303,4 @@
     }
 </script>
 </body>
-</html>z
+</html>
