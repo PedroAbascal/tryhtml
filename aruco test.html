@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ArUco 4.5.0 Stable</title>
+    <title>ArUco Robust 4.8</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; font-family: monospace; overflow: hidden; }
         
         #container { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
         #view-area { position: relative; flex: 1; overflow: hidden; background: #222; }
 
-        /* Video y Canvas superpuestos */
         video { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             object-fit: cover; opacity: 0.01; pointer-events: none;
@@ -20,16 +19,15 @@
             object-fit: contain; z-index: 10;
         }
 
-        /* Controles */
         #controls {
-            height: 120px; background: #111; color: #0f0;
+            height: 140px; background: #111; color: #0f0;
             display: flex; flex-direction: column;
             padding: 5px; box-sizing: border-box; z-index: 20; border-top: 1px solid #444;
         }
         button {
             padding: 10px; font-size: 16px; font-weight: bold;
             background: #007bff; color: white; border: none; 
-            border-radius: 4px; margin-bottom: 5px; cursor: pointer;
+            border-radius: 4px; margin-bottom: 5px;
         }
         textarea#log {
             flex: 1; background: #000; color: #0f0; 
@@ -46,12 +44,12 @@
         <canvas id="canvasOutput"></canvas>
     </div>
     <div id="controls">
-        <button id="btnStart" disabled>Cargando OpenCV 4.5.0...</button>
-        <textarea id="log" readonly>Iniciando carga...</textarea>
+        <button id="btnStart" disabled>Cargando Motor...</button>
+        <textarea id="log" readonly>Inicializando sistema...</textarea>
     </div>
 </div>
 
-<script async src="https://docs.opencv.org/4.5.0/opencv.js" onload="onCvLoaded()"></script>
+<script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onCvLoaded()"></script>
 
 <script>
     const logArea = document.getElementById('log');
@@ -69,24 +67,24 @@
     let streaming = false;
     
     // Objetos OpenCV
-    let cap, src, gray, dictionary, params, markerIds, markerCorners;
+    let cap = null;
+    let src = null;
+    let gray = null;
+    let detector = null;
+    let markerIds = null;
+    let markerCorners = null;
+    let rejected = null;
 
     function onCvLoaded() {
-        log("OpenCV 4.5.0 Cargado.");
-        
-        // Verificación de seguridad: ¿Existe ArUco?
-        if (!cv.aruco_Dictionary) {
-            log("ADVERTENCIA: cv.aruco_Dictionary no encontrado. Intentando cv.Dictionary...");
-        }
-
-        btnStart.innerText = "INICIAR ARUCO (ORIGINAL)";
+        log("OpenCV 4.8.0 descargado.");
+        btnStart.innerText = "INICIAR ARUCO";
         btnStart.disabled = false;
         btnStart.onclick = startCamera;
     }
 
     async function startCamera() {
         btnStart.disabled = true;
-        log("Solicitando cámara...");
+        log("Accediendo a cámara...");
 
         try {
             const constraints = { 
@@ -95,21 +93,19 @@
             };
             stream = await navigator.mediaDevices.getUserMedia(constraints);
             video.srcObject = stream;
-            
             await video.play();
-            log("Video play(). Esperando tamaño...");
             
+            log("Video OK. Esperando datos...");
             checkVideoReady();
-
         } catch (err) {
-            log("ERROR CÁMARA: " + err.message);
+            log("ERROR CAMARA: " + err.message);
             btnStart.disabled = false;
         }
     }
 
     function checkVideoReady() {
         if (video.videoWidth > 0 && video.videoHeight > 0) {
-            log(`Tamaño real: ${video.videoWidth}x${video.videoHeight}`);
+            log(`Video detectado: ${video.videoWidth}x${video.videoHeight}`);
             startProcessing();
         } else {
             requestAnimationFrame(checkVideoReady);
@@ -119,43 +115,57 @@
     function startProcessing() {
         streaming = true;
         
-        // 1. Ajustar Canvas
         video.width = video.videoWidth;
         video.height = video.videoHeight;
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
-        // 2. Inicializar Matrices
+        // 1. Inicializar Imágenes
         cap = new cv.VideoCapture(video);
         src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
         gray = new cv.Mat();
         
-        // 3. INICIALIZAR ARUCO (Versión 4.5.0)
+        // 2. CONFIGURACIÓN ARUCO (Modo Seguro)
         try {
-            // Usamos el ID 16 directamente (DICT_ARUCO_ORIGINAL = 16)
-            // para evitar errores si la constante es undefined.
-            let dictID = 16; 
+            log("Configurando ArUco...");
+
+            // Paso A: Diccionario
+            // En 4.8.0 se usa getPredefinedDictionary
+            let dictionary = cv.getPredefinedDictionary(cv.DICT_ARUCO_ORIGINAL);
             
-            // Intentamos el constructor estándar de 4.5.0
-            log("Creando diccionario ID: " + dictID);
-            dictionary = new cv.aruco_Dictionary(dictID);
+            // Paso B: Parámetros
+            let params = new cv.aruco_DetectorParameters();
             
-            params = new cv.aruco_DetectorParameters();
+            // Paso C: Detector (LA PARTE CRÍTICA)
+            // Intentamos crear el detector vacío y luego configurarlo
+            // Esto evita el error "invalid number of parameters"
+            log("Creando ArucoDetector...");
             
-            // Opcional: Ajustar parámetros para mejorar detección móvil
-            // params.adaptiveThreshWinSizeMin = 3;
-            // params.adaptiveThreshWinSizeMax = 23;
-            // params.adaptiveThreshWinSizeStep = 10;
+            // Opción 1: Constructor vacío (si está disponible)
+            try {
+                detector = new cv.aruco_ArucoDetector();
+                detector.setDictionary(dictionary);
+                detector.setDetectorParameters(params);
+                log("Detector creado (Método: Constructor vacío)");
+            } catch (e1) {
+                log("Fallo constructor vacío, probando constructor completo...");
+                // Opción 2: Constructor completo con RefineParameters (necesario en algunas builds)
+                let refineParams = new cv.aruco_RefineParameters(10, 3, true);
+                detector = new cv.aruco_ArucoDetector(dictionary, params, refineParams);
+                log("Detector creado (Método: Constructor completo)");
+            }
 
         } catch (e) {
-            log("ERROR ARUCO INIT: " + e);
+            log("ERROR FATAL ARUCO: " + e);
+            log("Detalle: " + JSON.stringify(e));
             return;
         }
         
         markerIds = new cv.Mat();
         markerCorners = new cv.MatVector();
-        
-        log("Todo listo. Loop iniciado.");
+        rejected = new cv.MatVector();
+
+        log("Iniciando bucle de detección...");
         requestAnimationFrame(processFrame);
     }
 
@@ -163,33 +173,29 @@
         if (!streaming) return;
 
         try {
-            // Protección contra cambio de orientación
+            // Protección de tamaño
             if (video.videoWidth !== src.cols || video.videoHeight !== src.rows) {
                 video.width = video.videoWidth;
                 video.height = video.videoHeight;
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 src.delete();
-                gray.delete();
+                gray.delete(); // Importante borrar antes de recrear
                 src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
                 gray = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC1);
             }
 
-            // 1. Leer
             cap.read(src);
-            
-            // 2. Gris
             cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-            // 3. Detectar
-            // En 4.5.0 la firma es: detectMarkers(image, dictionary, corners, ids, params, rejectedImgPoints)
-            // rejected es opcional en esta versión, probamos sin él primero para máxima compatibilidad.
-            cv.detectMarkers(gray, dictionary, markerCorners, markerIds, params);
+            // DETECCIÓN
+            // detectMarkers requiere (input, corners, ids, rejected)
+            detector.detectMarkers(gray, markerCorners, markerIds, rejected);
 
-            // 4. Dibujar
             if (markerIds.rows > 0) {
                 cv.drawDetectedMarkers(src, markerCorners, markerIds, new cv.Scalar(0, 255, 0, 255));
-                // log("Marcador detectado!"); // Descomentar para debug
+                // Opcional: Loguear ID la primera vez
+                // log("ID Detectado!");
             }
             
             cv.imshow('canvasOutput', src);
@@ -197,8 +203,11 @@
             requestAnimationFrame(processFrame);
 
         } catch (err) {
-            log("LOOP ERR: " + err);
-            // Intentamos seguir aunque falle un frame
+            // Loguear solo una vez para no congelar el navegador
+            if (!window.errorLogged) {
+                log("LOOP ERROR: " + err);
+                window.errorLogged = true;
+            }
             requestAnimationFrame(processFrame);
         }
     }
