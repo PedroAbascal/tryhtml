@@ -266,23 +266,63 @@
       
         gear: {
             // --- Básicos ---
-            none:    { name: "-",            cost: 0 },
+            none:    { name: "-", cost: 0, type: "passive", uses: 0, val: 0 },
             
-            // --- Modificadores de Combate ---
-            scope:   { name: "Mira Láser",     cost: 2, modHit: -1 }, // Mejora Puntería
-            stim:    { name: "Estimulante",    cost: 1, modA: 1, modHP: -1 }, // +Ataque, -Vida (ejemplo)
-            knife:   { name: "Cuchillo",  cost: 1, modA: 0 },    // Solo cosmético o regla especial
-            
-            // --- Defensivos ---
-            armor:   { name: "Placas Extra",   cost: 3, modHP: 1 },   // Suma Vida
-            shield:  { name: "Escudo", cost: 4, modSV: -1 },  // Mejora Salvación
-            camo:    { name: "Camuflaje", cost: 2, modSV: -1 },  // Mejora Salvación (ejemplo)
-            
-            // --- Utilidad (Solo Coste) ---
-            granada: { name: "Granada",   cost: 2 },
-            medkit:  { name: "Botiquín",       cost: 3 },
-            scanner: { name: "Escáner",        cost: 3 },
-            jetpack: { name: "Propulsores",    cost: 5 }
+           // --- SUPERVIVENCIA (Curación y Defensa) ---
+    medkit:  { 
+        name: "Botiquín", cost: 3, 
+        type: "heal", uses: 1, target: "ally", val: 4, // Cura 4 HP a un aliado
+        desc: "Restaura vida a una unidad a 3 pulgadas."
+    },
+    shield:  { 
+        name: "Escudo Energía", cost: 4, modSV: -1, // Modificador estático
+        type: "passive", uses: 0, target: "self", val: 0,
+        desc: "Otorga Salvación Invulnerable de 4+."
+    },
+    armor:   { 
+        name: "Placas Extra", cost: 3, modHP: 1, // Modificador estático
+        type: "passive", uses: 0, target: "self", val: 0,
+        desc: "+1 Herida permanente."
+    },
+
+    // --- OFENSIVOS (Ataques y Daño) ---
+    granada: { 
+        name: "Granada Frag", cost: 2, 
+        type: "attack", uses: 1, target: "area", val: 5, // 5 de Daño
+        desc: "Ataque indirecto de área, Daño 5."
+    },
+    ammo:    { 
+        name: "Munición AP", cost: 2, modA: 0, // No cambia stats base visibles
+        type: "buff", uses: 1, target: "self", val: 1, // Reroll o +1 Daño un turno
+        desc: "Un uso: +1 Daño a todos los disparos de esta fase."
+    },
+    scope:   { 
+        name: "Mira Táctica", cost: 2, modHit: -1, // Modificador estático
+        type: "passive", uses: 0, target: "self", val: 0,
+        desc: "+1 a Impactar en disparos."
+    },
+
+    // --- UTILIDAD Y TÁCTICA ---
+    stim:    { 
+        name: "Estimulante", cost: 1, modA: 1, modHP: -1, // Stat base modificado (berserker)
+        type: "buff", uses: 1, target: "self", val: 2, // +2 Movimiento al activar
+        desc: "+2 Movimiento este turno, sufres 1 herida al final."
+    },
+    scanner: { 
+        name: "Escáner", cost: 3, 
+        type: "utility", uses: 2, target: "enemy", val: 0, 
+        desc: "Ignora cobertura del objetivo seleccionado."
+    },
+    smoke:   { 
+        name: "Granada Humo", cost: 2, 
+        type: "utility", uses: 1, target: "area", val: -1, // -1 a impactar enemigo
+        desc: "Crea área de cobertura ligera."
+    },
+    jetpack: { 
+        name: "Propulsores", cost: 5, 
+        type: "active", uses: 0, target: "self", val: 12, // Mueve 12 pulgadas
+        desc: "Permite movimiento vertical y 'Vuelo'."
+    }
         },
     };
 
@@ -382,9 +422,15 @@
 
     // --- LISTA & DATA ---
     function addUnit() {
+        // 1. Validar coste
         const cost = parseInt(document.getElementById('d-cost').innerText);
         if(state.pts + cost > 100) return alert("¡Límite excedido!");
-        
+
+        // 2. Obtener datos del Equipo seleccionado
+        const gearKey = document.getElementById('u-gear').value;
+        const gearData = DB.gear[gearKey];
+
+        // 3. Construir el objeto Unidad
         const u = {
             id: document.getElementById('u-id').value,
             name: document.getElementById('u-name').value,
@@ -392,7 +438,17 @@
             role: document.getElementById('u-role').value,
             ability: document.getElementById('u-ability').value,
             weap: document.getElementById('u-weapon').value,
-            // Guardamos ambos perfiles
+            
+            // --- NUEVO: GUARDAMOS EL EQUIPO Y SUS DATOS DE JUEGO ---
+            gear: gearKey, 
+            gameplay: {
+                type: gearData.type || "passive", // Si no tiene tipo, es pasivo
+                uses: gearData.uses || 0,         // Para descontar en el futuro
+                val: gearData.val || 0,           // Valor de curación/daño
+                target: gearData.target || "self" // A quién afecta
+            },
+            // -------------------------------------------------------
+
             stats: { 
                 r_atk: document.getElementById('r-atk').innerText, 
                 r_hit: document.getElementById('r-hit').innerText, 
@@ -405,7 +461,10 @@
             },
             cost: cost
         };
-        state.squad[u.id] = u; save();
+
+        // 4. Guardar y renderizar
+        state.squad[u.id] = u; 
+        save();
     }
 
     function removeUnit(id) { delete state.squad[id]; save(); }
@@ -417,20 +476,28 @@
         Object.values(state.squad).sort((a,b)=>a.id-b.id).forEach(u => {
             t+=u.cost;
             let rngStr = (u.stats.r_atk !== '-') ? `🔫 ${u.stats.r_atk}A / ${u.stats.r_dmg}D` : '';
-            l.innerHTML += `
-            <div class="unit-item" style="border-left-color:${DB.species[u.spec].color}">
-                <div>
-                    <strong style="color:white">#${u.id} ${u.name}</strong> 
-                    <small style="color:#aaa">(${DB.species[u.spec].name} ${DB.roles[u.role].name})</small><br>
-                    <div style="margin-top:2px; font-size:0.8rem; color:var(--neon-cyan)">
-                        ${rngStr} ⚔️ ${u.stats.m_atk}A / ${u.stats.m_dmg}D
-                    </div>
-                </div>
-                <div style="text-align:right">
-                    <span style="color:var(--neon-gold); font-weight:bold">${u.cost} pts</span>
-                    <button class="btn-del" onclick="removeUnit('${u.id}')">X</button>
-                </div>
-            </div>`;
+             let gearStr = "";
+                if (u.gear && u.gear !== 'none') {
+                    // Busca el nombre bonito en la DB
+                    let gearName = DB.gear[u.gear].name;
+                    // Si tiene usos (ej: granada), muéstralos entre paréntesis
+                    let usesStr = (u.gameplay.uses > 0) ? `(x${u.gameplay.uses})` : '';
+                    gearStr = `📦 ${gearName} ${usesStr}`;
+                }
+               l.innerHTML += `
+                    <div class="unit-item" style="border-left-color:${DB.species[u.spec].color}">
+                        <div>
+                            <strong style="color:white">#${u.id} ${u.name}</strong> 
+                            <small style="color:#aaa">(${DB.species[u.spec].name} ${DB.roles[u.role].name})</small><br>
+                            <div style="margin-top:2px; font-size:0.8rem; color:var(--neon-cyan)">
+                                ${rngStr} ⚔️ ${u.stats.m_atk}A / ${u.stats.m_dmg}D <br>
+                                <span style="color:var(--neon-green)">${gearStr}</span> </div>
+                        </div>
+                        <div style="text-align:right">
+                            <span style="color:var(--neon-gold); font-weight:bold">${u.cost} pts</span>
+                            <button class="btn-del" onclick="removeUnit('${u.id}')">X</button>
+                        </div>
+                    </div>`;
         });
         state.pts=t; document.getElementById('pts-current').innerText = t;
         document.getElementById('budget-fill').style.width = Math.min(t,100)+"%";
@@ -488,6 +555,7 @@
 </body>
 
 </html>
+
 
 
 
