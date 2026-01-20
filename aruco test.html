@@ -3,64 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ArUco Class API</title>
+    <title>ArUco Debug Copyable</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: monospace; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; font-family: monospace; overflow: hidden; }
         
-        #ui {
-            position: absolute; top: 0; left: 0; width: 100%; z-index: 10;
-            background: rgba(0,0,0,0.6); color: #0f0; padding: 5px;
-            pointer-events: none; text-align: center;
-        }
-        
-        #btn-container { pointer-events: auto; margin-bottom: 5px; }
-        
-        button { 
-            padding: 15px 30px; font-size: 16px; 
-            background: #007bff; color: white; font-weight: bold;
-            border: none; border-radius: 5px; cursor: pointer;
-        }
-        
-        #log { 
-            font-size: 11px; max-height: 120px; 
-            overflow-y: auto; padding: 5px; text-align: left;
-            border-top: 1px solid #444; color: #ccffcc;
-        }
+        /* Contenedor principal centrado */
+        #container { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
 
-        #container { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background: #222; }
-        
+        /* Área de visualización (Cámara + Canvas) */
+        #view-area { position: relative; flex: 1; overflow: hidden; background: #222; }
+
         video { 
-            position: absolute; top: 0; left: 0; 
-            width: 100%; height: 100%; 
-            object-fit: cover; opacity: 0.01; z-index: 1;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            object-fit: cover; opacity: 0.01; pointer-events: none;
         }
         
         canvas { 
-            position: absolute; top: 0; left: 0; 
-            width: 100%; height: 100%; 
-            object-fit: contain; z-index: 2; 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            object-fit: contain; z-index: 10;
+        }
+
+        /* Panel de control inferior */
+        #controls {
+            height: 150px; background: #111; color: #0f0;
+            display: flex; flex-direction: column;
+            padding: 5px; box-sizing: border-box; z-index: 20;
+            border-top: 2px solid #444;
+        }
+
+        button {
+            padding: 10px; font-size: 16px; font-weight: bold;
+            background: #0066cc; color: white; border: none; 
+            border-radius: 4px; margin-bottom: 5px; cursor: pointer;
+        }
+
+        /* TEXTAREA para poder copiar el log */
+        textarea#log {
+            flex: 1; background: #000; color: #0f0; 
+            border: 1px solid #555; padding: 5px;
+            font-family: monospace; font-size: 11px;
+            resize: none; outline: none;
         }
     </style>
 </head>
 <body>
 
-<div id="ui">
-    <div id="log">Cargando librerías...</div>
-    <div id="btn-container">
-        <button id="btnStart" disabled>Espere...</button>
+<div id="container">
+    <div id="view-area">
+        <video id="videoInput" playsinline webkit-playsinline autoplay muted></video>
+        <canvas id="canvasOutput"></canvas>
+    </div>
+    
+    <div id="controls">
+        <button id="btnStart" disabled>Cargando OpenCV...</button>
+        <textarea id="log" readonly>Esperando librerías...</textarea>
     </div>
 </div>
 
-<div id="container">
-    <video id="videoInput" playsinline webkit-playsinline autoplay muted></video>
-    <canvas id="canvasOutput"></canvas>
-</div>
-
-<script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onCvLoaded()"></script>
+<script async src="https://docs.opencv.org/4.5.4/opencv.js" onload="onCvLoaded()"></script>
 
 <script>
-    const logDiv = document.getElementById('log');
-    function log(msg) { console.log(msg); logDiv.innerHTML = `> ${msg}<br>` + logDiv.innerHTML; }
+    // --- Utilidad de Log en Textarea ---
+    const logArea = document.getElementById('log');
+    function log(msg) {
+        console.log(msg);
+        let time = new Date().toLocaleTimeString();
+        // Añadimos al principio para ver lo más reciente arriba
+        logArea.value = `[${time}] ${msg}\n` + logArea.value; 
+    }
 
     let video = document.getElementById('videoInput');
     let canvas = document.getElementById('canvasOutput');
@@ -75,22 +85,20 @@
     let gray = null;
     let dictionary = null;
     let params = null;
-    let detector = null; // NUEVO: El objeto detector
     let markerIds = null;
     let markerCorners = null;
-    let rejected = null;
 
     function onCvLoaded() {
-        log("OpenCV 4.8.0 Cargado.");
-        btnStart.innerText = "INICIAR PRUEBA ARUCO";
+        log("OpenCV 4.5.4 Cargado.");
+        btnStart.innerText = "INICIAR CÁMARA";
         btnStart.disabled = false;
         btnStart.onclick = startCamera;
     }
 
     async function startCamera() {
-        btnStart.style.display = 'none';
-        log("Accediendo a cámara...");
-        
+        btnStart.disabled = true;
+        log("Pidiendo cámara...");
+
         try {
             const constraints = { 
                 video: { facingMode: 'environment' }, 
@@ -99,62 +107,53 @@
             stream = await navigator.mediaDevices.getUserMedia(constraints);
             video.srcObject = stream;
             
+            // Forzar play para iOS/Android
             await video.play();
             
-            log("Video activo. Esperando dimensiones...");
-            waitForVideoSize();
+            log("Stream activo. Esperando datos de video...");
+            
+            // Iniciar bucle de comprobación de tamaño
+            checkVideoReady();
 
         } catch (err) {
-            log("ERROR CÁMARA: " + err.message);
-            btnStart.style.display = 'inline-block';
+            log("ERROR FATAL: " + err.message);
+            btnStart.disabled = false;
         }
     }
 
-    function waitForVideoSize() {
+    // Espera activa hasta que el video tenga dimensiones reales
+    function checkVideoReady() {
         if (video.videoWidth > 0 && video.videoHeight > 0) {
-            log(`Dimensión detectada: ${video.videoWidth}x${video.videoHeight}`);
-            startOpenCV();
+            log(`Dimensiones detectadas: ${video.videoWidth}x${video.videoHeight}`);
+            startProcessing();
         } else {
-            requestAnimationFrame(waitForVideoSize);
+            requestAnimationFrame(checkVideoReady);
         }
     }
 
-    function startOpenCV() {
+    function startProcessing() {
         streaming = true;
         
-        // 1. Sincronizar tamaños
+        // 1. Ajustar tamaños internos
         video.width = video.videoWidth;
         video.height = video.videoHeight;
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
-        // 2. Crear Mats
+        // 2. Inicializar OpenCV
         cap = new cv.VideoCapture(video);
         src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
         gray = new cv.Mat();
         
-        // 3. CONFIGURACIÓN ARUCO (NUEVA API DE CLASES)
-        // Paso A: Obtener diccionario (sin new)
-        dictionary = cv.getPredefinedDictionary(cv.DICT_ARUCO_ORIGINAL);
-        
-        // Paso B: Crear parámetros
+        // En 4.5.4 se usa new cv.aruco_Dictionary
+        // Mapeo directo a ARUCO_ORIGINAL (valor 16 en 4.5.4)
+        dictionary = new cv.aruco_Dictionary(cv.DICT_ARUCO_ORIGINAL);
         params = new cv.aruco_DetectorParameters();
-        
-        // Paso C: Crear EL DETECTOR (Esto reemplaza a la función detectMarkers)
-        // La clase se llama aruco_ArucoDetector
-        try {
-            detector = new cv.aruco_ArucoDetector(dictionary, params);
-            log("Detector ArUco creado correctamente.");
-        } catch(e) {
-            log("Error creando ArucoDetector: " + e);
-            return;
-        }
         
         markerIds = new cv.Mat();
         markerCorners = new cv.MatVector();
-        rejected = new cv.MatVector();
         
-        log("Sistema listo. Buscando marcadores...");
+        log("ArUco iniciado. Buscando...");
         requestAnimationFrame(processFrame);
     }
 
@@ -162,31 +161,38 @@
         if (!streaming) return;
 
         try {
-            // Protección contra cambio de tamaño
+            // Protección contra cambio de resolución (giro de pantalla)
             if (video.videoWidth !== src.cols || video.videoHeight !== src.rows) {
+                log(`Resize: ${src.cols}x${src.rows} -> ${video.videoWidth}x${video.videoHeight}`);
+                
+                // Actualizar atributos
                 video.width = video.videoWidth;
                 video.height = video.videoHeight;
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
+                
+                // Recrear matrices
                 src.delete();
+                gray.delete();
                 src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
-                // Si cambiamos src, quizás debamos reiniciar cap? Generalmente VideoCapture se adapta
-                // pero por seguridad, reasignamos tamaño.
+                gray = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC1);
             }
 
+            // 1. Leer frame
             cap.read(src);
+            
+            // 2. Convertir a gris
             cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-            // --- NUEVA LLAMADA DE DETECCIÓN ---
-            // Usamos el objeto 'detector', no la función global 'cv'
-            detector.detectMarkers(gray, markerCorners, markerIds, rejected);
+            // 3. Detectar (API antigua 4.5.4)
+            // detectMarkers(image, dictionary, corners, ids, params, rejectedImgPoints)
+            cv.detectMarkers(gray, dictionary, markerCorners, markerIds, params);
 
+            // 4. Dibujar
             if (markerIds.rows > 0) {
-                // Dibujar (Esto sigue siendo una función global de utilidad)
                 cv.drawDetectedMarkers(src, markerCorners, markerIds, new cv.Scalar(0, 255, 0, 255));
-                
-                // Opcional: Mostrar ID en el log solo si cambia (para no saturar)
-                // log("ID Detectado: " + markerIds.data32S[0]);
+                // Descomentar para ver ID en log (puede saturar)
+                // log("ID detectado: " + markerIds.data32S[0]);
             }
             
             cv.imshow('canvasOutput', src);
@@ -195,7 +201,7 @@
 
         } catch (err) {
             log("Error Loop: " + err);
-            // Intentar seguir
+            // Intentar recuperar
             requestAnimationFrame(processFrame);
         }
     }
