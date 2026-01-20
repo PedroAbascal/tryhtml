@@ -27,6 +27,14 @@
             clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%); 
             margin-top: 5px; pointer-events: auto; touch-action: manipulation; position: relative;
         }
+        .btn:disabled {
+            background: #222;
+            color: #555;
+            border: 1px solid #333;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+        }
         .btn-small { font-size: 0.7rem; padding: 5px; width: auto; display: inline-block; clip-path: none; border: 1px solid var(--gold); background: #000; color: var(--gold); cursor: pointer; pointer-events: auto; }
         .btn-gear { background: #fff !important; color: #000 !important; border: 2px solid var(--gold) !important; box-shadow: 0 0 10px var(--gold); animation: pulseGold 2s infinite; }
         @keyframes pulseGold { 0% { box-shadow: 0 0 5px var(--gold); } 50% { box-shadow: 0 0 15px var(--gold); } 100% { box-shadow: 0 0 5px var(--gold); } }
@@ -199,7 +207,7 @@
 
         <div class="hud-bottom">
             <div id="planning-controls" style="text-align:center; margin-bottom:10px;">
-                <button type="button" class="btn" id="btn-ready" onclick="commitPlanning()"><span>CONFIRMAR ÓRDENES</span></button>
+            <button type="button" class="btn" id="btn-ready" onclick="commitPlanning()" disabled><span>ESPERANDO RIVAL...</span></button>
             </div>
 
             <div class="unit-selector">
@@ -449,6 +457,11 @@
                 else { maxRounds=d.rounds; updateMissionDisplay(); }
                 enemyUnits.forEach(u => { if(!globalHP[u.uid] && u.stats) globalHP[u.uid] = {c:parseInt(u.stats.hp)||1, m:parseInt(u.stats.hp)||1}; });
                 updateHUD(); log(`RIVAL CONECTADO.`);
+                const btn = document.getElementById('btn-ready');
+                btn.disabled = false;
+                btn.querySelector('span').innerText = "CONFIRMAR ÓRDENES";
+                btn.style.background = "var(--c)";
+                btn.style.color = "#000";
             }
         }
         else if(d.type === 'SCORE_UPDATE') { enemyVP = d.vp; updateHUD(); }
@@ -650,7 +663,10 @@
     window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
     function assignSecretMission() { if(secondaryActive) secretMission = SECRET_POOL[Math.floor(Math.random()*SECRET_POOL.length)]; else secretMission = null; }
     function updateMissionDisplay() { document.getElementById('mission-info').innerText = secondaryActive && secretMission ? `${primaryMission} + SEC` : primaryMission; }
-    function commitPlanning() { if(gameState !== 'PLANNING') return; iAmReady = true; myInitRoll = Math.ceil(Math.random()*100); document.getElementById('planning-controls').style.display = 'none'; document.getElementById('my-ready-mark').classList.add('show'); publish({type: 'READY', squad: myUnits, roll: myInitRoll}); checkStartRound(); }
+    function commitPlanning() { 
+        if(gameState !== 'PLANNING') return;
+        if(enemyUnits.length === 0) { log("ESPERANDO RIVAL..."); return; }
+        iAmReady = true; myInitRoll = Math.ceil(Math.random()*100); document.getElementById('planning-controls').style.display = 'none'; document.getElementById('my-ready-mark').classList.add('show'); publish({type: 'READY', squad: myUnits, roll: myInitRoll}); checkStartRound(); }
     function checkStartRound() { if(iAmReady && enemyIsReady) { log(`INICIATIVA: YO ${myInitRoll} vs ${enemyInitRoll} RIV`); gameState = (myInitRoll >= enemyInitRoll) ? 'MY_TURN' : 'ENEMY_TURN'; document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show')); setTurn(gameState, 0); } }
     function getKillPoints(total) { return total <= 4 ? 4 : (total <= 7 ? 3 : 1); }
     function checkAutoMechanics() { const me = myUnits[myIdx]; if(!me || globalHP[me.uid].c <= 0) return; me.mechanics.forEach(m => { if(m.type === 'AUTO' && m.func === 'AUTO_REGEN') { if(globalHP[me.uid].c < globalHP[me.uid].m) { globalHP[me.uid].c++; publish({type: 'SYNC_HP', state: globalHP}); log(`REGEN: ${me.name} recupera 1 HP`); updateHUD(); } } }); }
@@ -667,3 +683,4 @@
 </script>
 </body>
 </html>
+
