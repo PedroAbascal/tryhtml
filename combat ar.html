@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v54 NETWORK SAFE</title>
+    <title>SQUAD COMMAND: v55 LAG BREAKER</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -88,7 +88,7 @@
         #dice-overlay.show { transform: translateY(0); }
         .dice-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
         
-        /* DADOS COMO BOTONES */
+        /* DADOS COMO BOTONES SEGUROS */
         .die-btn { 
             background: transparent; border: none; font-size: 3.5rem; cursor: pointer; 
             transition: transform 0.2s; position:relative; padding: 0; margin: 0;
@@ -96,16 +96,19 @@
         }
         .die-btn:focus { outline: none; }
         .die-btn:active { transform: scale(0.9); }
+        
         .die-btn.crit { color: var(--gold); text-shadow: 0 0 25px var(--gold); animation: pop 0.2s; }
         .die-btn.hit { color: var(--g); text-shadow: 0 0 20px var(--g); }
         .die-btn.miss { color: #444; }
         .die-btn.save-ok { color: var(--c); text-shadow: 0 0 20px var(--c); }
         .die-btn.save-fail { color: var(--r); opacity: 0.8; }
+        
         .die-btn.incoming-crit { color: var(--gold); text-shadow: 0 0 15px var(--gold); pointer-events: none; }
         .die-btn.incoming-hit { color: var(--c); text-shadow: 0 0 10px var(--c); pointer-events: none; }
         .die-btn.pending { color: var(--gold); animation: pulse 0.5s infinite; cursor: wait; pointer-events: none; opacity: 0.7; }
         .die-btn.locked { opacity: 0.7; cursor: default; pointer-events: none; }
         
+        /* BOTÓN TOGGLE COBERTURA (TYPE BUTTON) */
         #btn-cover-toggle {
             background: #000; border: 2px solid #444; color: #666; 
             padding: 8px 20px; font-family: monospace; font-weight: bold; 
@@ -195,7 +198,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v54 NETWORK SAFE</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v55 LAG BREAKER</div>
         
         <div class="box"><textarea id="json-input" placeholder='{"squad": [{"id":"1","name":"Trooper","stats":{"hp":"10"...},"gear":"grenade"}]}'></textarea></div>
         
@@ -319,6 +322,7 @@
     </div>
 
 <script>
+    // --- DATABASE ---
     const MECHANICS_DB = {
         "grenade": { name: "GRANADA", icon: "💣", type: "ACTIVE", func: "THROW_GRENADE", oneUse: true },
         "medkit":  { name: "MEDKIT",  icon: "💊", type: "ACTIVE", func: "USE_MEDKIT", oneUse: true },
@@ -358,12 +362,17 @@
     let waitingForAck = false; 
     let diceRerollIndex = -1;
     let coverActive = false; 
-    
-    // --- NUEVO: TIMEOUT ID ---
-    let ackTimeout = null;
+    let ackTimeout = null; // Para el seguro anti-lag
+
+    // --- DETECTOR DE SALIDA (PARA DEBUG) ---
+    window.addEventListener('beforeunload', (event) => {
+        // Descomenta si quieres ver la alerta de salida
+        // event.preventDefault();
+        // event.returnValue = "";
+    });
 
     function returnToLobby() {
-        if(!isGameOver) return; // SOLO SI TERMINÓ
+        if(!isGameOver) return;
         if(client) { try{ client.disconnect(); } catch(e){} client=null; }
         document.getElementById('game-over-screen').classList.remove('show');
         document.getElementById('game-screen').classList.add('hidden');
@@ -422,7 +431,7 @@
         updateHUD();
     }
 
-    // --- NUEVO: REROLL SEGURO ---
+    // --- NUEVO: SISTEMA DE REROLL "LAG BREAKER" ---
     function askReroll(e, index) {
         if(e) { e.preventDefault(); e.stopPropagation(); }
         if(waitingForAck) return;
@@ -436,29 +445,21 @@
             pool.children[index].innerText = "⏳";
         }
         
-        log("SOLICITANDO REROLL AL RIVAL...", "info");
+        log("PIDIENDO RE-TIRADA...", "info");
         publish({type: 'REQ_REROLL'});
 
-        // --- SAFETY TIMEOUT: 5 SEGUNDOS ---
+        // --- SAFETY: SI EN 3 SEGUNDOS NO RESPONDEN, FORZAMOS ---
         if(ackTimeout) clearTimeout(ackTimeout);
         ackTimeout = setTimeout(() => {
             if(waitingForAck) {
-                log("¡TIMEOUT! RIVAL NO RESPONDE. RESET.", "danger");
-                waitingForAck = false;
-                diceRerollIndex = -1;
-                // Restaurar vista dado
-                if(pool.children[index]) {
-                    const originalVal = activeDice[index];
-                    pool.children[index].className = 'die-btn';
-                    pool.children[index].innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][originalVal];
-                }
+                log("SIN RESPUESTA: FORZANDO TIRADA.", "danger");
+                executeReroll(true); // Forzado localmente
             }
-        }, 5000); // 5 segundos
+        }, 3000);
     }
 
-    function executeReroll() {
-        // Si llega la respuesta, cancelamos el timeout
-        if(ackTimeout) clearTimeout(ackTimeout);
+    function executeReroll(forced = false) {
+        if(ackTimeout) clearTimeout(ackTimeout); // Cancelar timeout
         
         if(diceRerollIndex === -1) return;
         const pool = document.getElementById('dice-pool');
@@ -467,7 +468,8 @@
         syncDiceToRival(dicePhase==='ATTACK_ROLL' ? myUnits[myIdx].name : "DEFENSA"); 
         showDiceOverlay(dicePhase, activeDice, diceTarget, true); 
         
-        log("REROLL AUTORIZADO", "success");
+        if(!forced) log("RE-TIRADA AUTORIZADA", "success");
+        
         diceRerollIndex = -1;
         waitingForAck = false;
     }
@@ -545,7 +547,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v54/${code}`; 
+        TOPIC = `sqcmd/v55/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -563,7 +565,7 @@
         if(d.type === 'REQ_SECRET') showConfirmModal(`RIVAL RECLAMA SECRETA: ${d.missionName}\n¿CONFIRMAR?`, d);
         else if(d.type === 'ACK_SECRET') executeSecretClaim();
         else if(d.type === 'REQ_REROLL') showConfirmModal(`RIVAL PIDE RE-TIRAR\n¿CONFIRMAR?`, d);
-        else if(d.type === 'ACK_REROLL') executeReroll();
+        else if(d.type === 'ACK_REROLL') executeReroll(false); // Confirmado por rival
         
         else if(d.type === 'GEAR_EFFECT') {
             log(`RIVAL USA ${d.gearName}: ${d.desc}`);
