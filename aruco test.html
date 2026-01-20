@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ArUco Robust 4.8</title>
+    <title>ArUco 4.8.0 Safe Mode</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; font-family: monospace; overflow: hidden; }
         
@@ -27,7 +27,7 @@
         button {
             padding: 10px; font-size: 16px; font-weight: bold;
             background: #007bff; color: white; border: none; 
-            border-radius: 4px; margin-bottom: 5px;
+            border-radius: 4px; margin-bottom: 5px; cursor: pointer;
         }
         textarea#log {
             flex: 1; background: #000; color: #0f0; 
@@ -44,8 +44,8 @@
         <canvas id="canvasOutput"></canvas>
     </div>
     <div id="controls">
-        <button id="btnStart" disabled>Cargando Motor...</button>
-        <textarea id="log" readonly>Inicializando sistema...</textarea>
+        <button id="btnStart" disabled>Cargando Motor 4.8...</button>
+        <textarea id="log" readonly>Iniciando...</textarea>
     </div>
 </div>
 
@@ -70,13 +70,23 @@
     let cap = null;
     let src = null;
     let gray = null;
+    
+    // Objetos ArUco
     let detector = null;
     let markerIds = null;
     let markerCorners = null;
     let rejected = null;
 
     function onCvLoaded() {
-        log("OpenCV 4.8.0 descargado.");
+        log("Librería cargada. Verificando módulos...");
+        
+        // Verificación rápida
+        if (cv.aruco_ArucoDetector) {
+            log("Módulo ArUco detectado correctamente.");
+        } else {
+            log("ALERTA: ArucoDetector no encontrado en 'cv'.");
+        }
+
         btnStart.innerText = "INICIAR ARUCO";
         btnStart.disabled = false;
         btnStart.onclick = startCamera;
@@ -84,7 +94,7 @@
 
     async function startCamera() {
         btnStart.disabled = true;
-        log("Accediendo a cámara...");
+        log("Abriendo cámara...");
 
         try {
             const constraints = { 
@@ -93,10 +103,12 @@
             };
             stream = await navigator.mediaDevices.getUserMedia(constraints);
             video.srcObject = stream;
-            await video.play();
             
-            log("Video OK. Esperando datos...");
+            await video.play();
+            log("Video corriendo. Midiendo...");
+            
             checkVideoReady();
+
         } catch (err) {
             log("ERROR CAMARA: " + err.message);
             btnStart.disabled = false;
@@ -105,7 +117,7 @@
 
     function checkVideoReady() {
         if (video.videoWidth > 0 && video.videoHeight > 0) {
-            log(`Video detectado: ${video.videoWidth}x${video.videoHeight}`);
+            log(`Resolución: ${video.videoWidth}x${video.videoHeight}`);
             startProcessing();
         } else {
             requestAnimationFrame(checkVideoReady);
@@ -115,57 +127,59 @@
     function startProcessing() {
         streaming = true;
         
+        // Sincronizar dimensiones
         video.width = video.videoWidth;
         video.height = video.videoHeight;
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
-        // 1. Inicializar Imágenes
+        // Inicializar matrices base
         cap = new cv.VideoCapture(video);
         src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
         gray = new cv.Mat();
         
-        // 2. CONFIGURACIÓN ARUCO (Modo Seguro)
+        // --- INICIALIZACIÓN SEGURA DE ARUCO ---
         try {
-            log("Configurando ArUco...");
+            log("Configurando detector...");
 
-            // Paso A: Diccionario
-            // En 4.8.0 se usa getPredefinedDictionary
+            // 1. Diccionario
             let dictionary = cv.getPredefinedDictionary(cv.DICT_ARUCO_ORIGINAL);
             
-            // Paso B: Parámetros
+            // 2. Parámetros
             let params = new cv.aruco_DetectorParameters();
-            
-            // Paso C: Detector (LA PARTE CRÍTICA)
-            // Intentamos crear el detector vacío y luego configurarlo
+
+            // 3. Crear Detector (EL TRUCO: Constructor Vacío)
             // Esto evita el error "invalid number of parameters"
-            log("Creando ArucoDetector...");
+            detector = new cv.aruco_ArucoDetector(); 
             
-            // Opción 1: Constructor vacío (si está disponible)
-            try {
-                detector = new cv.aruco_ArucoDetector();
-                detector.setDictionary(dictionary);
-                detector.setDetectorParameters(params);
-                log("Detector creado (Método: Constructor vacío)");
-            } catch (e1) {
-                log("Fallo constructor vacío, probando constructor completo...");
-                // Opción 2: Constructor completo con RefineParameters (necesario en algunas builds)
-                let refineParams = new cv.aruco_RefineParameters(10, 3, true);
-                detector = new cv.aruco_ArucoDetector(dictionary, params, refineParams);
-                log("Detector creado (Método: Constructor completo)");
-            }
+            // 4. Asignar configuración manualmente
+            detector.setDictionary(dictionary);
+            detector.setDetectorParameters(params);
+            
+            log("Detector creado con éxito (Modo Seguro).");
 
         } catch (e) {
-            log("ERROR FATAL ARUCO: " + e);
-            log("Detalle: " + JSON.stringify(e));
-            return;
+            log("ERROR CRITICO ARUCO: " + e);
+            // Intento desesperado: Constructor con RefineParameters
+            try {
+               log("Intentando constructor completo...");
+               let refine = new cv.aruco_RefineParameters(10, 3, true);
+               let dict = cv.getPredefinedDictionary(cv.DICT_ARUCO_ORIGINAL);
+               let par = new cv.aruco_DetectorParameters();
+               detector = new cv.aruco_ArucoDetector(dict, par, refine);
+               log("Detector recuperado con constructor completo.");
+            } catch (e2) {
+               log("FALLO TOTAL: " + e2);
+               return;
+            }
         }
         
+        // Matrices de salida
         markerIds = new cv.Mat();
         markerCorners = new cv.MatVector();
         rejected = new cv.MatVector();
 
-        log("Iniciando bucle de detección...");
+        log("Sistema ArUco Operativo.");
         requestAnimationFrame(processFrame);
     }
 
@@ -173,29 +187,31 @@
         if (!streaming) return;
 
         try {
-            // Protección de tamaño
+            // Protección contra cambio de tamaño (bad size error)
             if (video.videoWidth !== src.cols || video.videoHeight !== src.rows) {
                 video.width = video.videoWidth;
                 video.height = video.videoHeight;
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
+                
                 src.delete();
-                gray.delete(); // Importante borrar antes de recrear
+                gray.delete();
                 src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
                 gray = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC1);
             }
 
+            // 1. Capturar
             cap.read(src);
+            
+            // 2. Procesar
             cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-
-            // DETECCIÓN
-            // detectMarkers requiere (input, corners, ids, rejected)
+            
+            // 3. Detectar
             detector.detectMarkers(gray, markerCorners, markerIds, rejected);
 
+            // 4. Dibujar
             if (markerIds.rows > 0) {
                 cv.drawDetectedMarkers(src, markerCorners, markerIds, new cv.Scalar(0, 255, 0, 255));
-                // Opcional: Loguear ID la primera vez
-                // log("ID Detectado!");
             }
             
             cv.imshow('canvasOutput', src);
@@ -203,10 +219,10 @@
             requestAnimationFrame(processFrame);
 
         } catch (err) {
-            // Loguear solo una vez para no congelar el navegador
-            if (!window.errorLogged) {
+            // Loguear solo 1 vez para no colgar el móvil
+            if (!window.hasLoggedError) {
                 log("LOOP ERROR: " + err);
-                window.errorLogged = true;
+                window.hasLoggedError = true;
             }
             requestAnimationFrame(processFrame);
         }
