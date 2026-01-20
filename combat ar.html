@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v62 POLISHED</title>
+    <title>SQUAD COMMAND: v63 FINAL RULES</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -157,7 +157,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v62 POLISHED</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v63 FINAL RULES</div>
         <div class="box"><textarea id="json-input" placeholder='PEGAR JSON AQUÍ'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem; color:#888;">MISIÓN PRINCIPAL</div>
@@ -347,15 +347,15 @@
         resetPassButtons(); coverActive = false;
     }
 
-    // --- TACTICAL LOGIC REFINED ---
+    // --- REGLAS TÁCTICAS EXACTAS v63 ---
     function checkRoundOver() {
         if(isGameOver) return;
         const myValid = myUnits.filter(u => canUnitAct(u, myUnits, enemyUnits)).length;
         const enValid = enemyUnits.filter(u => canUnitAct(u, enemyUnits, myUnits)).length;
         
-        // CORRECCION: Si nadie puede actuar, la ronda termina.
+        // Si nadie puede actuar, fin de ronda.
         if (myValid === 0 && enValid === 0) {
-            log("FIN DE RONDA (Sin acciones posibles)");
+            log("FIN DE RONDA (Todos Fatigados/Agotados)");
             publish({type:'ROUND_OVER'});
             resetRound();
             return true;
@@ -365,19 +365,24 @@
 
     function canUnitAct(unit, team, opponents) {
         if (!globalHP[unit.uid] || globalHP[unit.uid].c <= 0) return false;
-        if (unit.activations >= 2) return false;
-        if (unit.activations === 0) return true; // FRESH siempre puede
+        if (unit.activations >= 2) return false; // Agotado = No actua
+        if (unit.activations === 0) return true; // Fresco = Siempre actua
         
-        // FATIGADO (1 Activation): Solo si NO hay frescos Y soy UNDERDOG numérico
+        // Lógica para Fatigado (1 activación):
+        // 1. No debe haber frescos en mi equipo
         const hasFresh = team.some(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
         if (hasFresh) return false;
         
-        // Conteo de vivos para UNDERDOG
+        // 2. REGLA: Si el enemigo tiene activaciones (frescos) -> PUEDO
+        const enemyHasFresh = opponents.some(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
+        if (enemyHasFresh) return true;
+
+        // 3. REGLA: Si no tiene frescos, pero tiene MÁS tropas vivas que yo -> PUEDO
         const myLiving = team.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
         const enLiving = opponents.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
-        
-        if (myLiving >= enLiving) return false; // Si tengo igual o más tropas, no puedo reusar.
-        return true;
+        if (myLiving < enLiving) return true;
+
+        return false;
     }
 
     function canSelectUnit(index) {
@@ -415,7 +420,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v62/${code}`;
+        TOPIC = `sqcmd/v63/${code}`;
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -452,7 +457,7 @@
             if(d.phase === 'ATTACK_ROLL') {
                 showDiceOverlay(d.phase, d.dice, d.target, false); 
                 document.getElementById('dice-sub').innerText = `${d.uName} apuntando...`;
-                if(d.contextLog) log(`RIVAL: ${d.contextLog}`); // LOG LIMPIO
+                if(d.contextLog) log(`RIVAL: ${d.contextLog}`); 
                 else log("RIVAL APUNTANDO...");
             }
         }
