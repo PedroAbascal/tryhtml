@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v53 BUTTON DICE</title>
+    <title>SQUAD COMMAND: v54 NETWORK SAFE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -22,8 +22,6 @@
         textarea { width: 100%; height: 60px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; }
         input, select { background: #000; border: 2px solid var(--gold); color: var(--gold); padding: 10px; font-family: monospace; width: 100%; text-align: center; font-size: 1rem; letter-spacing: 2px; margin: 5px 0; text-transform: uppercase; }
         
-        /* ESTILO BOTONES (GLOBAL) */
-        button { font-family: 'Courier New', monospace; text-transform: uppercase; }
         .btn { 
             background: var(--c); color: #000; border: none; padding: 15px; width: 100%; 
             font-weight: bold; cursor: pointer; font-size: 1rem; 
@@ -41,7 +39,6 @@
         }
         @keyframes pulseGold { 0% { box-shadow: 0 0 5px var(--gold); } 50% { box-shadow: 0 0 15px var(--gold); } 100% { box-shadow: 0 0 5px var(--gold); } }
 
-        /* TAGS */
         .tags-container { display:flex; flex-wrap:wrap; gap:2px; margin-top:4px; }
         .tag { font-size: 0.55rem; padding: 2px 4px; border-radius: 2px; text-transform: uppercase; font-weight: bold; border: 1px solid #444; }
         .tag.active-gear { background: var(--gold); color: #000; border-color: #fff; }
@@ -91,7 +88,7 @@
         #dice-overlay.show { transform: translateY(0); }
         .dice-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
         
-        /* DADOS COMO BOTONES SEGUROS */
+        /* DADOS COMO BOTONES */
         .die-btn { 
             background: transparent; border: none; font-size: 3.5rem; cursor: pointer; 
             transition: transform 0.2s; position:relative; padding: 0; margin: 0;
@@ -99,13 +96,11 @@
         }
         .die-btn:focus { outline: none; }
         .die-btn:active { transform: scale(0.9); }
-        
         .die-btn.crit { color: var(--gold); text-shadow: 0 0 25px var(--gold); animation: pop 0.2s; }
         .die-btn.hit { color: var(--g); text-shadow: 0 0 20px var(--g); }
         .die-btn.miss { color: #444; }
         .die-btn.save-ok { color: var(--c); text-shadow: 0 0 20px var(--c); }
         .die-btn.save-fail { color: var(--r); opacity: 0.8; }
-        
         .die-btn.incoming-crit { color: var(--gold); text-shadow: 0 0 15px var(--gold); pointer-events: none; }
         .die-btn.incoming-hit { color: var(--c); text-shadow: 0 0 10px var(--c); pointer-events: none; }
         .die-btn.pending { color: var(--gold); animation: pulse 0.5s infinite; cursor: wait; pointer-events: none; opacity: 0.7; }
@@ -200,7 +195,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v53 BUTTON DICE</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v54 NETWORK SAFE</div>
         
         <div class="box"><textarea id="json-input" placeholder='{"squad": [{"id":"1","name":"Trooper","stats":{"hp":"10"...},"gear":"grenade"}]}'></textarea></div>
         
@@ -363,10 +358,12 @@
     let waitingForAck = false; 
     let diceRerollIndex = -1;
     let coverActive = false; 
+    
+    // --- NUEVO: TIMEOUT ID ---
+    let ackTimeout = null;
 
-    // --- SEGURO ANTI-RESETEO ACCIDENTAL ---
     function returnToLobby() {
-        if(!isGameOver) return; // Solo funciona si el juego terminó
+        if(!isGameOver) return; // SOLO SI TERMINÓ
         if(client) { try{ client.disconnect(); } catch(e){} client=null; }
         document.getElementById('game-over-screen').classList.remove('show');
         document.getElementById('game-screen').classList.add('hidden');
@@ -425,32 +422,52 @@
         updateHUD();
     }
 
-    // --- MANEJO DE DADOS (CLIC DELEGADO) ---
-    // Usamos esta función para manejar los clics sin que el DOM haga cosas raras
-    function handleDieClick(index) {
+    // --- NUEVO: REROLL SEGURO ---
+    function askReroll(e, index) {
+        if(e) { e.preventDefault(); e.stopPropagation(); }
         if(waitingForAck) return;
+        
         diceRerollIndex = index;
         waitingForAck = true;
-        const pool = document.getElementById('dice-pool');
         
-        // Visual feedback
+        const pool = document.getElementById('dice-pool');
         if(pool.children[index]) {
-            const btn = pool.children[index];
-            btn.className = 'die-btn pending';
-            btn.innerText = "⏳";
+            pool.children[index].className = 'die-btn pending';
+            pool.children[index].innerText = "⏳";
         }
+        
+        log("SOLICITANDO REROLL AL RIVAL...", "info");
         publish({type: 'REQ_REROLL'});
+
+        // --- SAFETY TIMEOUT: 5 SEGUNDOS ---
+        if(ackTimeout) clearTimeout(ackTimeout);
+        ackTimeout = setTimeout(() => {
+            if(waitingForAck) {
+                log("¡TIMEOUT! RIVAL NO RESPONDE. RESET.", "danger");
+                waitingForAck = false;
+                diceRerollIndex = -1;
+                // Restaurar vista dado
+                if(pool.children[index]) {
+                    const originalVal = activeDice[index];
+                    pool.children[index].className = 'die-btn';
+                    pool.children[index].innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][originalVal];
+                }
+            }
+        }, 5000); // 5 segundos
     }
 
     function executeReroll() {
+        // Si llega la respuesta, cancelamos el timeout
+        if(ackTimeout) clearTimeout(ackTimeout);
+        
         if(diceRerollIndex === -1) return;
         const pool = document.getElementById('dice-pool');
         
-        // Simular rodada
         activeDice[diceRerollIndex] = Math.ceil(Math.random()*6); 
         syncDiceToRival(dicePhase==='ATTACK_ROLL' ? myUnits[myIdx].name : "DEFENSA"); 
         showDiceOverlay(dicePhase, activeDice, diceTarget, true); 
         
+        log("REROLL AUTORIZADO", "success");
         diceRerollIndex = -1;
         waitingForAck = false;
     }
@@ -528,7 +545,7 @@
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v53/${code}`; 
+        TOPIC = `sqcmd/v54/${code}`; 
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
@@ -884,20 +901,16 @@
         btn.style.display = isInteractive ? 'block' : 'none';
         
         dice.forEach((val, i) => {
-            // USAMOS BUTTON EXPLICITO PARA EVITAR RECARGAS
             const d = document.createElement('button'); 
-            d.type = "button"; // CLAVE
+            d.type = "button"; 
             d.className = 'die-btn';
             d.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][val];
             
             if(val === 6) d.classList.add('crit'); else if(val >= target) d.classList.add(phase==='ATTACK_ROLL'?'hit':'save-ok'); else d.classList.add(phase==='ATTACK_ROLL'?'miss':'save-fail');
             
             if(isInteractive) { 
-                // EVENT DELEGATION CLAVE
                 d.onclick = (e) => { 
-                    e.preventDefault(); 
-                    e.stopPropagation();
-                    handleDieClick(i); 
+                    askReroll(e, i); 
                 }; 
             } else d.classList.add('locked');
             pool.appendChild(d);
@@ -922,7 +935,9 @@
         
         document.getElementById('my-name').innerText = me.name;
         document.getElementById('my-r').innerText = `${me.stats.r_atk}d (${me.stats.r_hit})`;
+        document.getElementById('my-r').className = combatMode==='ranged' ? 'stat-val hl' : 'stat-val';
         document.getElementById('my-m').innerText = `${me.stats.m_atk}d (${me.stats.m_hit})`;
+        document.getElementById('my-m').className = combatMode==='melee' ? 'stat-val hl' : 'stat-val';
         document.getElementById('my-sv').innerText = `${me.stats.sv}`;
         document.getElementById('my-hp').style.width = (globalHP[me.uid].c / globalHP[me.uid].m * 100) + "%";
         
