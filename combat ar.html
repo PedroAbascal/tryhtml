@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v1.2 all dead ops FIX</title>
+    <title>SQUAD COMMAND: v1.3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -226,8 +226,8 @@
                     </div>
                     <div>
                         <div class="tactic-row" id="my-tactics">
-                            <button type="button" id="btn-mode-open" class="mode-toggle selected" onclick="setMode('open', event)">⚔️</button>
-                            <button type="button" id="btn-mode-hidden" class="mode-toggle" onclick="setMode('hidden', event)">🛡️</button>
+                            <button type="button" id="btn-mode-open" class="mode-toggle selected" onclick="setMode('open', event)" style="font-size:0.6rem;">ATAQUE</button>
+                            <button type="button" id="btn-mode-hidden" class="mode-toggle" onclick="setMode('hidden', event)" style="font-size:0.6rem;">TÁCTICA</button>
                         </div>
                         <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
                     </div>
@@ -525,17 +525,42 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
     }
 
     window.performOp = function(op) {
-        if(gameState !== 'MY_TURN') return;
-        if(op === 'MISION') { myVP+=1; publish({type:'SCORE_UPDATE', vp:myVP}); log("MISION CUMPLIDA"); }
-        else log(op);
-        publish({type:'OP_ACTION', opType: op});
-        passTurn(0);
+    if(gameState !== 'MY_TURN') return;
+    const me = myUnits[myIdx]; // Obtenemos la unidad actual
+
+    // --- CAMBIO 1.3: Restricción de Modo para Misión ---
+    if(op === 'MISION') {
+        if(me.mode !== 'hidden') {
+            log("ERROR: REQUIERE ORDEN TÁCTICA", "danger");
+             document.getElementById('btn-mode-hidden').style.borderColor = "red";
+            setTimeout(()=>document.getElementById('btn-mode-hidden').style.borderColor = "#555", 500);
+            return;
+        }
+        myVP+=1; 
+        publish({type:'SCORE_UPDATE', vp:myVP}); 
+        log("MISION CUMPLIDA"); 
     }
+    // Dash y otros ops siguen permitidos en cualquier modo (a menos que quieras restringirlos también)
+    else {
+        log(op);
+    }
+    // ---------------------------------------------------
+
+    publish({type:'OP_ACTION', opType: op});
+    passTurn(0);
+}
 
     window.startActionPhase = function() {
         if(gameState !== 'MY_TURN') return;
         const me = myUnits[myIdx];
         if(me.activations >= 2) { log("UNIDAD AGOTADA"); return; }
+        if(me.mode !== 'open') {
+        log("ERROR: REQUIERE ORDEN DE ATAQUE", "danger");
+        // Hacemos un pequeño efecto visual en el botón de modo para indicar el error
+        document.getElementById('btn-mode-open').style.borderColor = "red";
+        setTimeout(()=>document.getElementById('btn-mode-open').style.borderColor = "#555", 500);
+        return;
+        }
         dicePhase = 'ATTACK_ROLL';
         
         let diceCount = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
@@ -637,6 +662,17 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
         document.getElementById('btn-mode-hidden').className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
         
         document.getElementById('btn-combat-mode').innerHTML = combatMode === 'ranged' ? "<span>🔫</span>" : "<span>⚔️</span>";
+        // Si estoy en Táctica, el botón de disparar se ve apagado
+            if(me.mode === 'hidden') {
+                document.getElementById('btn-act').style.opacity = "0.3";
+                document.querySelector('.op-mission').style.opacity = "1";
+                document.querySelector('.op-mission').style.border = "1px solid var(--gold)";
+            } else {
+                // Si estoy en Ataque, el botón de misión se ve apagado
+                document.getElementById('btn-act').style.opacity = "1";
+                document.querySelector('.op-mission').style.opacity = "0.3";
+                document.querySelector('.op-mission').style.border = "1px solid #333";
+            }
         document.getElementById('btn-act').innerHTML = combatMode === 'ranged' ? "<span>DISPARAR</span>" : "<span>GOLPEAR</span>";
         document.getElementById('my-r').className = combatMode==='ranged' ? 'stat-val hl' : 'stat-val';
         document.getElementById('my-m').className = combatMode==='melee' ? 'stat-val hl' : 'stat-val';
@@ -718,5 +754,6 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
 </script>
 </body>
 </html>
+
 
 
