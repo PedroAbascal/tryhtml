@@ -48,7 +48,16 @@
         .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; flex-direction: column; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); pointer-events: auto; width: 100%; box-sizing: border-box;}
         .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px; }
         .score-board { font-size: 1.2rem; font-weight: bold; color: #fff; text-shadow: 0 0 10px var(--c); letter-spacing: 2px; }
-        .score-detail { font-size: 0.6rem; color: #888; text-transform: uppercase; }
+        .score-detail { 
+            font-size: 0.6rem; 
+            color: #aaa; 
+            text-transform: uppercase; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            max-width: 95%;
+        }
+        .secret-hl { color: var(--gold); font-weight: bold; }
 
         .turn-badge { border: 2px solid #555; padding: 5px 15px; font-weight: bold; background: #000; color: #555; text-transform: uppercase; font-size: 0.8rem; transition: 0.3s; }
         .turn-badge.planning { border-color: var(--gold); color: var(--gold); }
@@ -74,6 +83,28 @@
         .mode-toggle { cursor: pointer; padding: 2px 5px; border: 1px solid #555; color: #888; background: #000; font-family: monospace; font-size: 1rem; width: 45%; }
         .mode-toggle.selected { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.1); }
 
+
+        #btn-claim-secret {
+        display: none; /* Oculto por defecto */
+        margin-top: 5px;
+        background: #000;
+        color: var(--gold);
+        border: 1px solid var(--gold);
+        box-shadow: 0 0 5px var(--gold);
+        animation: pulseSecret 2s infinite;
+        width: 100%;
+        font-size: 0.7rem;
+        padding: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        text-transform: uppercase;
+        }
+        @keyframes pulseSecret { 
+            0% { box-shadow: 0 0 2px var(--gold); } 
+            50% { box-shadow: 0 0 10px var(--gold); } 
+            100% { box-shadow: 0 0 2px var(--gold); } 
+        }
+        
         #dice-overlay { 
             position: absolute; bottom: 0; left: 0; width: 100%; height: 75%; 
             background: rgba(0, 15, 30, 0.98); border-top: 4px solid var(--gold); 
@@ -196,6 +227,7 @@
             <div class="top-row">
                 <div class="score-board">YO: <span id="my-score">0</span> | RIV: <span id="enemy-score">0</span></div>
                 <div class="turn-badge planning" id="turn-indicator">PLANIFICACIÓN</div>
+                <button type="button" id="btn-claim-secret" class="btn-small" onclick="tryClaimSecret()">RECLAMAR SECRETA</button>
             </div>
             <div class="top-row">
                 <div id="round-display" style="font-size:0.8rem; font-weight:bold;">RND 1/4</div>
@@ -708,6 +740,20 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
         document.getElementById('my-score').innerText = myVP;
         document.getElementById('enemy-score').innerText = enemyVP;
         document.getElementById('round-display').innerText = `RND ${currentRound}/${maxRounds}`;
+        // --- CAMBIO 1.5: Lógica del Botón Reclamar ---
+        const btnSecret = document.getElementById('btn-claim-secret');
+        
+        // Solo mostramos el botón si:
+        // 1. Hay secundarias activas
+        // 2. NO la he reclamado todavía
+        // 3. NO estoy en fase de planificación (la partida está en curso)
+        if (secondaryActive && !secretClaimed && gameState !== 'PLANNING') {
+            btnSecret.style.display = 'block';
+            btnSecret.innerText = `RECLAMAR: ${secretMission} (+2 PV)`;
+        } else {
+            btnSecret.style.display = 'none';
+        }
+    
     }
 
     window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; updateHUD(); } }
@@ -737,7 +783,20 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
     function showConfirmModal(text, reqData) { pendingRequest = reqData; const modal = document.getElementById('confirm-modal'); document.getElementById('modal-msg').innerText = text; modal.classList.add('show'); }
     window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
     function assignSecretMission() { if(secondaryActive) secretMission = SECRET_POOL[Math.floor(Math.random()*SECRET_POOL.length)]; else secretMission = null; }
-    function updateMissionDisplay() { document.getElementById('mission-info').innerText = secondaryActive && secretMission ? `${primaryMission} + SEC` : primaryMission; }
+  
+    function updateMissionDisplay() { 
+    const container = document.getElementById('mission-info');
+    
+    if (secondaryActive && secretMission) {
+        // Muestra: PRIMARIA | SEC: [NOMBRE MISION]
+        container.innerHTML = `${primaryMission} <span style="color:#666">|</span> <span style="color:var(--gold); font-weight:bold;">SEC: ${secretMission}</span>`;
+    } else if (secondaryActive) {
+        container.innerHTML = `${primaryMission} <span style="color:#666">|</span> SEC: ???`;
+    } else {
+        container.innerText = primaryMission;
+    }
+}
+    
     function commitPlanning() { 
         if(gameState !== 'PLANNING') return;
         if(enemyUnits.length === 0) { log("ESPERANDO RIVAL..."); return; }
@@ -765,6 +824,7 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
 </script>
 </body>
 </html>
+
 
 
 
