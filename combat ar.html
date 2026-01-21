@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v70 FRIENDLY FIRE FIX</title>
+    <title>SQUAD COMMAND: v1.2 all dead ops FIX</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -358,19 +358,30 @@
         resetPassButtons(); coverActive = false;
     }
 
-    function checkWinCondition() {
-        isGameOver = true;
-        const screen = document.getElementById('game-over-screen');
-        const title = document.getElementById('end-title');
-        const score = document.getElementById('end-score');
-        screen.classList.add('show');
-        let res = "EMPATE"; let color = "#ffcc00";
-        if(myVP > enemyVP) { res = "VICTORIA"; color = "#00ff99"; }
-        else if(myVP < enemyVP) { res = "DERROTA"; color = "#ff0055"; }
-        title.innerText = res; title.style.color = color;
-        score.innerText = `YO: ${myVP} - RIV: ${enemyVP}`;
-        if(client) try{ client.disconnect(); } catch(e){}
+   function triggerGameOver(resultText, colorStr, subText) {
+    isGameOver = true;
+    const screen = document.getElementById('game-over-screen');
+    const title = document.getElementById('end-title');
+    const score = document.getElementById('end-score');
+    
+    // Si no pasamos argumentos, es fin por rondas (calcula puntos)
+    if(!resultText) {
+        if(myVP > enemyVP) { resultText="VICTORIA"; colorStr="#00ff99"; subText="POR PUNTOS"; }
+        else if(myVP < enemyVP) { resultText="DERROTA"; colorStr="#ff0055"; subText="POR PUNTOS"; }
+        else { resultText="EMPATE"; colorStr="#ffcc00"; subText="TIEMPO AGOTADO"; }
     }
+
+    screen.classList.add('show');
+    title.innerText = resultText; 
+    title.style.color = colorStr;
+    // Mostramos el motivo (Aniquilación o Puntos) + el marcador final
+    score.innerHTML = `<div style="font-size:0.8rem; color:#888; margin-bottom:10px;">${subText}</div>YO: ${myVP} - RIV: ${enemyVP}`;
+
+    if(client) try{ client.disconnect(); } catch(e){}
+}
+
+// Mantenemos el nombre antiguo como alias para no romper el código que llama a checkWinCondition()
+const checkWinCondition = () => triggerGameOver(null, null, null);
 
     function checkRoundOver() {
         if(isGameOver) return;
@@ -498,7 +509,8 @@
                     log(`ENEMIGO ABATIDO (+${pts} PV)`); publish({type:'SCORE_UPDATE', vp:myVP});
                 }
             });
-            updateHUD(); 
+            updateHUD();
+            checkAliveStatus();
         }
     }
 
@@ -658,6 +670,22 @@
     window.closeDice=()=>{document.getElementById('dice-overlay').classList.remove('show');};
     window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
     window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
+
+   
+    function checkAliveStatus() {
+        if(isGameOver || !myUnits.length || !enemyUnits.length) return;
+    
+        // Contamos vivos (HP actual > 0)
+        const myLiveCount = myUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
+        const enLiveCount = enemyUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
+    
+        if (myLiveCount === 0) {
+            triggerGameOver("DERROTA", "#ff0055", "SQUAD ELIMINADO");
+        } else if (enLiveCount === 0) {
+            triggerGameOver("VICTORIA", "#00ff99", "ENEMIGO ANIQUILADO");
+        }
+    }
+    
     function executeSecretClaim() { secretClaimed = true; myVP += 2; log(`SECRETA ACEPTADA (+2 PV)`); document.getElementById('btn-claim-secret').style.display = 'none'; publish({type: 'SCORE_UPDATE', vp: myVP}); updateHUD(); }
     function showConfirmModal(text, reqData) { pendingRequest = reqData; const modal = document.getElementById('confirm-modal'); document.getElementById('modal-msg').innerText = text; modal.classList.add('show'); }
     window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
@@ -673,7 +701,14 @@
     function startDefensePhase() { dicePhase = 'DEFENSE_ROLL'; const me = myUnits[myIdx]; activeDice = Array(3).fill(0).map(()=>Math.ceil(Math.random()*6)); diceTarget = parseInt(me.stats.sv.replace('+','')); document.getElementById('btn-cover-toggle').style.display = 'block'; showDiceOverlay('DEFENSE_ROLL', activeDice, diceTarget, true); }
     function showDiceOverlay(phase, dice, target, isInteractive) { const pool = document.getElementById('dice-pool'); document.getElementById('active-section').style.display = 'block'; pool.innerHTML = ''; document.getElementById('dice-title').innerText = phase==='ATTACK_ROLL' ? "ATAQUE" : "DEFENSA"; dice.forEach((val, i) => { const d = document.createElement('button'); d.type = "button"; d.className = 'die-btn'; d.innerText = ['?','⚀','⚁','⚂','⚃','⚄','⚅'][val]; if(val === 6) d.classList.add('crit'); else if(val >= target) d.classList.add(phase==='ATTACK_ROLL'?'hit':'save-ok'); else d.classList.add(phase==='ATTACK_ROLL'?'miss':'save-fail'); if(isInteractive) d.onclick = (e) => instantReroll(e, i); else d.classList.add('locked'); pool.appendChild(d); }); document.getElementById('dice-overlay').classList.add('show'); if(isInteractive) document.getElementById('btn-dice-main').style.display = 'block'; }
     function syncDiceToRival(uName) { publish({type: 'DICE_SYNC', phase: dicePhase, dice: activeDice, target: diceTarget, uName: uName}); }
-    function applyDamage(n) { if(n>0){ document.getElementById('flash-fx').className='flash'; setTimeout(()=>document.getElementById('flash-fx').className='',300); globalHP[myUnits[myIdx].uid].c=Math.max(0,globalHP[myUnits[myIdx].uid].c-n); publish({type:'SYNC_HP',state:globalHP}); updateHUD(); } }
+    function applyDamage(n) { 
+        if(n>0){ document.getElementById('flash-fx').className='flash'; 
+                setTimeout(()=>document.getElementById('flash-fx').className='',300); 
+                globalHP[myUnits[myIdx].uid].c=Math.max(0,globalHP[myUnits[myIdx].uid].c-n); 
+                publish({type:'SYNC_HP',state:globalHP}); 
+                updateHUD(); 
+                checkAliveStatus();
+               } }
     function log(t, type='info') { const c = document.getElementById('combat-log'); while(c.children.length>=6) c.lastChild.remove(); const el = document.createElement('div'); el.innerText = `> ${t}`; el.className = `log-entry ${type}`; c.prepend(el); setTimeout(()=>el.remove(), 10000); }
     function publish(p) { if(client){ p.sender=MY_ID; client.send(TOPIC, JSON.stringify(p)); } }
     function resetRound() { if(isGameOver) return; if(currentRound>=maxRounds) { checkWinCondition(); return; } currentRound++; gameState='PLANNING'; iAmReady=false; enemyIsReady=false; myUnits.forEach(u=>{u.activations=0;u.gearUsed=false;}); resetPassButtons(); document.getElementById('planning-controls').style.display='block'; document.getElementById('combat-actions').style.display='flex'; document.getElementById('turn-indicator').innerText='PLANIFICACIÓN'; document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show')); updateHUD(); log(`INICIO RONDA ${currentRound}`); }
@@ -683,4 +718,5 @@
 </script>
 </body>
 </html>
+
 
