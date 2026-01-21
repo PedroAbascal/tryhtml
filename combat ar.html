@@ -126,7 +126,7 @@
         .log-entry.success { border-color: var(--gold); color: #fffee0; text-shadow: 0 0 5px var(--gold); }
         @keyframes slideIn { from { opacity:0; transform: translateX(-50px); } to { opacity:1; transform: translateX(0); } }
 
-        #game-over-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
+        #game-over-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
         #game-over-screen.show { opacity: 1; pointer-events: auto; }
         .end-title { font-size: 3rem; font-weight: bold; margin-bottom: 20px; letter-spacing: 5px; }
         
@@ -742,6 +742,7 @@
 
     function triggerGameOver(resultText, colorStr, subText) {
         isGameOver = true;
+        document.getElementById('dice-overlay').style.display = 'none';
         const screen = document.getElementById('game-over-screen');
         const title = document.getElementById('end-title');
         const score = document.getElementById('end-score');
@@ -905,4 +906,5 @@
 </script>
 </body>
 </html>
+
 
