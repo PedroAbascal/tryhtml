@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v1.5</title>
+    <title>SQUAD COMMAND: v1.6</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -498,8 +498,34 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
         else if(d.type === 'JOIN_REQ' || d.type === 'JOIN_ACK') {
             if(!enemyUnits.length) {
                 enemyUnits = d.squad; initialEnemyCount = enemyUnits.length;
-                if(d.type==='JOIN_REQ') publish({type:'JOIN_ACK', squad:myUnits, rounds:maxRounds, pMission:primaryMission}); 
-                else { maxRounds=d.rounds; updateMissionDisplay(); }
+                if(d.type==='JOIN_REQ') {
+                        publish({
+                            type: 'JOIN_ACK', 
+                            squad: myUnits, 
+                            rounds: maxRounds, 
+                            pMission: primaryMission,     // Misión Principal elegida por Host
+                            secActive: secondaryActive    // Boolean: ¿Hay secundarias?
+                        }); 
+                    }
+                else { 
+                    // 1. Sincronizar Rondas
+                    maxRounds = d.rounds; 
+                    
+                    // 2. Sincronizar Misión Principal
+                    if(d.pMission) primaryMission = d.pMission;
+                    
+                    // 3. Sincronizar Misiones Secundarias
+                    // Si el host dice que hay secundarias (true) o no (false), acatamos.
+                    if(typeof d.secActive !== 'undefined') {
+                        secondaryActive = d.secActive;
+                        // Regeneramos la misión secreta basándonos en la regla del Host
+                        assignSecretMission(); 
+                    }
+                
+                    // 4. Actualizar la interfaz con los nuevos datos
+                    updateMissionDisplay(); 
+                    log(`REGLAS SINCRONIZADAS CON HOST.`);
+                }
                 enemyUnits.forEach(u => { if(!globalHP[u.uid] && u.stats) globalHP[u.uid] = {c:parseInt(u.stats.hp)||1, m:parseInt(u.stats.hp)||1}; });
                 updateHUD(); log(`RIVAL CONECTADO.`);
                 const btn = document.getElementById('btn-ready');
@@ -825,6 +851,7 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
 </script>
 </body>
 </html>
+
 
 
 
