@@ -121,6 +121,32 @@
             transition: transform 0.1s; position:relative; padding: 0; margin: 0;
             appearance: none; -webkit-appearance: none;
         }
+
+        .die-face {
+        font-size: 2.5rem; 
+        width: 45px; height: 45px; 
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; 
+        transition: transform 0.1s, color 0.2s;
+        color: #fff;
+        border-radius: 5px;
+        background: #222;
+        border: 1px solid #444;
+        }
+        .die-face:hover { background: #333; }
+        .die-face.selected { 
+            color: #000; 
+            background: var(--gold); 
+            border-color: #fff;
+            transform: scale(1.1); 
+            box-shadow: 0 0 10px var(--gold);
+        }
+        .die-face.locked { pointer-events: none; opacity: 0.7; }
+        
+        /* Ajuste para que las estrellas sigan viéndose bien */
+        .star-gold { color: #ffd700; text-shadow: 0 0 8px #ffd700; font-size: 2rem; }
+        .star-blue { color: #00ccff; text-shadow: 0 0 5px #00ccff; font-size: 2rem; }
+        .star-miss { color: #444; font-size: 1rem; }
         .die-btn.rotating { animation: spin 0.2s ease-out; }
         @keyframes spin { 0% { transform: rotate(0deg) scale(0.8); } 100% { transform: rotate(360deg) scale(1); } }
         .die-btn.crit { color: var(--gold); text-shadow: 0 0 25px var(--gold); }
@@ -358,10 +384,14 @@
         <div id="combat-log-visual" class="combat-log"></div>
 
         <div id="combat-actions-bar" style="margin-top:20px; display:flex; gap:10px; justify-content:center;">
+            <button id="btn-reroll" class="btn" style="background:#ff9900; color:#000; display:none;" onclick="rerollFailures()">RE-TIRAR FALLOS</button>
+            <button id="btn-confirm-atk" class="btn" style="background:var(--g); color:#000; display:none;" onclick="confirmAttack()">CONFIRMAR ATAQUE</button>
+            
             <button id="btn-roll-def" class="btn" style="display:none;" onclick="rollDefense()">TIRAR DEFENSA</button>
-            <button id="btn-apply-dmg" class="btn" style="background:var(--gold); color:#000; display:none;">APLICAR DAÑO</button>
+            <button id="btn-apply-dmg" class="btn" style="background:var(--r); color:#fff; display:none;">APLICAR DAÑO</button>
+            
             <button id="btn-cancel-combat" class="btn" style="background:#444;" onclick="cancelCombat()">CANCELAR</button>
-            <button id="btn-close-combat" class="btn" style="display:none;" onclick="closeCombatOverlay()">CERRAR</button>
+            <button id="btn-close-combat" class="btn" style="display:none;" onclick="endCombatTurn()">CERRAR Y PASAR</button>
         </div>
     </div>
 </div>
@@ -397,6 +427,9 @@
     let pendingRequest = null; let coverActive = false; 
     let currentWeaponDmg = 1; 
     let combatPendingDmg = 0; // Daño temporal antes de defensa
+    let currentRolls = []; // Array de dados actuales (atacante o defensor)
+    let combatTargetVal = 4; // Valor para impactar (se guarda al iniciar)
+    let hasRerolled = false; // Para limitar el re-roll a una vez
 
     window.initSystem = function() {
         MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
@@ -609,15 +642,16 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
         document.getElementById('btn-apply-dmg').style.display = 'none';
 
     } else if (d.stage === 'RESOLVED') {
-        // EL ENEMIGO SE DEFENDIÓ
-        renderStars(d.rolls, 'pool-def'); // Veo sus dados de defensa
-        logCombat(`RIVAL defendió. Daño Final: ${d.finalDmg}`);
+        renderStars(d.rolls, 'pool-def'); 
+        logCombat(`RIVAL defendió. Daño Final Aplicado: ${d.finalDmg}`);
         
-        // Botón para cerrar
+        // --- AQUÍ HABILITAMOS EL BOTÓN DE FIN DE TURNO ---
+        hideAllCombatButtons();
         const btnClose = document.getElementById('btn-close-combat');
         btnClose.style.display = 'inline-block';
-        document.getElementById('btn-cancel-combat').style.display = 'none';
-    } 
+        btnClose.innerText = "TERMINAR ACTIVACIÓN"; 
+        // ------------------------------------------------
+    }
     else if (d.stage === 'CANCEL') {
         closeCombatOverlay();
         log("COMBATE CANCELADO POR RIVAL", "warning");
@@ -640,6 +674,54 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
         }
     }
 
+function renderDiceFaces(rolls, containerId, interactive) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    const faces = ['?','⚀','⚁','⚂','⚃','⚄','⚅']; // Unicode dice
+
+    rolls.forEach((val, index) => {
+        let div = document.createElement('div');
+        div.className = 'die-face';
+        div.innerText = faces[val];
+        
+        if (interactive && canReroll) {
+            div.onclick = () => toggleDieSelection(index);
+            // Si ya estaba seleccionado, mantener estilo
+            if (selectedDiceIndices.includes(index)) {
+                div.classList.add('selected');
+            }
+        } else {
+            div.classList.add('locked');
+        }
+        container.appendChild(div);
+    });
+}
+
+function toggleDieSelection(index) {
+    if(!canReroll) return;
+    
+    const div = document.getElementById('pool-atk').children[index];
+    
+    if (selectedDiceIndices.includes(index)) {
+        // Deseleccionar
+        selectedDiceIndices = selectedDiceIndices.filter(i => i !== index);
+        div.classList.remove('selected');
+    } else {
+        // Seleccionar
+        selectedDiceIndices.push(index);
+        div.classList.add('selected');
+    }
+
+    // Mostrar u ocultar botón de re-roll según selección
+    const btnReroll = document.getElementById('btn-reroll');
+    if (selectedDiceIndices.length > 0) {
+        btnReroll.style.display = 'inline-block';
+        btnReroll.innerText = `RE-TIRAR (${selectedDiceIndices.length})`;
+    } else {
+        btnReroll.style.display = 'none';
+    }
+}
+    
 function cancelCombat() {
     publish({type:'COMBAT_SYNC', stage:'CANCEL'});
     closeCombatOverlay();
@@ -707,74 +789,63 @@ function logCombat(msg) {
     // --- CAMBIO 1.8: Lógica de Combate Unificada ---
 function initiateCombat() {
     if(gameState !== 'MY_TURN') return;
-    
     const me = myUnits[myIdx];
-    
-    // 1. Validaciones (Copiadas de tu antigua startActionPhase)
+
+    // Validaciones (igual que antes)
     if(me.activations >= 2) { log("UNIDAD AGOTADA"); return; }
     if(me.mode !== 'open') {
         log("ERROR: REQUIERE ORDEN DE ATAQUE", "danger");
-        document.getElementById('btn-mode-open').style.borderColor = "red";
-        setTimeout(()=>document.getElementById('btn-mode-open').style.borderColor = "#555", 500);
         return;
     }
 
-    // 2. Lectura de Stats Reales
+    // Stats
     let diceCount = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
-    let target = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
+    combatTargetVal = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
     let dmgRaw = combatMode==='ranged' ? me.stats.r_dmg : me.stats.m_dmg;
+    currentWeaponDmg = parseInt(dmgRaw) || 1;
+    if(me.activations === 1) { combatTargetVal++; log("FATIGA: +1 DIFICULTAD", "danger"); }
+
+    // UI Reset
+    canReroll = true;
+    selectedDiceIndices = [];
     
-    // Fallback de daño
-    currentWeaponDmg = parseInt(dmgRaw);
-    if(isNaN(currentWeaponDmg) || currentWeaponDmg === 0) currentWeaponDmg = 1;
-
-    // Fatiga
-    if(me.activations === 1) { target++; log("FATIGA: +1 DIFICULTAD", "danger"); }
-
-    // 3. Configurar Interfaz Visual
     const overlay = document.getElementById('dice-overlay');
-    overlay.style.display = 'flex'; // Ahora sí se verá gracias al fix de CSS
+    overlay.style.display = 'flex';
     document.getElementById('pool-atk').innerHTML = '';
-    document.getElementById('pool-def').innerHTML = 'Esperando...';
-    document.getElementById('btn-roll-def').style.display = 'none';
-    document.getElementById('btn-apply-dmg').style.display = 'none';
-    document.getElementById('btn-cancel-combat').style.display = 'inline-block';
-    document.getElementById('btn-close-combat').style.display = 'none';
+    document.getElementById('pool-def').innerHTML = 'Esperando confirmación...';
     document.getElementById('combat-log-visual').innerHTML = '';
-
-    // 4. Tirar Dados Reales
-    let rolls = [];
-    let hits = 0, crits = 0;
-    for(let i=0; i<diceCount; i++) {
-        let r = Math.ceil(Math.random()*6);
-        rolls.push(r);
-        if(r===6) crits++; else if(r>=target) hits++;
-    }
-
-    // 5. Mostrar y Calcular
-    renderStars(rolls, 'pool-atk');
-    combatPendingDmg = (hits * 1) + (crits * 1); // Nota: El daño se calcula al resolver, aquí contamos éxitos para mostrar
-    // PERO para simplificar la sincronización, enviamos el daño potencial total:
-    // (Ajuste a tu regla de daño: ¿Los criticos hacen mas daño base o solo son imparables?)
-    // Asumiremos por ahora: Daño = (Hits + Crits) * DañoArma.
-    // La defensa luego restará éxitos.
     
-    // Guardamos cuántos éxitos totales (normales + criticos)
-    let totalHits = hits + crits;
-    let potentialDamage = totalHits * currentWeaponDmg;
+    hideAllCombatButtons();
+    // Solo mostramos Confirmar y Cancelar. El de Re-tirar aparece si tocas un dado.
+    document.getElementById('btn-confirm-atk').style.display = 'inline-block';
+    document.getElementById('btn-cancel-combat').style.display = 'inline-block';
 
-    logCombat(`${me.name} DISPARA: ${hits} Hits, ${crits} Crits.`);
-    logCombat(`Daño Potencial: ${totalHits} impactos x ${currentWeaponDmg} dmg`);
+    // Tirada inicial
+    currentRolls = [];
+    for(let i=0; i<diceCount; i++) currentRolls.push(Math.ceil(Math.random()*6));
 
-    // 6. Enviar al Rival
-    publish({
-        type: 'COMBAT_SYNC',
-        stage: 'ATTACK',
-        rolls: rolls,
-        dmg: potentialDamage, // Enviamos el daño total potencial
-        hitsStruct: { normal: hits, crit: crits, dmgValue: currentWeaponDmg }, // Estructura detallada para defensa
-        uName: me.name
+    // Renderizar COMO DADOS (true = interactivo)
+    renderDiceFaces(currentRolls, 'pool-atk', true);
+    
+    logCombat(`${me.name} prepara ataque... (Toca los dados para cambiar)`);
+}
+
+// Helper para actualizar pantalla del atacante
+function updateAttackVisuals(name) {
+    let hits = 0, crits = 0;
+    currentRolls.forEach(r => {
+        if(r===6) crits++; else if(r>=combatTargetVal) hits++;
     });
+    
+    renderStars(currentRolls, 'pool-atk');
+    let potentialDmg = (hits + crits) * currentWeaponDmg;
+    
+    logCombat(`${name} TIRA: ${hits} Hits, ${crits} Crits. (Pot: ${potentialDmg})`);
+}
+
+function hideAllCombatButtons() {
+    const ids = ['btn-reroll', 'btn-confirm-atk', 'btn-roll-def', 'btn-apply-dmg', 'btn-cancel-combat', 'btn-close-combat'];
+    ids.forEach(id => document.getElementById(id).style.display = 'none');
 }
 
     function rollDefense() {
@@ -810,6 +881,61 @@ function initiateCombat() {
     document.getElementById('btn-roll-def').style.display = 'none';
 }
 
+function rerollFailures() { // NOTA: Cambia el onclick en el HTML a rerollSelected() si quieres, o usa este nombre
+    // Usaremos el nombre que ya tienes en el HTML 'rerollFailures' para no obligarte a cambiar el HTML, 
+    // pero la lógica interna cambia:
+    
+    if(!canReroll || selectedDiceIndices.length === 0) return;
+    
+    // Animación simple (opcional) o cambio directo
+    selectedDiceIndices.forEach(idx => {
+        currentRolls[idx] = Math.ceil(Math.random()*6);
+    });
+
+    canReroll = false; // Gastamos la oportunidad
+    selectedDiceIndices = []; // Limpiamos selección
+
+    // Re-renderizar dados, pero ya NO interactivos (false)
+    renderDiceFaces(currentRolls, 'pool-atk', false);
+    
+    document.getElementById('btn-reroll').style.display = 'none';
+    logCombat(">> DADOS RE-TIRADOS");
+}
+
+function confirmAttack() {
+    hideAllCombatButtons();
+    document.getElementById('btn-cancel-combat').style.display = 'inline-block';
+    
+    // 1. TRANSFORMACIÓN VISUAL: De Dados a Estrellas
+    // Ahora que confirmamos, mostramos el resultado real (Estrellas)
+    renderStars(currentRolls, 'pool-atk'); 
+    
+    // 2. Calculamos éxitos
+    let hits = 0, crits = 0;
+    currentRolls.forEach(r => {
+        if(r===6) crits++; else if(r>=combatTargetVal) hits++;
+    });
+    
+    let potentialDamage = (hits + crits) * currentWeaponDmg;
+
+    logCombat(`CONFIRMADO: ${hits} Hits, ${crits} Crits.`);
+    
+    // 3. Enviamos
+    publish({
+        type: 'COMBAT_SYNC',
+        stage: 'ATTACK',
+        rolls: currentRolls,
+        dmg: potentialDamage,
+        hitsStruct: { normal: hits, crit: crits, dmgValue: currentWeaponDmg },
+        uName: myUnits[myIdx].name
+    });
+}
+    function endCombatTurn() {
+    document.getElementById('dice-overlay').style.display = 'none';
+    
+    // IMPORTANTE: Aquí consumimos la acción y pasamos turno
+    passTurn(0); 
+}
     function instantReroll(e, index) {
         if(e) { e.preventDefault(); e.stopPropagation(); }
         const oldVal = activeDice[index];
@@ -980,6 +1106,7 @@ function initiateCombat() {
 </script>
 </body>
 </html>
+
 
 
 
