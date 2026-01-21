@@ -92,7 +92,7 @@
         border: 1px solid var(--gold);
         box-shadow: 0 0 5px var(--gold);
         animation: pulseSecret 2s infinite;
-        width: 100%;
+        width: 25%;
         font-size: 0.7rem;
         padding: 5px;
         cursor: pointer;
@@ -216,6 +216,9 @@
             <select id="round-select">
                 <option value="4">4 RONDAS</option>
                 <option value="5">5 RONDAS</option>
+                <option value="6">6 RONDAS</option>
+                <option value="7">7 RONDAS</option>
+                <option value="8">8 RONDAS</option>
             </select>
             <input type="text" id="room-id" value="WARZONE-10">
             <button type="button" class="btn" onclick="initSystem()"><span>DESPLEGAR</span></button>
@@ -227,7 +230,7 @@
             <div class="top-row">
                 <div class="score-board">YO: <span id="my-score">0</span> | RIV: <span id="enemy-score">0</span></div>
                 <div class="turn-badge planning" id="turn-indicator">PLANIFICACIÓN</div>
-                <button type="button" id="btn-claim-secret" class="btn-small" onclick="tryClaimSecret()">RECLAMAR SECRETA</button>
+                <div <button type="button" id="btn-claim-secret" class="btn-small" onclick="tryClaimSecret()">RECLAMAR SECRETA</button> </div>
             </div>
             <div class="top-row">
                 <div id="round-display" style="font-size:0.8rem; font-weight:bold;">RND 1/4</div>
@@ -851,6 +854,7 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
 </script>
 </body>
 </html>
+
 
 
 
