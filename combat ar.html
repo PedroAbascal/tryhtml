@@ -174,6 +174,37 @@
         .op-dash { background: var(--c); }
         .op-mission { background: var(--gold); }
         .op-pass { background: #888; color: #000; transition: 0.2s; }
+
+        .dice-arena {
+            width: 95%; max-width: 400px;
+            background: #111; border: 1px solid #333;
+            padding: 15px; border-radius: 8px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .duel-container {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; margin: 20px 0; background: #000; padding: 10px; border-radius: 5px;
+        }
+        .duel-side { width: 45%; text-align: center; }
+        .duel-label { font-size: 0.7rem; color: #666; margin-bottom: 5px; letter-spacing: 1px; }
+        .dice-pool { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; min-height: 30px; }
+        
+        /* Estilos de Iconos (Estrellas) */
+        .d-icon { font-size: 1.4rem; animation: popIn 0.3s ease; }
+        .star-gold { color: #ffd700; text-shadow: 0 0 5px #ffd700; } /* Crítico (6) */
+        .star-blue { color: #00ccff; text-shadow: 0 0 3px #00ccff; } /* Éxito (3-5) */
+        .star-miss { color: #333; font-size: 0.8rem; line-height: 1.8rem; } /* Fallo */
+        
+        @keyframes popIn { 0%{transform:scale(0);} 80%{transform:scale(1.2);} 100%{transform:scale(1);} }
+        
+        .combat-log {
+            width: 100%; height: 60px; overflow-y: auto;
+            background: #0a0a0a; border: 1px solid #222;
+            font-size: 0.7rem; color: #888; text-align: left; padding: 5px;
+            font-family: monospace;
+        }
+        .log-line { margin-bottom: 2px; border-bottom: 1px solid #1a1a1a; }
+        
     </style>
 </head>
 <body>
@@ -292,7 +323,7 @@
             <div id="combat-actions">
                 <button type="button" class="btn" id="btn-combat-mode" style="width:40px; background:#333; color:#fff;" onclick="resetPassButtons(); switchMode()"><span>🔫</span></button>
                 <button type="button" class="btn" id="btn-pass-open" style="flex:1; background:#555; color:#fff;" onclick="tryPass('btn-pass-open')"><span>PASAR</span></button>
-                <button type="button" class="btn" id="btn-act" style="flex:2; background:var(--r); color:#fff;" onclick="resetPassButtons(); startActionPhase()"><span>DISPARAR</span></button>
+                <button type="button" class="btn" id="btn-act" style="flex:2; background:var(--r); color:#fff;" onclick="resetPassButtons(); initiateCombat()"><span>DISPARAR</span></button>
                 <button type="button" class="btn btn-gear" id="btn-gear" style="flex:2; display:none;" onclick="useSpecialGear()"><span>ITEM</span></button>
             </div>
 
@@ -304,22 +335,34 @@
         </div>
     </div>
 
-    <div id="dice-overlay">
-        <div class="dice-header" id="dice-title">FASE DE COMBATE</div>
-        <button type="button" id="btn-cover-toggle" style="display:none;" onclick="toggleCover()">COBERTURA: NO</button>
-        <div id="incoming-section" class="dice-section" style="display:none;">
-            <div class="dice-label"><span>AMENAZA ENTRANTE</span></div>
-            <div class="dice-container" id="incoming-pool"></div>
+    <div id="dice-overlay" class="overlay" style="display:none;">
+    <div class="dice-arena">
+        <h2 id="combat-phase-title" style="margin:0; color:#fff;">COMBATE</h2>
+        
+        <div class="duel-container">
+            <div class="duel-side" id="side-atk">
+                <div class="duel-label">ATACANTE</div>
+                <div id="pool-atk" class="dice-pool"></div>
+            </div>
+            
+            <div style="font-size:2rem; color:#444;">VS</div>
+            
+            <div class="duel-side" id="side-def">
+                <div class="duel-label">DEFENSOR</div>
+                <div id="pool-def" class="dice-pool">Esperando...</div>
+            </div>
         </div>
-        <div id="active-section" class="dice-section">
-            <div class="dice-label" id="active-label"><span>TUS DADOS</span></div>
-            <div class="dice-sub" id="dice-sub" style="font-size:0.6rem; color:#888;">TOCA UN DADO PARA RE-TIRAR</div>
-            <div class="dice-container" id="dice-pool"></div>
-        </div>
-        <div style="display:flex; gap:10px; width:90%;">
-            <button type="button" class="btn" id="btn-dice-main" onclick="proceedPhase(event)"><span>CONFIRMAR</span></button>
+
+        <div id="combat-log-visual" class="combat-log"></div>
+
+        <div id="combat-actions-bar" style="margin-top:20px; display:flex; gap:10px; justify-content:center;">
+            <button id="btn-roll-def" class="btn" style="display:none;" onclick="rollDefense()">TIRAR DEFENSA</button>
+            <button id="btn-apply-dmg" class="btn" style="background:var(--gold); color:#000; display:none;">APLICAR DAÑO</button>
+            <button id="btn-cancel-combat" class="btn" style="background:#444;" onclick="cancelCombat()">CANCELAR</button>
+            <button id="btn-close-combat" class="btn" style="display:none;" onclick="closeCombatOverlay()">CERRAR</button>
         </div>
     </div>
+</div>
 
 <script>
     const MECHANICS_DB = {
@@ -351,6 +394,7 @@
     let consecutivePasses = 0; let passConfirm = null;
     let pendingRequest = null; let coverActive = false; 
     let currentWeaponDmg = 1; 
+    let combatPendingDmg = 0; // Daño temporal antes de defensa
 
     window.initSystem = function() {
         MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
@@ -543,23 +587,39 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
             enemyUnits = d.squad; enemyIsReady = true; enemyInitRoll = d.roll;
             document.getElementById('en-ready-mark').classList.add('show'); checkStartRound();
         }
-        else if(d.type === 'DICE_SYNC') {
-            if(d.phase === 'ATTACK_ROLL') {
-                showDiceOverlay(d.phase, d.dice, d.target, false); 
-                document.getElementById('dice-sub').innerText = `${d.uName} apuntando...`;
-                if(d.contextLog) log(`RIVAL: ${d.contextLog}`); 
-            }
-        }
-        else if(d.type === 'REQ_DEFENSE') { 
-            pendingHits = d.hitsStruct;
-            startDefensePhase(); 
-        }
-        else if(d.type === 'DAMAGE_RESOLVE') { 
-            // CRITICAL FIX: Do not apply damage here. Just log and pass turn.
-            log(`ATAQUE EXITOSO: RIVAL RECIBIÓ ${d.dmg} DAÑO`, 'success'); 
-            closeDice(); 
-            passTurn(0); 
-        }
+        else if (d.type === 'COMBAT_SYNC') {
+    const overlay = document.getElementById('dice-overlay');
+    
+    if (d.stage === 'ATTACK') {
+        // ME ESTÁN ATACANDO
+        overlay.style.display = 'flex';
+        document.getElementById('combat-log-visual').innerHTML = ''; // Limpiar log anterior
+        renderStars(d.rolls, 'pool-atk'); // Muestro dados del enemigo
+        document.getElementById('pool-def').innerHTML = '???';
+        
+        combatPendingDmg = d.dmg;
+        logCombat(`ENEMIGO ataca con daño potencial: ${d.dmg}`);
+        
+        // Habilitar mi botón de defensa
+        document.getElementById('btn-roll-def').style.display = 'inline-block';
+        document.getElementById('btn-cancel-combat').style.display = 'none'; // El defensor no cancela, defiende
+        document.getElementById('btn-apply-dmg').style.display = 'none';
+
+    } else if (d.stage === 'RESOLVED') {
+        // EL ENEMIGO SE DEFENDIÓ
+        renderStars(d.rolls, 'pool-def'); // Veo sus dados de defensa
+        logCombat(`RIVAL defendió. Daño Final: ${d.finalDmg}`);
+        
+        // Botón para cerrar
+        const btnClose = document.getElementById('btn-close-combat');
+        btnClose.style.display = 'inline-block';
+        document.getElementById('btn-cancel-combat').style.display = 'none';
+    } 
+    else if (d.stage === 'CANCEL') {
+        closeCombatOverlay();
+        log("COMBATE CANCELADO POR RIVAL", "warning");
+    }
+}
         else if(d.type === 'OP_ACTION') { if(gameState!=='PLANNING'){ log(`RIVAL: ${d.opType}`); setTurn('MY_TURN', 0); } }
         else if(d.type === 'CHANGE_TURN') { if(gameState!=='PLANNING') setTurn('MY_TURN', d.passes || 0); }
         else if(d.type === 'ROUND_OVER') resetRound();
@@ -577,6 +637,15 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
         }
     }
 
+function cancelCombat() {
+    publish({type:'COMBAT_SYNC', stage:'CANCEL'});
+    closeCombatOverlay();
+}
+
+function closeCombatOverlay() {
+    document.getElementById('dice-overlay').style.display = 'none';
+}
+    
     function passTurn(passes) {
         const me = myUnits[myIdx];
         if (me.activations < 2) me.activations++;
@@ -613,6 +682,94 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
     passTurn(0);
 }
 
+function renderStars(rolls, elementId) {
+    const el = document.getElementById(elementId);
+    el.innerHTML = '';
+    rolls.forEach(r => {
+        let span = document.createElement('span');
+        span.className = 'd-icon';
+        if(r >= 6) { span.innerHTML = '★'; span.classList.add('star-gold'); }
+        else if(r >= 3) { span.innerHTML = '★'; span.classList.add('star-blue'); }
+        else { span.innerHTML = '•'; span.classList.add('star-miss'); }
+        el.appendChild(span);
+    });
+}
+
+function logCombat(msg) {
+    const log = document.getElementById('combat-log-visual');
+    log.innerHTML += `<div class="log-line">> ${msg}</div>`;
+    log.scrollTop = log.scrollHeight;
+}
+
+    function initiateCombat() {
+    if(gameState !== 'MY_TURN') return;
+    
+    // 1. Configurar Interfaz
+    const overlay = document.getElementById('dice-overlay');
+    overlay.style.display = 'flex';
+    document.getElementById('pool-atk').innerHTML = '';
+    document.getElementById('pool-def').innerHTML = 'Esperando...';
+    document.getElementById('btn-roll-def').style.display = 'none';
+    document.getElementById('btn-apply-dmg').style.display = 'none';
+    document.getElementById('btn-cancel-combat').style.display = 'inline-block';
+    document.getElementById('combat-log-visual').innerHTML = '';
+
+    // 2. Tirar Dados (Ejemplo: 4 dados de ataque)
+    let rolls = [];
+    let hits = 0, crits = 0;
+    for(let i=0; i<4; i++) {
+        let r = Math.ceil(Math.random()*6);
+        rolls.push(r);
+        if(r>=6) crits++; else if(r>=3) hits++;
+    }
+
+    // 3. Mostrar y Calcular
+    renderStars(rolls, 'pool-atk');
+    combatPendingDmg = (hits * 3) + (crits * 5); // Define tu daño base aquí
+    logCombat(`ATACANTE: ${hits} Hits, ${crits} Crits. Daño Potencial: ${combatPendingDmg}`);
+
+    // 4. Enviar al Rival
+    publish({
+        type: 'COMBAT_SYNC',
+        stage: 'ATTACK',
+        rolls: rolls,
+        dmg: combatPendingDmg
+    });
+}
+
+    function rollDefense() {
+    let rolls = [];
+    let saves = 0;
+    // Ejemplo: 3 dados de defensa
+    for(let i=0; i<3; i++) {
+        let r = Math.ceil(Math.random()*6);
+        rolls.push(r);
+        if(r>=3) saves++;
+    }
+
+    renderStars(rolls, 'pool-def');
+    
+    // Calculo final
+    let blocked = saves * 3; // Cada save bloquea 3 de daño (ejemplo)
+    let finalDmg = Math.max(0, combatPendingDmg - blocked);
+    
+    logCombat(`DEFENSA: ${saves} Salvadas. Bloqueado: ${blocked}`);
+    logCombat(`DAÑO FINAL APLICABLE: ${finalDmg}`);
+
+    // Botón para aplicar
+    const btnApp = document.getElementById('btn-apply-dmg');
+    btnApp.style.display = 'inline-block';
+    btnApp.innerText = `RECIBIR ${finalDmg} DAÑO`;
+    btnApp.onclick = function() {
+        applyDamage(finalDmg); // Tu función existente de daño
+        publish({type: 'COMBAT_SYNC', stage: 'RESOLVED', rolls: rolls, finalDmg: finalDmg});
+        closeCombatOverlay();
+    };
+
+    // Ocultar botón de tirar defensa para no repetir
+    document.getElementById('btn-roll-def').style.display = 'none';
+}
+    
     window.startActionPhase = function() {
         if(gameState !== 'MY_TURN') return;
         const me = myUnits[myIdx];
@@ -854,6 +1011,7 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
 </script>
 </body>
 </html>
+
 
 
 
