@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v2.1 CLEAN</title>
+    <title>SQUAD COMMAND: v2.2 CLEAN</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
@@ -161,7 +161,7 @@
 
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v2.1 CLEAN</div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v2.2 CLEAN</div>
         <div class="box"><textarea id="json-input" placeholder='PEGAR JSON AQUÍ'></textarea></div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem; color:#888;">MISIÓN PRINCIPAL</div>
@@ -506,17 +506,24 @@
         publish({ type: 'COMBAT_SYNC', stage: 'ATTACK_CONFIRMED', rolls: atkRolls, dmg: potDmg, hitsStruct: { normal: hits, crit: crits, dmgValue: currentWeaponDmg }, uName: myUnits[myIdx].name });
     }
 
-    function startDefenseSequence(atkData) {
-        pendingAtkStats = atkData;
-        setupCombatUI('DEFENDER');
-        document.getElementById('pool-atk').innerHTML = '';
-        renderStars(atkData.rolls, 'pool-atk');
-        
-        defRolls = [];
-        for(let i=0; i<3; i++) defRolls.push(Math.ceil(Math.random()*6));
-        renderDiceFaces(defRolls, 'pool-def', true);
-        logCombat(`RECIBES ATAQUE. Tira defensa...`);
-    }
+    function startDefenseSequence(stats, enemyRolls) {
+    pendingAtkStats = stats;
+    
+    setupCombatUI('DEFENDER');
+    
+    // 1. Dibujar Estrellas del Enemigo (Ahora sí tiene los datos)
+    document.getElementById('pool-atk').innerHTML = '';
+    renderStars(enemyRolls, 'pool-atk');
+    
+    // 2. Generar mis dados de defensa
+    defRolls = [];
+    for(let i=0; i<3; i++) defRolls.push(Math.ceil(Math.random()*6));
+    
+    // 3. Dibujar mis dados (Interactivos)
+    renderDiceFaces(defRolls, 'pool-def', true);
+    
+    logCombat(`RECIBES ATAQUE. Tira defensa...`);
+}
 
     function confirmDefense() {
         hideAllCombatButtons();
@@ -556,36 +563,40 @@
     }
 
     function handleCombatSync(d) {
-        const overlay = document.getElementById('dice-overlay');
-        if (d.stage === 'PRE_ATTACK') {
-            overlay.style.display = 'flex';
-            document.getElementById('combat-log-visual').innerHTML = '';
-            document.getElementById('pool-def').innerHTML = 'Esperando confirmación...';
-            hideAllCombatButtons();
-            renderDiceFaces(d.rolls, 'pool-atk', false);
-            logCombat(`ENEMIGO prepara ataque...`);
-        } 
-        else if (d.stage === 'ATK_REROLL') {
-            renderDiceFaces(d.rolls, 'pool-atk', false);
-            logCombat(`>> ENEMIGO RE-TIRA DADOS`);
-        }
-        else if (d.stage === 'ATTACK_CONFIRMED') {
-            renderStars(d.rolls, 'pool-atk');
-            logCombat(`ATAQUE ENTRANTE: ${d.hitsStruct.crit} Crits, ${d.hitsStruct.normal} Hits`);
-            startDefenseSequence(d.hitsStruct);
-        }
-        else if (d.stage === 'RESOLVED') {
-            renderStars(d.rolls, 'pool-def');
-            logCombat(`RIVAL defendió. Daño Aplicado: ${d.finalDmg}`);
-            hideAllCombatButtons();
-            const btnClose = document.getElementById('btn-close-combat');
-            btnClose.style.display = 'inline-block';
-            btnClose.innerText = "TERMINAR ACTIVACIÓN";
-        }
-        else if (d.stage === 'CANCEL') {
-            closeCombatOverlay(); log("COMBATE CANCELADO POR RIVAL", "warning");
-        }
+    const overlay = document.getElementById('dice-overlay');
+    
+    if (d.stage === 'PRE_ATTACK') {
+        overlay.style.display = 'flex';
+        document.getElementById('combat-log-visual').innerHTML = '';
+        document.getElementById('pool-def').innerHTML = 'Esperando confirmación...';
+        hideAllCombatButtons();
+        renderDiceFaces(d.rolls, 'pool-atk', false);
+        logCombat(`ENEMIGO prepara ataque...`);
+    } 
+    else if (d.stage === 'ATK_REROLL') {
+        renderDiceFaces(d.rolls, 'pool-atk', false);
+        logCombat(`>> ENEMIGO RE-TIRA DADOS`);
     }
+    else if (d.stage === 'ATTACK_CONFIRMED') {
+        renderStars(d.rolls, 'pool-atk');
+        logCombat(`ATAQUE ENTRANTE: ${d.hitsStruct.crit} Crits, ${d.hitsStruct.normal} Hits`);
+        
+        // AQUÍ ESTABA EL ERROR: Ahora pasamos (hitsStruct, rolls)
+        startDefenseSequence(d.hitsStruct, d.rolls);
+    }
+    else if (d.stage === 'RESOLVED') {
+        renderStars(d.rolls, 'pool-def');
+        logCombat(`RIVAL defendió. Daño Aplicado: ${d.finalDmg}`);
+        hideAllCombatButtons();
+        const btnClose = document.getElementById('btn-close-combat');
+        btnClose.style.display = 'inline-block';
+        btnClose.innerText = "TERMINAR ACTIVACIÓN";
+    }
+    else if (d.stage === 'CANCEL') {
+        closeCombatOverlay(); 
+        log("COMBATE CANCELADO POR RIVAL", "warning");
+    }
+}
 
     /* =========================================
        UI & HELPERS
@@ -894,3 +905,4 @@
 </script>
 </body>
 </html>
+
