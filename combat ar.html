@@ -105,13 +105,15 @@
             100% { box-shadow: 0 0 2px var(--gold); } 
         }
         
-        #dice-overlay { 
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 75%; 
-            background: rgba(0, 15, 30, 0.98); border-top: 4px solid var(--gold); 
-            z-index: 100; display: flex; flex-direction: column; align-items: center; 
-            transform: translateY(100%); transition: transform 0.3s; pointer-events: auto; padding-top: 20px;
+       #dice-overlay { 
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.95); 
+        z-index: 2000; 
+        display: none; /* Oculto por defecto, sin transforms raros */
+        flex-direction: column; align-items: center; justify-content: center; 
+        padding: 20px;
         }
-        #dice-overlay.show { transform: translateY(0); }
+       
         .dice-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
         
         .die-btn { 
@@ -598,6 +600,7 @@ const checkWinCondition = () => triggerGameOver(null, null, null);
         document.getElementById('pool-def').innerHTML = '???';
         
         combatPendingDmg = d.dmg;
+        pendingHits = d.hitsStruct || { normal: 0, crit: 0, dmgValue: 1 };
         logCombat(`ENEMIGO ataca con daño potencial: ${d.dmg}`);
         
         // Habilitar mi botón de defensa
@@ -701,39 +704,76 @@ function logCombat(msg) {
     log.scrollTop = log.scrollHeight;
 }
 
-    function initiateCombat() {
+    // --- CAMBIO 1.8: Lógica de Combate Unificada ---
+function initiateCombat() {
     if(gameState !== 'MY_TURN') return;
     
-    // 1. Configurar Interfaz
+    const me = myUnits[myIdx];
+    
+    // 1. Validaciones (Copiadas de tu antigua startActionPhase)
+    if(me.activations >= 2) { log("UNIDAD AGOTADA"); return; }
+    if(me.mode !== 'open') {
+        log("ERROR: REQUIERE ORDEN DE ATAQUE", "danger");
+        document.getElementById('btn-mode-open').style.borderColor = "red";
+        setTimeout(()=>document.getElementById('btn-mode-open').style.borderColor = "#555", 500);
+        return;
+    }
+
+    // 2. Lectura de Stats Reales
+    let diceCount = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
+    let target = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
+    let dmgRaw = combatMode==='ranged' ? me.stats.r_dmg : me.stats.m_dmg;
+    
+    // Fallback de daño
+    currentWeaponDmg = parseInt(dmgRaw);
+    if(isNaN(currentWeaponDmg) || currentWeaponDmg === 0) currentWeaponDmg = 1;
+
+    // Fatiga
+    if(me.activations === 1) { target++; log("FATIGA: +1 DIFICULTAD", "danger"); }
+
+    // 3. Configurar Interfaz Visual
     const overlay = document.getElementById('dice-overlay');
-    overlay.style.display = 'flex';
+    overlay.style.display = 'flex'; // Ahora sí se verá gracias al fix de CSS
     document.getElementById('pool-atk').innerHTML = '';
     document.getElementById('pool-def').innerHTML = 'Esperando...';
     document.getElementById('btn-roll-def').style.display = 'none';
     document.getElementById('btn-apply-dmg').style.display = 'none';
     document.getElementById('btn-cancel-combat').style.display = 'inline-block';
+    document.getElementById('btn-close-combat').style.display = 'none';
     document.getElementById('combat-log-visual').innerHTML = '';
 
-    // 2. Tirar Dados (Ejemplo: 4 dados de ataque)
+    // 4. Tirar Dados Reales
     let rolls = [];
     let hits = 0, crits = 0;
-    for(let i=0; i<4; i++) {
+    for(let i=0; i<diceCount; i++) {
         let r = Math.ceil(Math.random()*6);
         rolls.push(r);
-        if(r>=6) crits++; else if(r>=3) hits++;
+        if(r===6) crits++; else if(r>=target) hits++;
     }
 
-    // 3. Mostrar y Calcular
+    // 5. Mostrar y Calcular
     renderStars(rolls, 'pool-atk');
-    combatPendingDmg = (hits * 3) + (crits * 5); // Define tu daño base aquí
-    logCombat(`ATACANTE: ${hits} Hits, ${crits} Crits. Daño Potencial: ${combatPendingDmg}`);
+    combatPendingDmg = (hits * 1) + (crits * 1); // Nota: El daño se calcula al resolver, aquí contamos éxitos para mostrar
+    // PERO para simplificar la sincronización, enviamos el daño potencial total:
+    // (Ajuste a tu regla de daño: ¿Los criticos hacen mas daño base o solo son imparables?)
+    // Asumiremos por ahora: Daño = (Hits + Crits) * DañoArma.
+    // La defensa luego restará éxitos.
+    
+    // Guardamos cuántos éxitos totales (normales + criticos)
+    let totalHits = hits + crits;
+    let potentialDamage = totalHits * currentWeaponDmg;
 
-    // 4. Enviar al Rival
+    logCombat(`${me.name} DISPARA: ${hits} Hits, ${crits} Crits.`);
+    logCombat(`Daño Potencial: ${totalHits} impactos x ${currentWeaponDmg} dmg`);
+
+    // 6. Enviar al Rival
     publish({
         type: 'COMBAT_SYNC',
         stage: 'ATTACK',
         rolls: rolls,
-        dmg: combatPendingDmg
+        dmg: potentialDamage, // Enviamos el daño total potencial
+        hitsStruct: { normal: hits, crit: crits, dmgValue: currentWeaponDmg }, // Estructura detallada para defensa
+        uName: me.name
     });
 }
 
@@ -769,77 +809,6 @@ function logCombat(msg) {
     // Ocultar botón de tirar defensa para no repetir
     document.getElementById('btn-roll-def').style.display = 'none';
 }
-    
-    window.startActionPhase = function() {
-        if(gameState !== 'MY_TURN') return;
-        const me = myUnits[myIdx];
-        if(me.activations >= 2) { log("UNIDAD AGOTADA"); return; }
-        if(me.mode !== 'open') {
-        log("ERROR: REQUIERE ORDEN DE ATAQUE", "danger");
-        // Hacemos un pequeño efecto visual en el botón de modo para indicar el error
-        document.getElementById('btn-mode-open').style.borderColor = "red";
-        setTimeout(()=>document.getElementById('btn-mode-open').style.borderColor = "#555", 500);
-        return;
-        }
-        dicePhase = 'ATTACK_ROLL';
-        
-        let diceCount = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
-        let target = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
-        let dmgRaw = combatMode==='ranged' ? me.stats.r_dmg : me.stats.m_dmg;
-        
-        currentWeaponDmg = parseInt(dmgRaw);
-        if(isNaN(currentWeaponDmg) || currentWeaponDmg === 0) currentWeaponDmg = 1;
-
-        if(me.activations === 1) { target++; log("FATIGA: +1 DIFICULTAD", "danger"); }
-        
-        log(`ATACANDO (Daño: ${currentWeaponDmg})`);
-        diceTarget = target;
-        activeDice = Array(diceCount).fill(0).map(()=>Math.ceil(Math.random()*6));
-        showDiceOverlay('ATTACK_ROLL', activeDice, diceTarget, true);
-        syncDiceToRival(me.name);
-    }
-
-    window.proceedPhase = function(e) {
-        if(e) { e.preventDefault(); e.stopPropagation(); }
-        if(dicePhase === 'ATTACK_ROLL') {
-            let hitsStruct = { normal: 0, crit: 0, dmgValue: currentWeaponDmg };
-            activeDice.forEach(val => { if(val === 6) hitsStruct.crit++; else if(val >= diceTarget) hitsStruct.normal++; });
-            log(`IMPACTOS: ${hitsStruct.normal} N, ${hitsStruct.crit} Crit`);
-            publish({ type: 'REQ_DEFENSE', hitsStruct: hitsStruct, uName: myUnits[myIdx].name });
-            document.getElementById('btn-dice-main').style.display = 'none';
-        } 
-        else if(dicePhase === 'DEFENSE_ROLL') {
-            const sv = parseInt(myUnits[myIdx].stats.sv.replace('+',''));
-            
-            let defCrits = activeDice.filter(d => d === 6).length;
-            let defNormals = activeDice.filter(d => d >= sv && d < 6).length;
-
-            if (coverActive) { defNormals++; log("COBERTURA: +1 SALVACIÓN"); }
-
-            let incCrits = pendingHits.crit;
-            let incNormals = pendingHits.normal;
-            let incDmgPerHit = pendingHits.dmgValue || 1;
-
-            let blockedCrits = Math.min(incCrits, defCrits);
-            let totalDmgCritsHits = incCrits - blockedCrits; 
-            
-            let extraDefCrits = defCrits - blockedCrits;
-            let totalDefNormals = defNormals + extraDefCrits;
-            
-            let blockedNormals = Math.min(incNormals, totalDefNormals);
-            let totalDmgNormalsHits = incNormals - blockedNormals; 
-            
-            let totalUnblockedHits = totalDmgCritsHits + totalDmgNormalsHits;
-            let totalDmg = totalUnblockedHits * incDmgPerHit;
-
-            log(`DEFENSA: Bloqueas ${blockedCrits} Crits, ${blockedNormals} Normal.`);
-            log(`RECIBES ${totalUnblockedHits} Impactos x ${incDmgPerHit} Daño = ${totalDmg} TOTAL`, 'danger');
-            
-            applyDamage(totalDmg); 
-            closeDice(); 
-            publish({type: 'DAMAGE_RESOLVE', dmg: totalDmg}); 
-        }
-    }
 
     function instantReroll(e, index) {
         if(e) { e.preventDefault(); e.stopPropagation(); }
@@ -1011,6 +980,7 @@ function logCombat(msg) {
 </script>
 </body>
 </html>
+
 
 
 
