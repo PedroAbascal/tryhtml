@@ -335,23 +335,54 @@
     const FORGE_DB = {
         species: {
             human: { name: "HUMANO", hp: 10, sv: "5+", r_atk: 3, r_hit: "4+", m_atk: 3, m_hit: "4+", cost: 5 },
-            astartes: { name: "ASTARTES", hp: 14, sv: "3+", r_atk: 3, r_hit: "3+", m_atk: 3, m_hit: "3+", cost: 15 },
-            eldar: { name: "AELDARI", hp: 8, sv: "4+", r_atk: 4, r_hit: "3+", m_atk: 3, m_hit: "4+", cost: 12 },
-            ork: { name: "ORKO", hp: 12, sv: "6+", r_atk: 2, r_hit: "5+", m_atk: 4, m_hit: "3+", cost: 8 },
-            necron: { name: "NECRON", hp: 12, sv: "3+", r_atk: 3, r_hit: "3+", m_atk: 2, m_hit: "4+", cost: 14 }
+            astartes: { name: "TECHNO HUMANO", hp: 14, sv: "3+", r_atk: 3, r_hit: "3+", m_atk: 3, m_hit: "3+", cost: 15 },
+            eldar: { name: "ELFOS", hp: 8, sv: "4+", r_atk: 4, r_hit: "3+", m_atk: 3, m_hit: "4+", cost: 12 },
+            ork: { name: "OGROS", hp: 12, sv: "6+", r_atk: 2, r_hit: "5+", m_atk: 4, m_hit: "3+", cost: 8 },
+            necron: { name: "XENOS", hp: 12, sv: "3+", r_atk: 3, r_hit: "3+", m_atk: 2, m_hit: "4+", cost: 14 }
         },
         roles: {
-            troop: { name: "TROPA", hp: 0, cost: 0 },
-            leader: { name: "LÍDER", hp: 4, cost: 10 },
-            sniper: { name: "TIRADOR", hp: -2, cost: 5 }
+            // Básicos (Coste 0-1)
+            trooper: { name: "Guerrero", cost: 0, modA: 0, modHit: 0, modHP: 0 },
+            // Infantería (Coste 2)
+            assault: { name: "Asalto", cost: 2, modA: 1, modHit: 0, modHP: 1 }, 
+            hunter:  { name: "Cazador", cost: 2, modA: 1, modHit: -1, modHP: -2 },
+            // Especialistas (Coste 3)
+            sniper:  { name: "Francotirador", cost: 3, modA: 0, modHit: -1, modHP: -1 },
+            medic:   { name: "Médico", cost: 3, modA: -1, modHit: 0, modHP: 2 },
+            berserk: { name: "Frenético", cost: 3, modA: 2, modHit: 1, modHP: 0 },
+            // Élites (Coste 4-5)
+            heavy:   { name: "Artillero", cost: 4, modA: 1, modHit: -1, modHP: 2 },
+            leader:  { name: "Líder", cost: 5, modA: 1, modHit: -1, modHP: 3 },
+            // Pesados (Coste 6+)
+            tank:    { name: "Blindado", cost: 6, modA: 1, modHit: 1, modHP: 5 },
+            mech:    { name: "Mecha", cost: 8, modA: 3, modHit: 0, modHP: 4 }
         },
         weapons: {
-            bolter: { name: "BOLTER", r_atk: 4, r_hit: "3+", r_dmg: 3, m_atk: 2, m_hit: "4+", m_dmg: 1, cost: 2 },
-            plasma: { name: "PLASMA", r_atk: 3, r_hit: "3+", r_dmg: 5, m_atk: 2, m_hit: "5+", m_dmg: 1, cost: 6 },
-            chainsword: { name: "ESPADA S.", r_atk: 1, r_hit: "5+", r_dmg: 1, m_atk: 5, m_hit: "3+", m_dmg: 4, cost: 3 },
-            rifle: { name: "LASGUN", r_atk: 3, r_hit: "4+", r_dmg: 2, m_atk: 1, m_hit: "5+", m_dmg: 1, cost: 0 },
-            gauss: { name: "GAUSS", r_atk: 3, r_hit: "3+", r_dmg: 4, m_atk: 2, m_hit: "4+", m_dmg: 1, cost: 4 },
-            shoota: { name: "ACRIBILLADOR", r_atk: 5, r_hit: "5+", r_dmg: 2, m_atk: 3, m_hit: "4+", m_dmg: 2, cost: 2 }
+            pistol:     { name: "Pistola",      cost: 0, A: 3, D: 3, type: "Ranged" },
+            autogun:    { name: "Rifle Automático",   cost: 1, A: 5, D: 3, type: "Ranged" },
+            shotgun:    { name: "Escopeta",     cost: 2, A: 3, D: 5, type: "Ranged" },
+            lasgun:     { name: "Rifle Láser",  cost: 0, A: 4, D: 3, type: "Ranged" },
+            bolter:     { name: "Bólter",       cost: 2, A: 4, D: 4, type: "Ranged" },
+            flamer:     { name: "Lanzallamas",  cost: 3, A: 8, D: 2, type: "Ranged" },
+            grenade_l:  { name: "Lanzagranad.", cost: 3, A: 2, D: 5, type: "Ranged" },
+            sniper:     { name: "Rifle Prec.",  cost: 3, A: 3, D: 5, type: "Ranged" },
+            plasma:     { name: "Plasma",       cost: 4, A: 4, D: 6, type: "Ranged" },
+            minigun:    { name: "Cañón Rotatorio",   cost: 5, A: 6, D: 4, type: "Ranged" },
+            rocket:     { name: "Lanzamisiles", cost: 5, A: 1, D: 9, type: "Ranged" },
+            melta:      { name: "Fusil de Fusión", cost: 4, A: 2, D: 7, type: "Ranged" },
+            railgun:    { name: "Cañón Riel",   cost: 6, A: 2, D: 8, type: "Ranged" },
+
+            // MELEE
+            staff:      { name: "Bastón",       cost: 0, A: 3, D: 4, type: "Melee" },
+            knife:      { name: "Cuchillo",  cost: 0, A: 4, D: 3, type: "Melee" },
+            spear:      { name: "Lanza",        cost: 1, A: 4, D: 4, type: "Melee" },
+            axe:        { name: "Hacha",        cost: 2, A: 3, D: 5, type: "Melee" },
+            chainsword: { name: "Espada Sierra",cost: 2, A: 5, D: 4, type: "Melee" },
+            whip:       { name: "Látigo",    cost: 3, A: 5, D: 3, type: "Melee" },
+            claws:      { name: "Garras",       cost: 3, A: 6, D: 4, type: "Melee" },
+            powerw:     { name: "Arma de Energía", cost: 4, A: 4, D: 6, type: "Melee" },
+            fist:       { name: "Puño Combate", cost: 4, A: 3, D: 7, type: "Melee" },
+            hammer:     { name: "Martillo",  cost: 5, A: 2, D: 8, type: "Melee" }
         },
         gear: {
             none: { name: "NINGUNO", cost: 0 },
@@ -1023,3 +1054,4 @@
 </script>
 </body>
 </html>
+
