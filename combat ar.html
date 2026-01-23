@@ -3,37 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v2.2 CLEAN</title>
+    <title>SQUAD COMMAND: v2.4 FORGE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
         :root { --c: #00f2ff; --r: #ff0055; --g: #00ff99; --gold: #ffcc00; --bg: #0d1117; }
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; color: var(--c); user-select: none; -webkit-user-select: none; }
 
-        /* AR & FX */
-        #ar-feed { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; filter: contrast(1.2) brightness(0.6); }
-        .scan-line { position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: rgba(0, 242, 255, 0.3); animation: scan 3s linear infinite; pointer-events: none; }
-        #flash-fx { pointer-events:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index: 50; }
-        .flash { animation: flashRed 0.3s; }
-        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
-        @keyframes flashRed { 50% { background: rgba(255, 0, 0, 0.5); } }
-
-        /* UI CONTAINERS */
-        .screen { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; background: var(--bg); z-index: 10; transition: 0.3s; align-items: center; }
+        /* --- UI GENERAL --- */
+        .screen { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; background: var(--bg); z-index: 10; transition: 0.3s; align-items: center; overflow-y: auto; }
         .screen.hidden { display: none !important; }
-        .screen.transparent { background: transparent; pointer-events: none; padding: 0; }
+        .screen.transparent { background: transparent; pointer-events: none; padding: 0; overflow: hidden; }
         
         .box { border: 1px solid var(--c); padding: 15px; width: 100%; max-width: 400px; background: rgba(0,0,0,0.95); margin-bottom: 15px; text-align: center; }
         
-        /* CONTROLS */
-        textarea { width: 100%; height: 60px; background: #111; color: #aaa; border: 1px solid #333; font-size: 0.7rem; font-family: monospace; }
-        input, select { background: #000; border: 2px solid var(--gold); color: var(--gold); padding: 10px; font-family: monospace; width: 100%; text-align: center; font-size: 1rem; letter-spacing: 2px; margin: 5px 0; text-transform: uppercase; }
+        input, select, textarea { background: #000; border: 1px solid #333; color: #fff; padding: 8px; font-family: monospace; width: 100%; text-align: center; margin: 5px 0; text-transform: uppercase; box-sizing: border-box; }
+        textarea { height: 60px; color: var(--gold); border-color: var(--gold); font-size: 0.7rem; }
         
-        .btn { background: var(--c); color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; font-size: 1rem; clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%); margin-top: 5px; pointer-events: auto; }
-        .btn:disabled { background: #222; color: #555; border: 1px solid #333; cursor: not-allowed; pointer-events: none; }
-        .btn-small { font-size: 0.7rem; padding: 5px; width: auto; display: inline-block; clip-path: none; border: 1px solid var(--gold); background: #000; color: var(--gold); cursor: pointer; pointer-events: auto; }
-        
-        /* HUD ELEMENTS */
+        .btn { background: var(--c); color: #000; border: none; padding: 12px; width: 100%; font-weight: bold; cursor: pointer; font-size: 1rem; clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%); margin-top: 5px; pointer-events: auto; }
+        .btn:disabled { background: #222; color: #555; pointer-events: none; }
+        .btn-small { font-size: 0.7rem; padding: 5px; width: auto; border: 1px solid var(--gold); background: #000; color: var(--gold); cursor: pointer; pointer-events: auto; }
+        .btn-del { background: var(--r); color: #fff; width: 30px; height: 30px; padding: 0; clip-path: none; }
+
+        /* --- FORGE (CREADOR) STYLES --- */
+        .forge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; width: 100%; }
+        .forge-label { font-size: 0.6rem; color: #888; margin-top: 5px; }
+        .preview-box { background: #111; padding: 10px; margin-top: 10px; border-left: 2px solid var(--gold); text-align: left; }
+        .stat-preview { display: flex; gap: 10px; font-size: 0.8rem; color: #fff; margin-top: 5px; }
+        .unit-list { width: 100%; max-width: 400px; margin-bottom: 20px; }
+        .unit-item { background: #0a0a0a; border: 1px solid #333; padding: 10px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .unit-info { font-size: 0.7rem; text-align: left; }
+
+        /* --- HUD ELEMENTS --- */
         .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; flex-direction: column; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); pointer-events: auto; box-sizing: border-box;}
         .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px; }
         .score-board { font-size: 1.2rem; font-weight: bold; color: #fff; text-shadow: 0 0 10px var(--c); letter-spacing: 2px; }
@@ -45,7 +46,6 @@
         .turn-badge.my-turn { border-color: var(--g); color: var(--g); box-shadow: 0 0 15px var(--g); transform: scale(1.1); }
         .turn-badge.enemy-turn { border-color: var(--r); color: var(--r); opacity: 0.8; }
 
-        /* CARDS & UNITS */
         .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; }
         .unit-selector { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
         .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.85); cursor: pointer; min-height: 120px; transition: 0.2s; position: relative; display: flex; flex-direction: column; justify-content: space-between; pointer-events: auto !important; }
@@ -60,7 +60,6 @@
         .ready-marker.show { display:block; }
         @keyframes pop { 0%{transform:scale(0);} 80%{transform:scale(1.2);} 100%{transform:scale(1);} }
 
-        /* STATS & TAGS */
         .hp-bar { height: 4px; background: #333; margin-top: 5px; width: 100%; }
         .hp-fill { height: 100%; transition: width 0.3s; }
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; margin: 5px 0; background: rgba(255,255,255,0.05); padding: 3px; border-radius: 2px; }
@@ -75,7 +74,6 @@
         .tag.passive { background: #222; color: #aaa; }
         .tag.used { text-decoration: line-through; opacity: 0.5; background: #000; color: #444; }
 
-        /* MODES & BUTTONS */
         .tactic-row { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.7rem; border-top: 1px solid #333; padding-top: 5px; }
         .mode-toggle { cursor: pointer; padding: 2px 5px; border: 1px solid #555; color: #888; background: #000; font-family: monospace; font-size: 0.6rem; width: 45%; }
         .mode-toggle.selected { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.1); }
@@ -96,7 +94,15 @@
         .op-mission { background: var(--gold); }
         .op-pass { background: #888; color: #000; transition: 0.2s; }
 
-        /* COMBAT ARENA (v2.1) */
+        /* AR & FX */
+        #ar-feed { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; filter: contrast(1.2) brightness(0.6); }
+        .scan-line { position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: rgba(0, 242, 255, 0.3); animation: scan 3s linear infinite; pointer-events: none; }
+        #flash-fx { pointer-events:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index: 50; }
+        .flash { animation: flashRed 0.3s; }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+        @keyframes flashRed { 50% { background: rgba(255, 0, 0, 0.5); } }
+
+        /* COMBAT ARENA */
         #dice-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
         .dice-arena { width: 100%; max-width: 400px; background: #111; border: 1px solid #333; padding: 15px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; }
         .duel-container { display: flex; justify-content: space-between; align-items: center; width: 100%; margin: 20px 0; background: #000; padding: 10px; border-radius: 5px; box-sizing: border-box; }
@@ -104,7 +110,6 @@
         .duel-label { font-size: 0.7rem; color: #666; margin-bottom: 5px; letter-spacing: 1px; }
         .dice-pool { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; min-height: 45px; }
 
-        /* DICE & STARS */
         .die-face { font-size: 2.2rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s, color 0.2s; color: #fff; border-radius: 5px; background: #222; border: 1px solid #444; }
         .die-face:hover { background: #333; }
         .die-face.selected { color: #000; background: var(--gold); border-color: #fff; transform: scale(1.1); box-shadow: 0 0 10px var(--gold); }
@@ -126,7 +131,7 @@
         .log-entry.success { border-color: var(--gold); color: #fffee0; text-shadow: 0 0 5px var(--gold); }
         @keyframes slideIn { from { opacity:0; transform: translateX(-50px); } to { opacity:1; transform: translateX(0); } }
 
-        #game-over-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
+        #game-over-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
         #game-over-screen.show { opacity: 1; pointer-events: auto; }
         .end-title { font-size: 3rem; font-weight: bold; margin-bottom: 20px; letter-spacing: 5px; }
         
@@ -147,33 +152,83 @@
     <div id="confirm-modal">
         <div class="modal-box">
             <div id="modal-msg" class="modal-text">SOLICITUD ENTRANTE...</div>
-            <div class="modal-btn-row">
-                <button type="button" class="btn-modal-yes" onclick="confirmRequest()">CONFIRMAR</button>
-            </div>
+            <div class="modal-btn-row"><button type="button" class="btn-modal-yes" onclick="confirmRequest()">CONFIRMAR</button></div>
         </div>
     </div>
-
     <div id="game-over-screen">
         <div id="end-title" class="end-title">---</div>
         <div id="end-score" style="font-size:1.5rem; margin-bottom:20px; color:#fff;"></div>
         <button type="button" class="btn" style="max-width:200px;" onclick="returnToLobby()"><span>REINICIAR</span></button>
     </div>
 
+    <div id="creator-screen" class="screen hidden">
+        <h2 style="color:var(--gold); margin:0;">SQUAD FORGE</h2>
+        <div style="font-size:0.6rem; color:#888; margin-bottom:15px;">CONSTRUCTOR DE ESCUADRA</div>
+
+        <div class="box">
+            <div class="forge-grid">
+                <div>
+                    <div class="forge-label">NOMBRE</div>
+                    <input type="text" id="u-name" placeholder="Ej: Sargento Ray">
+                </div>
+                <div>
+                    <div class="forge-label">ESPECIE</div>
+                    <select id="u-species" onchange="calcForge()"></select>
+                </div>
+                <div>
+                    <div class="forge-label">ROL</div>
+                    <select id="u-role" onchange="calcForge()"></select>
+                </div>
+                <div>
+                    <div class="forge-label">ARMA</div>
+                    <select id="u-weapon" onchange="calcForge()"></select>
+                </div>
+            </div>
+            
+            <div class="forge-label">EQUIPAMIENTO</div>
+            <select id="u-gear" onchange="calcForge()"></select>
+
+            <div class="preview-box">
+                <div id="preview-text" style="color:var(--c); font-weight:bold;">---</div>
+                <div class="stat-preview">
+                    <span>HP: <b id="p-hp" style="color:#fff"></b></span>
+                    <span>SV: <b id="p-sv" style="color:#fff"></b></span>
+                    <span>R: <b id="p-ratk" style="color:#fff"></b> / <b id="p-rhit" style="color:#aaa"></b></span>
+                    <span>M: <b id="p-matk" style="color:#fff"></b> / <b id="p-mhit" style="color:#aaa"></b></span>
+                </div>
+                <div style="font-size:0.7rem; color:var(--gold); margin-top:5px;">COSTE: <span id="p-cost">0</span> PTS</div>
+            </div>
+
+            <button class="btn" onclick="addUnitToSquad()" style="margin-top:10px;">AÑADIR OPERATIVO</button>
+        </div>
+
+        <div class="unit-list" id="squad-list"></div>
+        
+        <div style="width:100%; max-width:400px; display:flex; gap:10px;">
+            <button class="btn" style="background:#333; color:#fff;" onclick="closeForge()">VOLVER</button>
+            <button class="btn" style="background:var(--gold); color:#000;" onclick="deployToLobby()">DESPLEGAR EN LOBBY</button>
+        </div>
+    </div>
+
     <div id="lobby-screen" class="screen">
         <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v2.2 CLEAN</div>
-        <div class="box"><textarea id="json-input" placeholder='PEGAR JSON AQUÍ'></textarea></div>
+        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v2.4 FORGE</div>
+        
+        <button class="btn" onclick="openForge()" style="background:#222; border:1px solid var(--gold); color:var(--gold); margin-bottom:15px;">🛠️ CREAR ESCUADRA</button>
+
+        <div class="box">
+            <textarea id="json-input" placeholder='PEGAR JSON O USAR CREADOR'></textarea>
+        </div>
         <div class="box" style="border-color:var(--gold);">
-            <div style="font-size:0.6rem; color:#888;">MISIÓN PRINCIPAL</div>
+            <div style="font-size:0.6rem; color:#888;">CONFIGURACIÓN DE PARTIDA</div>
             <select id="primary-mission">
                 <option value="DOMINACION">DOMINACIÓN</option>
                 <option value="SABOTAJE">SABOTAJE</option>
                 <option value="RELIC">RELIQUIA</option>
             </select>
-            <div style="font-size:0.6rem; color:#888;">MISIONES SECUNDARIAS (SECRETAS)</div>
             <select id="secondary-toggle">
                 <option value="NO">SIN SECUNDARIAS</option>
-                <option value="SI">CON SECUNDARIAS (ALEATORIO)</option>
+                <option value="SI">CON SECUNDARIAS</option>
             </select>
             <select id="round-select">
                 <option value="4">4 RONDAS</option>
@@ -203,13 +258,10 @@
             <div id="planning-controls" style="text-align:center; margin-bottom:10px;">
                 <button type="button" class="btn" id="btn-ready" onclick="commitPlanning()" disabled><span>ESPERANDO RIVAL...</span></button>
             </div>
-
             <div class="unit-selector">
                 <div class="card my" onclick="nextMyUnit()" id="my-card">
                     <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.6rem;">
-                            <span>YO</span> <span id="my-status-text" style="color:var(--gold)"></span>
-                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.6rem;"><span>YO</span> <span id="my-status-text" style="color:var(--gold)"></span></div>
                         <div id="my-name" style="font-weight:bold;">---</div>
                         <div class="tags-container" id="my-tags"></div>
                         <div class="stat-grid">
@@ -227,12 +279,9 @@
                     </div>
                     <div id="my-ready-mark" class="ready-marker">LISTO</div>
                 </div>
-                
                 <div class="card enemy" onclick="nextEnemyUnit()" id="en-card">
                     <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)">
-                            <span>RIVAL</span> <span id="en-mode-icon">❓</span>
-                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)"><span>RIVAL</span> <span id="en-mode-icon">❓</span></div>
                         <div id="enemy-name" style="font-weight:bold;">ESPERANDO...</div>
                         <div class="tags-container" id="en-tags"></div>
                         <div class="stat-grid">
@@ -245,14 +294,12 @@
                     <div id="en-ready-mark" class="ready-marker">¡LISTO!</div>
                 </div>
             </div>
-
             <div id="combat-actions">
                 <button type="button" class="btn" id="btn-combat-mode" style="width:40px; background:#333; color:#fff;" onclick="resetPassButtons(); switchMode()"><span>🔫</span></button>
                 <button type="button" class="btn" id="btn-pass-open" style="flex:1; background:#555; color:#fff;" onclick="tryPass('btn-pass-open')"><span>PASAR</span></button>
                 <button type="button" class="btn" id="btn-act" style="flex:2; background:var(--r); color:#fff;" onclick="resetPassButtons(); initiateCombat()"><span>DISPARAR</span></button>
                 <button type="button" class="btn btn-gear" id="btn-gear" style="flex:2; display:none;" onclick="useSpecialGear()"><span>ITEM</span></button>
             </div>
-
             <div id="ops-actions" class="ops-grid">
                 <button type="button" class="btn btn-op op-dash" onclick="resetPassButtons(); performOp('DASH')"><span>DASH</span></button>
                 <button type="button" class="btn btn-op op-mission" onclick="resetPassButtons(); performOp('MISION')"><span>MISIÓN (+1PV)</span></button>
@@ -265,29 +312,18 @@
         <div class="dice-arena">
             <h2 id="combat-phase-title" style="margin:0; color:#fff;">COMBATE</h2>
             <button type="button" id="btn-cover-toggle" style="display:none;" onclick="toggleCover()">COBERTURA: NO</button>
-            
             <div class="duel-container">
-                <div class="duel-side" id="side-atk">
-                    <div class="duel-label">ATACANTE</div>
-                    <div id="pool-atk" class="dice-pool"></div>
-                </div>
+                <div class="duel-side" id="side-atk"><div class="duel-label">ATACANTE</div><div id="pool-atk" class="dice-pool"></div></div>
                 <div style="font-size:2rem; color:#444;">VS</div>
-                <div class="duel-side" id="side-def">
-                    <div class="duel-label">DEFENSOR</div>
-                    <div id="pool-def" class="dice-pool">Esperando...</div>
-                </div>
+                <div class="duel-side" id="side-def"><div class="duel-label">DEFENSOR</div><div id="pool-def" class="dice-pool">Esperando...</div></div>
             </div>
-
             <div id="combat-log-visual" class="combat-log"></div>
-
             <div id="combat-actions-bar" style="margin-top:20px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-                <button id="btn-reroll" class="btn" style="background:#ff9900; color:#000; display:none;" onclick="rerollDice('ATK')">RE-TIRAR SELECCIÓN</button>
+                <button id="btn-reroll" class="btn" style="background:#ff9900; color:#000; display:none;" onclick="rerollDice('ATK')">RE-TIRAR</button>
                 <button id="btn-confirm-atk" class="btn" style="background:var(--g); color:#000; display:none;" onclick="confirmAttack()">CONFIRMAR ATAQUE</button>
-                
-                <button id="btn-reroll-def" class="btn" style="background:#ff9900; color:#000; display:none;" onclick="rerollDice('DEF')">RE-TIRAR SELECCIÓN</button>
+                <button id="btn-reroll-def" class="btn" style="background:#ff9900; color:#000; display:none;" onclick="rerollDice('DEF')">RE-TIRAR</button>
                 <button id="btn-confirm-def" class="btn" style="background:var(--c); color:#000; display:none;" onclick="confirmDefense()">CONFIRMAR DEFENSA</button>
-                <button id="btn-apply-dmg" class="btn" style="background:var(--r); color:#fff; display:none;">APLICAR DAÑO</button>
-                
+                <button id="btn-apply-dmg" class="btn" style="background:var(--r); color:#fff; display:none;" onclick="applyCombatResult()">APLICAR DAÑO</button>
                 <button id="btn-cancel-combat" class="btn" style="background:#444;" onclick="cancelCombat()">CANCELAR</button>
                 <button id="btn-close-combat" class="btn" style="display:none;" onclick="endCombatTurn()">TERMINAR</button>
             </div>
@@ -295,9 +331,41 @@
     </div>
 
 <script>
-    /* =========================================
-       CONSTANTS & CONFIG
-       ========================================= */
+    // --- DATABASE (FORGE) ---
+    const FORGE_DB = {
+        species: {
+            human: { name: "HUMANO", hp: 10, sv: "5+", r_atk: 3, r_hit: "4+", m_atk: 3, m_hit: "4+", cost: 5 },
+            astartes: { name: "ASTARTES", hp: 14, sv: "3+", r_atk: 3, r_hit: "3+", m_atk: 3, m_hit: "3+", cost: 15 },
+            eldar: { name: "AELDARI", hp: 8, sv: "4+", r_atk: 4, r_hit: "3+", m_atk: 3, m_hit: "4+", cost: 12 },
+            ork: { name: "ORKO", hp: 12, sv: "6+", r_atk: 2, r_hit: "5+", m_atk: 4, m_hit: "3+", cost: 8 },
+            necron: { name: "NECRON", hp: 12, sv: "3+", r_atk: 3, r_hit: "3+", m_atk: 2, m_hit: "4+", cost: 14 }
+        },
+        roles: {
+            troop: { name: "TROPA", hp: 0, cost: 0 },
+            leader: { name: "LÍDER", hp: 4, cost: 10 },
+            sniper: { name: "TIRADOR", hp: -2, cost: 5 }
+        },
+        weapons: {
+            bolter: { name: "BOLTER", r_atk: 4, r_hit: "3+", r_dmg: 3, m_atk: 2, m_hit: "4+", m_dmg: 1, cost: 2 },
+            plasma: { name: "PLASMA", r_atk: 3, r_hit: "3+", r_dmg: 5, m_atk: 2, m_hit: "5+", m_dmg: 1, cost: 6 },
+            chainsword: { name: "ESPADA S.", r_atk: 1, r_hit: "5+", r_dmg: 1, m_atk: 5, m_hit: "3+", m_dmg: 4, cost: 3 },
+            rifle: { name: "LASGUN", r_atk: 3, r_hit: "4+", r_dmg: 2, m_atk: 1, m_hit: "5+", m_dmg: 1, cost: 0 },
+            gauss: { name: "GAUSS", r_atk: 3, r_hit: "3+", r_dmg: 4, m_atk: 2, m_hit: "4+", m_dmg: 1, cost: 4 },
+            shoota: { name: "ACRIBILLADOR", r_atk: 5, r_hit: "5+", r_dmg: 2, m_atk: 3, m_hit: "4+", m_dmg: 2, cost: 2 }
+        },
+        gear: {
+            none: { name: "NINGUNO", cost: 0 },
+            grenade: { name: "GRANADA", cost: 3 },
+            medkit: { name: "MEDKIT", cost: 5 },
+            scope: { name: "MIRA", cost: 2 },
+            stim: { name: "ESTIM", cost: 4 },
+            regen: { name: "REGEN", cost: 6 },
+            shield: { name: "ESCUDO", cost: 8 },
+            stealth: { name: "SIGILO", cost: 4 }
+        }
+    };
+    
+    // --- GAME CONSTANTS ---
     const MECHANICS_DB = {
         "grenade": { name: "GRANADA", icon: "💣", type: "ACTIVE", func: "THROW_GRENADE", oneUse: true },
         "medkit":  { name: "MEDKIT",  icon: "💊", type: "ACTIVE", func: "USE_MEDKIT", oneUse: true },
@@ -307,37 +375,138 @@
         "stealth": { name: "SIGILO",  icon: "👻", type: "PASSIVE" },
         "shield":  { name: "ESCUDO",  icon: "🔵", type: "PASSIVE" }
     };
-
+    
     const BROKER = "broker.hivemq.com"; const PORT = 8884; 
     const SECRET_POOL = ["ASESINATO", "INFILTRACION", "SEGURIDAD", "RECONOCIMIENTO"];
     
-    /* =========================================
-       GAME STATE VARIABLES
-       ========================================= */
+    // --- STATE VARIABLES ---
     let MY_ID = ""; let client=null, TOPIC="";
     let myUnits=[], enemyUnits=[], globalHP={};
-    let initialEnemyCount = 0;
+    let editorSquad = []; // FORGE SQUAD
     let myIdx=0, enIdx=0, combatMode='ranged'; 
     let gameState = 'PLANNING'; let isGameOver = false;
     let myVP = 0; let enemyVP = 0;
     
-    // Misions
     let secretMission = null; let secretClaimed = false;
     let primaryMission = "DOMINACION"; let secondaryActive = false;
     let maxRounds = 4; let currentRound = 1;
     let iAmReady=false, enemyIsReady=false;
     let myInitRoll = null, enemyInitRoll = null;
     let pendingRequest = null; let passConfirm = null;
+    
+    let atkRolls = [], defRolls = [], selectedIndices = [], canReroll = true;
+    let combatTargetVal = 4, currentWeaponDmg = 1;
+    let pendingAtkStats = null, coverActive = false;
 
-    // Combat State v2.1
-    let atkRolls = []; let defRolls = []; 
-    let selectedIndices = []; let canReroll = true;
-    let combatTargetVal = 4; let currentWeaponDmg = 1;
-    let pendingAtkStats = null; let coverActive = false;
+    // --- FORGE FUNCTIONS (LOGICA CREADOR) ---
+    function openForge() {
+        document.getElementById('lobby-screen').classList.add('hidden');
+        document.getElementById('creator-screen').classList.remove('hidden');
+        initForgeSelects();
+        renderEditorSquad();
+    }
+    
+    function closeForge() {
+        document.getElementById('creator-screen').classList.add('hidden');
+        document.getElementById('lobby-screen').classList.remove('hidden');
+    }
 
-    /* =========================================
-       INIT & LOBBY
-       ========================================= */
+    function initForgeSelects() {
+        const fill = (id, obj) => {
+            const el = document.getElementById(id);
+            if(el.options.length > 0) return; // Ya llenado
+            for(let k in obj) {
+                let opt = document.createElement('option');
+                opt.value = k; opt.innerText = obj[k].name;
+                el.appendChild(opt);
+            }
+        };
+        fill('u-species', FORGE_DB.species);
+        fill('u-role', FORGE_DB.roles);
+        fill('u-weapon', FORGE_DB.weapons);
+        fill('u-gear', FORGE_DB.gear);
+        calcForge();
+    }
+
+    function calcForge() {
+        const s = FORGE_DB.species[document.getElementById('u-species').value];
+        const r = FORGE_DB.roles[document.getElementById('u-role').value];
+        const w = FORGE_DB.weapons[document.getElementById('u-weapon').value];
+        const g = FORGE_DB.gear[document.getElementById('u-gear').value];
+        
+        const final = {
+            hp: s.hp + r.hp,
+            cost: s.cost + r.cost + w.cost + g.cost,
+            name: document.getElementById('u-name').value || "OPERATIVO"
+        };
+        
+        document.getElementById('preview-text').innerText = `${final.name} (${s.name} ${r.name})`;
+        document.getElementById('p-hp').innerText = final.hp;
+        document.getElementById('p-sv').innerText = s.sv;
+        document.getElementById('p-ratk').innerText = w.r_atk; document.getElementById('p-rhit').innerText = w.r_hit;
+        document.getElementById('p-matk').innerText = w.m_atk; document.getElementById('p-mhit').innerText = w.m_hit;
+        document.getElementById('p-cost').innerText = final.cost;
+    }
+
+    function addUnitToSquad() {
+        const name = document.getElementById('u-name').value || "Operativo " + (editorSquad.length+1);
+        const species = document.getElementById('u-species').value;
+        const role = document.getElementById('u-role').value;
+        const weapon = document.getElementById('u-weapon').value;
+        const gear = document.getElementById('u-gear').value;
+        
+        // Build Stats Object
+        const sData = FORGE_DB.species[species];
+        const rData = FORGE_DB.roles[role];
+        const wData = FORGE_DB.weapons[weapon];
+        
+        const newUnit = {
+            id: Date.now(),
+            name: name,
+            gear: gear === 'none' ? null : gear,
+            stats: {
+                hp: sData.hp + rData.hp,
+                sv: sData.sv,
+                r_atk: wData.r_atk, r_hit: wData.r_hit, r_dmg: wData.r_dmg,
+                m_atk: wData.m_atk, m_hit: wData.m_hit, m_dmg: wData.m_dmg
+            }
+        };
+        
+        editorSquad.push(newUnit);
+        renderEditorSquad();
+        document.getElementById('u-name').value = "";
+    }
+
+    function renderEditorSquad() {
+        const c = document.getElementById('squad-list'); c.innerHTML = "";
+        let total = 0;
+        editorSquad.forEach((u, i) => {
+            let div = document.createElement('div');
+            div.className = "unit-item";
+            div.innerHTML = `
+                <div class="unit-info">
+                    <div style="color:var(--c); font-weight:bold;">${u.name}</div>
+                    <div style="color:#666;">HP:${u.stats.hp} SV:${u.stats.sv} | ${u.gear ? u.gear : 'NO GEAR'}</div>
+                </div>
+                <button class="btn btn-del" onclick="removeEditorUnit(${i})">X</button>
+            `;
+            c.appendChild(div);
+        });
+    }
+
+    window.removeEditorUnit = function(i) {
+        editorSquad.splice(i, 1);
+        renderEditorSquad();
+    }
+
+    function deployToLobby() {
+        if(editorSquad.length === 0) { alert("Escuadra vacía"); return; }
+        const json = JSON.stringify({ squad: editorSquad });
+        document.getElementById('json-input').value = json;
+        closeForge();
+    }
+
+    // --- GAME INIT ---
     window.initSystem = function() {
         MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
         const json = document.getElementById('json-input').value;
@@ -348,37 +517,31 @@
         
         try {
             const parsed = JSON.parse(json);
-            if(!parsed.squad) throw new Error("Falta la propiedad 'squad' en el JSON.");
-            const rawSquad = Array.isArray(parsed.squad) ? parsed.squad : Object.values(parsed.squad);
-            myUnits = rawSquad.map(u => {
+            if(!parsed.squad) throw new Error("Falta 'squad' en JSON.");
+            myUnits = parsed.squad.map(u => {
                 const unit = { ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', activations: 0, gearUsed: false, mechanics: [] };
                 if(u.gear && MECHANICS_DB[u.gear]) unit.mechanics.push(MECHANICS_DB[u.gear]);
-                if(u.ability && MECHANICS_DB[u.ability]) unit.mechanics.push(MECHANICS_DB[u.ability]);
                 return unit;
             });
-            myUnits.forEach(u => { 
-                let hp = 1; if(u.stats && u.stats.hp) hp = parseInt(u.stats.hp); if(isNaN(hp)) hp=1; 
-                globalHP[u.uid] = {c:hp, m:hp}; 
-            });
+            myUnits.forEach(u => { globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
+            
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
-            assignSecretMission(); updateMissionDisplay();
+            assignSecretMission(); updateMissionDisplay(); updateHUD(); 
             navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>console.log("No AR"));
-            updateHUD(); startNetwork(code); log("SISTEMA ONLINE. ESPERANDO RIVAL...");
-        } catch(e) { alert("ERROR CRÍTICO: " + e.message); }
+            startNetwork(code);
+        } catch(e) { alert("ERROR DE DATOS: " + e.message); }
     }
 
     function startNetwork(code) {
-        TOPIC = `sqcmd/v2.1/${code}`;
+        TOPIC = `sqcmd/v2.4/${code}`;
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
         client.connect({useSSL:true, onSuccess:()=>{ client.subscribe(TOPIC); publish({type:'JOIN_REQ', squad:myUnits, pMission:primaryMission, secActive:secondaryActive}); }});
     }
 
-    /* =========================================
-       NETWORK HANDLER
-       ========================================= */
+    // --- NETWORK HANDLER ---
     function onMessage(msg) {
         if(isGameOver) return;
         const d = JSON.parse(msg.payloadString);
@@ -389,12 +552,9 @@
                 enemyUnits = d.squad; initialEnemyCount = enemyUnits.length;
                 publish({type: 'JOIN_ACK', squad: myUnits, rounds: maxRounds, pMission: primaryMission, secActive: secondaryActive});
                 enemyUnits.forEach(u => { if(!globalHP[u.uid] && u.stats) globalHP[u.uid] = {c:parseInt(u.stats.hp)||1, m:parseInt(u.stats.hp)||1}; });
-                
-                // Activar botón del host
                 const btn = document.getElementById('btn-ready');
                 btn.disabled = false; btn.querySelector('span').innerText = "CONFIRMAR ÓRDENES";
                 btn.style.background = "var(--c)"; btn.style.color = "#000";
-                
                 updateHUD(); log(`RIVAL CONECTADO.`);
             }
         }
@@ -404,13 +564,10 @@
                 maxRounds = d.rounds;
                 if(d.pMission) primaryMission = d.pMission;
                 if(typeof d.secActive !== 'undefined') { secondaryActive = d.secActive; assignSecretMission(); }
-                
                 enemyUnits.forEach(u => { if(!globalHP[u.uid] && u.stats) globalHP[u.uid] = {c:parseInt(u.stats.hp)||1, m:parseInt(u.stats.hp)||1}; });
-                
                 const btn = document.getElementById('btn-ready');
                 btn.disabled = false; btn.querySelector('span').innerText = "CONFIRMAR ÓRDENES";
                 btn.style.background = "var(--c)"; btn.style.color = "#000";
-                
                 updateMissionDisplay(); updateHUD(); log(`REGLAS SINCRONIZADAS.`);
             }
         }
@@ -418,9 +575,7 @@
             enemyUnits = d.squad; enemyIsReady = true; enemyInitRoll = d.roll;
             document.getElementById('en-ready-mark').classList.add('show'); checkStartRound();
         }
-        else if(d.type === 'COMBAT_SYNC') {
-            handleCombatSync(d);
-        }
+        else if(d.type === 'COMBAT_SYNC') { handleCombatSync(d); }
         else if(d.type === 'SCORE_UPDATE') { enemyVP = d.vp; updateHUD(); }
         else if(d.type === 'SYNC_SQUAD') { enemyUnits = d.squad; updateHUD(); }
         else if(d.type === 'SYNC_HP') { 
@@ -444,22 +599,13 @@
         else if(d.type === 'ROUND_OVER') resetRound();
     }
 
-    /* =========================================
-       COMBAT LOGIC v2.1 (CLEAN)
-       ========================================= */
+    // --- COMBAT LOGIC ---
     function initiateCombat() {
         if(gameState !== 'MY_TURN') return;
         const me = myUnits[myIdx];
-
         if(me.activations >= 2) { log("UNIDAD AGOTADA"); return; }
-        if(me.mode !== 'open') {
-            log("ERROR: REQUIERE ORDEN DE ATAQUE", "danger");
-            document.getElementById('btn-mode-open').style.borderColor = "red";
-            setTimeout(()=>document.getElementById('btn-mode-open').style.borderColor = "#555", 500);
-            return;
-        }
+        if(me.mode !== 'open') { log("ERROR: REQUIERE ORDEN DE ATAQUE", "danger"); return; }
 
-        // Stats
         let diceCount = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
         combatTargetVal = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
         let dmgRaw = combatMode==='ranged' ? me.stats.r_dmg : me.stats.m_dmg;
@@ -467,11 +613,7 @@
         if(me.activations === 1) { combatTargetVal++; log("FATIGA: +1 DIFICULTAD", "danger"); }
 
         setupCombatUI('ATTACKER');
-        
-        // Tirada
-        atkRolls = [];
-        for(let i=0; i<diceCount; i++) atkRolls.push(Math.ceil(Math.random()*6));
-
+        atkRolls = []; for(let i=0; i<diceCount; i++) atkRolls.push(Math.ceil(Math.random()*6));
         renderDiceFaces(atkRolls, 'pool-atk', true);
         syncVisuals('PRE_ATTACK', atkRolls);
         logCombat(`${me.name} inicia ataque...`);
@@ -482,7 +624,6 @@
         let targetArray = (type === 'ATK') ? atkRolls : defRolls;
         selectedIndices.forEach(idx => { targetArray[idx] = Math.ceil(Math.random()*6); });
         canReroll = false; selectedIndices = [];
-
         if(type === 'ATK') {
             renderDiceFaces(atkRolls, 'pool-atk', false);
             document.getElementById('btn-reroll').style.display = 'none';
@@ -507,23 +648,15 @@
     }
 
     function startDefenseSequence(stats, enemyRolls) {
-    pendingAtkStats = stats;
-    
-    setupCombatUI('DEFENDER');
-    
-    // 1. Dibujar Estrellas del Enemigo (Ahora sí tiene los datos)
-    document.getElementById('pool-atk').innerHTML = '';
-    renderStars(enemyRolls, 'pool-atk');
-    
-    // 2. Generar mis dados de defensa
-    defRolls = [];
-    for(let i=0; i<3; i++) defRolls.push(Math.ceil(Math.random()*6));
-    
-    // 3. Dibujar mis dados (Interactivos)
-    renderDiceFaces(defRolls, 'pool-def', true);
-    
-    logCombat(`RECIBES ATAQUE. Tira defensa...`);
-}
+        pendingAtkStats = stats;
+        setupCombatUI('DEFENDER');
+        document.getElementById('pool-atk').innerHTML = '';
+        renderStars(enemyRolls, 'pool-atk');
+        
+        defRolls = []; for(let i=0; i<3; i++) defRolls.push(Math.ceil(Math.random()*6));
+        renderDiceFaces(defRolls, 'pool-def', true);
+        logCombat(`RECIBES ATAQUE. Tira defensa...`);
+    }
 
     function confirmDefense() {
         hideAllCombatButtons();
@@ -534,7 +667,6 @@
         defRolls.forEach(r => { if(r===6) defCrits++; else if(r>=sv) defHits++; });
         if(coverActive) { defHits++; logCombat("COBERTURA: +1 Bloqueo Normal"); }
 
-        // Math Logic v2.1
         let incCrit = pendingAtkStats.crit;
         let incNorm = pendingAtkStats.normal;
         let dmgPerHit = pendingAtkStats.dmgValue;
@@ -542,83 +674,79 @@
         let blockedCrits = Math.min(incCrit, defCrits);
         let remainingAtkCrits = incCrit - blockedCrits;
         let remainingDefCrits = defCrits - blockedCrits;
-        let convertedDefHits = remainingDefCrits * 2; // Crit sobra = 2 normales
+        let convertedDefHits = remainingDefCrits * 2; 
         let totalDefNormal = defHits + convertedDefHits;
         let blockedNormals = Math.min(incNorm, totalDefNormal);
         let remainingAtkNormals = incNorm - blockedNormals;
         let totalUnblockedHits = remainingAtkCrits + remainingAtkNormals;
         let finalDmg = totalUnblockedHits * dmgPerHit;
 
-        logCombat(`DEF: ${defCrits} Crit, ${defHits} Hit (Cover inc). Bloqueas ${blockedCrits} Crits, ${blockedNormals} Normales.`);
-        logCombat(`RESULTADO: ${remainingAtkCrits} Crits + ${remainingAtkNormals} Normales Entran.`);
+        logCombat(`DEF: ${defCrits} Crit, ${defHits} Hit. BLQ: ${blockedCrits} Crit, ${blockedNormals} Norm.`);
+        logCombat(`DAÑO FINAL: ${finalDmg}`);
         
+        // Guardamos el daño calculado en un atributo del botón para usarlo al hacer click
         const btnApply = document.getElementById('btn-apply-dmg');
         btnApply.style.display = 'inline-block';
         btnApply.innerText = `RECIBIR ${finalDmg} DAÑO`;
-        btnApply.onclick = () => {
-            applyDamage(finalDmg);
-            publish({type: 'COMBAT_SYNC', stage: 'RESOLVED', rolls: defRolls, finalDmg: finalDmg});
-            closeCombatOverlay();
-        };
+        btnApply.dataset.dmg = finalDmg; // Store damage value
+    }
+
+    function applyCombatResult() {
+        const btn = document.getElementById('btn-apply-dmg');
+        const finalDmg = parseInt(btn.dataset.dmg);
+        applyDamage(finalDmg);
+        publish({type: 'COMBAT_SYNC', stage: 'RESOLVED', rolls: defRolls, finalDmg: finalDmg});
+        closeCombatOverlay();
     }
 
     function handleCombatSync(d) {
-    const overlay = document.getElementById('dice-overlay');
-    
-    if (d.stage === 'PRE_ATTACK') {
-        overlay.style.display = 'flex';
-        document.getElementById('combat-log-visual').innerHTML = '';
-        document.getElementById('pool-def').innerHTML = 'Esperando confirmación...';
-        hideAllCombatButtons();
-        renderDiceFaces(d.rolls, 'pool-atk', false);
-        logCombat(`ENEMIGO prepara ataque...`);
-    } 
-    else if (d.stage === 'ATK_REROLL') {
-        renderDiceFaces(d.rolls, 'pool-atk', false);
-        logCombat(`>> ENEMIGO RE-TIRA DADOS`);
+        const overlay = document.getElementById('dice-overlay');
+        if (d.stage === 'PRE_ATTACK') {
+            overlay.style.display = 'flex';
+            document.getElementById('combat-log-visual').innerHTML = '';
+            document.getElementById('pool-def').innerHTML = 'Esperando confirmación...';
+            hideAllCombatButtons();
+            renderDiceFaces(d.rolls, 'pool-atk', false);
+            logCombat(`ENEMIGO prepara ataque...`);
+        } 
+        else if (d.stage === 'ATK_REROLL') {
+            renderDiceFaces(d.rolls, 'pool-atk', false);
+            logCombat(`>> ENEMIGO RE-TIRA DADOS`);
+        }
+        else if (d.stage === 'ATTACK_CONFIRMED') {
+            renderStars(d.rolls, 'pool-atk');
+            logCombat(`ATAQUE ENTRANTE: ${d.hitsStruct.crit} Crits, ${d.hitsStruct.normal} Hits`);
+            startDefenseSequence(d.hitsStruct, d.rolls);
+        }
+        else if (d.stage === 'RESOLVED') {
+            renderStars(d.rolls, 'pool-def');
+            logCombat(`RIVAL defendió. Daño Aplicado: ${d.finalDmg}`);
+            hideAllCombatButtons();
+            const btnClose = document.getElementById('btn-close-combat');
+            btnClose.style.display = 'inline-block';
+            btnClose.innerText = "TERMINAR ACTIVACIÓN";
+        }
+        else if (d.stage === 'CANCEL') {
+            closeCombatOverlay(); log("COMBATE CANCELADO POR RIVAL", "warning");
+        }
     }
-    else if (d.stage === 'ATTACK_CONFIRMED') {
-        renderStars(d.rolls, 'pool-atk');
-        logCombat(`ATAQUE ENTRANTE: ${d.hitsStruct.crit} Crits, ${d.hitsStruct.normal} Hits`);
-        
-        // AQUÍ ESTABA EL ERROR: Ahora pasamos (hitsStruct, rolls)
-        startDefenseSequence(d.hitsStruct, d.rolls);
-    }
-    else if (d.stage === 'RESOLVED') {
-        renderStars(d.rolls, 'pool-def');
-        logCombat(`RIVAL defendió. Daño Aplicado: ${d.finalDmg}`);
-        hideAllCombatButtons();
-        const btnClose = document.getElementById('btn-close-combat');
-        btnClose.style.display = 'inline-block';
-        btnClose.innerText = "TERMINAR ACTIVACIÓN";
-    }
-    else if (d.stage === 'CANCEL') {
-        closeCombatOverlay(); 
-        log("COMBATE CANCELADO POR RIVAL", "warning");
-    }
-}
 
-    /* =========================================
-       UI & HELPERS
-       ========================================= */
+    // --- UTILS ---
     function updateHUD() {
         if(!myUnits.length) return;
         if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit();
         const me = myUnits[myIdx]; const en = enemyUnits[enIdx];
         
-        // My Card
         document.getElementById('my-name').innerText = me.name;
         const card = document.getElementById('my-card'); card.className = "card my";
         if(me.activations === 1) card.classList.add('fatigued');
         if(me.activations >= 2) card.classList.add('exhausted');
         if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) card.classList.add('locked');
-        let statusText = "LISTO";
-        if(me.activations===1) statusText = "FATIGADO (-1 Hit)";
-        if(me.activations===2) statusText = "AGOTADO";
+        
+        let statusText = "LISTO"; if(me.activations===1) statusText="FATIGADO"; if(me.activations===2) statusText="AGOTADO";
         document.getElementById('my-status-text').innerText = statusText;
         if(globalHP[me.uid]) document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
         
-        // Mode Buttons & Panels
         document.getElementById('btn-mode-open').className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
         document.getElementById('btn-mode-hidden').className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
         
@@ -630,14 +758,10 @@
         if(me.mode === 'hidden') { combatPanel.style.display = 'none'; opsPanel.style.display = 'grid'; } 
         else { opsPanel.style.display = 'none'; combatPanel.style.display = 'flex'; }
 
-        // Stats
-        document.getElementById('my-r').className = combatMode==='ranged' ? 'stat-val hl' : 'stat-val';
-        document.getElementById('my-m').className = combatMode==='melee' ? 'stat-val hl' : 'stat-val';
         document.getElementById('my-r').innerText = me.stats.r_atk;
         document.getElementById('my-m').innerText = me.stats.m_atk;
         document.getElementById('my-sv').innerText = me.stats.sv;
 
-        // Gear Tags
         const tagContainer = document.getElementById('my-tags'); tagContainer.innerHTML = '';
         let showGearBtn = false; let gearBtnText = "ITEM";
         me.mechanics.forEach(m => {
@@ -649,7 +773,6 @@
         const btnGear = document.getElementById('btn-gear');
         if(showGearBtn) { btnGear.style.display='block'; btnGear.querySelector('span').innerText=gearBtnText; } else btnGear.style.display='none';
 
-        // Enemy Card
         if(en && globalHP[en.uid]) {
             document.getElementById('enemy-name').innerText = en.name;
             document.getElementById('enemy-hp').style.width = (globalHP[en.uid].c/globalHP[en.uid].m*100)+"%";
@@ -658,7 +781,6 @@
         document.getElementById('enemy-score').innerText = enemyVP;
         document.getElementById('round-display').innerText = `RND ${currentRound}/${maxRounds}`;
 
-        // Secret Button Logic
         const btnSecret = document.getElementById('btn-claim-secret');
         if (secondaryActive && !secretClaimed && gameState !== 'PLANNING') {
             btnSecret.style.display = 'block';
@@ -685,11 +807,9 @@
         const isAtk = parentId === 'pool-atk';
         if (gameState === 'MY_TURN' && !isAtk) return; 
         if (gameState !== 'MY_TURN' && isAtk) return;  
-
         const div = event.target;
         if (selectedIndices.includes(index)) { selectedIndices = selectedIndices.filter(i => i !== index); div.classList.remove('selected'); } 
         else { selectedIndices.push(index); div.classList.add('selected'); }
-
         const btnId = (gameState === 'MY_TURN') ? 'btn-reroll' : 'btn-reroll-def';
         const btn = document.getElementById(btnId);
         if (selectedIndices.length > 0) { btn.style.display = 'inline-block'; btn.innerText = `RE-TIRAR (${selectedIndices.length})`; } 
@@ -724,15 +844,13 @@
         }
     }
 
-    /* =========================================
-       CORE LOGIC
-       ========================================= */
     function returnToLobby() {
         if(!isGameOver) return;
         if(client) { try{ client.disconnect(); } catch(e){} client=null; }
         document.getElementById('game-over-screen').classList.remove('show');
         document.getElementById('game-screen').classList.add('hidden');
         document.getElementById('lobby-screen').classList.remove('hidden');
+        document.getElementById('dice-overlay').style.display = 'none';
         document.getElementById('combat-log').innerHTML = "";
         isGameOver = false; myUnits = []; enemyUnits = []; globalHP = {};
         myVP = 0; enemyVP = 0; currentRound = 1;
@@ -807,39 +925,6 @@
         } 
     }
 
-    // Standard Helpers
-    window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; updateHUD(); } }
-    window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); updateHUD(); }
-    window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
-    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
-    window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
-    window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
-    window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
-    window.performOp = function(op) {
-        if(gameState !== 'MY_TURN') return;
-        const me = myUnits[myIdx];
-        if(op === 'MISION') {
-            if(me.mode !== 'hidden') {
-                log("ERROR: REQUIERE ORDEN TÁCTICA", "danger");
-                document.getElementById('btn-mode-hidden').style.borderColor = "red"; setTimeout(()=>document.getElementById('btn-mode-hidden').style.borderColor = "#555", 500);
-                return;
-            }
-            myVP+=1; publish({type:'SCORE_UPDATE', vp:myVP}); log("MISION CUMPLIDA"); 
-        } else log(op);
-        publish({type:'OP_ACTION', opType: op}); passTurn(0);
-    }
-    window.useSpecialGear = function() { 
-        if(gameState !== 'MY_TURN') return; 
-        const me = myUnits[myIdx]; const item = me.mechanics.find(m => m.type === 'ACTIVE' && !me.gearUsed); 
-        if(!item) return; 
-        if(item.func === 'THROW_GRENADE') { log(`GRANADA LANZADA!`); publish({type: 'GEAR_EFFECT', gearName: 'GRANADA', desc: `BOOM! 3 Daño`, dmg: 3}); passTurn(0); } 
-        else if(item.func === 'USE_MEDKIT') { globalHP[me.uid].c = Math.min(globalHP[me.uid].m, globalHP[me.uid].c + 3); publish({type: 'SYNC_HP', state: globalHP}); log("MEDKIT USADO"); updateHUD(); passTurn(0); } 
-        if(item.oneUse) { me.gearUsed = true; updateHUD(); } 
-    }
-    window.tryPass = function(btnId) { const btn = document.getElementById(btnId); if (passConfirm === btnId) { performOp('PASAR'); resetPassButtons(); } else { resetPassButtons(); passConfirm = btnId; btn.innerText = "¿CONFIRMAR?"; btn.style.background = "var(--gold)"; btn.style.color = "#000"; } }
-    window.resetPassButtons = function() { passConfirm = null; const b1 = document.getElementById('btn-pass-open'); b1.innerText = "PASAR"; b1.style.background = "#555"; b1.style.color = "#fff"; const b2 = document.getElementById('btn-op-pass'); b2.innerText = "PASAR"; b2.style.background = "#888"; b2.style.color = "#000"; }
-    
-    // Internal Logics
     function canUnitAct(unit, team, opponents) {
         if (!globalHP[unit.uid] || globalHP[unit.uid].c <= 0) return false; 
         if (unit.activations >= 2) return false; 
@@ -903,8 +988,38 @@
     function endCombatTurn() { document.getElementById('dice-overlay').style.display = 'none'; passTurn(0); }
     function closeCombatOverlay() { document.getElementById('dice-overlay').style.display = 'none'; }
     function hideAllCombatButtons() { const ids = ['btn-reroll', 'btn-reroll-def', 'btn-confirm-atk', 'btn-confirm-def', 'btn-apply-dmg', 'btn-cancel-combat', 'btn-close-combat', 'btn-cover-toggle']; ids.forEach(id => document.getElementById(id).style.display = 'none'); }
+    
+    // UI Helpers
+    window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; updateHUD(); } }
+    window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); updateHUD(); }
+    window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
+    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
+    window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
+    window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
+    window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
+    window.performOp = function(op) {
+        if(gameState !== 'MY_TURN') return;
+        const me = myUnits[myIdx];
+        if(op === 'MISION') {
+            if(me.mode !== 'hidden') {
+                log("ERROR: REQUIERE ORDEN TÁCTICA", "danger");
+                document.getElementById('btn-mode-hidden').style.borderColor = "red"; setTimeout(()=>document.getElementById('btn-mode-hidden').style.borderColor = "#555", 500);
+                return;
+            }
+            myVP+=1; publish({type:'SCORE_UPDATE', vp:myVP}); log("MISION CUMPLIDA"); 
+        } else log(op);
+        publish({type:'OP_ACTION', opType: op}); passTurn(0);
+    }
+    window.useSpecialGear = function() { 
+        if(gameState !== 'MY_TURN') return; 
+        const me = myUnits[myIdx]; const item = me.mechanics.find(m => m.type === 'ACTIVE' && !me.gearUsed); 
+        if(!item) return; 
+        if(item.func === 'THROW_GRENADE') { log(`GRANADA LANZADA!`); publish({type: 'GEAR_EFFECT', gearName: 'GRANADA', desc: `BOOM! 3 Daño`, dmg: 3}); passTurn(0); } 
+        else if(item.func === 'USE_MEDKIT') { globalHP[me.uid].c = Math.min(globalHP[me.uid].m, globalHP[me.uid].c + 3); publish({type: 'SYNC_HP', state: globalHP}); log("MEDKIT USADO"); updateHUD(); passTurn(0); } 
+        if(item.oneUse) { me.gearUsed = true; updateHUD(); } 
+    }
+    window.tryPass = function(btnId) { const btn = document.getElementById(btnId); if (passConfirm === btnId) { performOp('PASAR'); resetPassButtons(); } else { resetPassButtons(); passConfirm = btnId; btn.innerText = "¿CONFIRMAR?"; btn.style.background = "var(--gold)"; btn.style.color = "#000"; } }
+    window.resetPassButtons = function() { passConfirm = null; const b1 = document.getElementById('btn-pass-open'); b1.innerText = "PASAR"; b1.style.background = "#555"; b1.style.color = "#fff"; const b2 = document.getElementById('btn-op-pass'); b2.innerText = "PASAR"; b2.style.background = "#888"; b2.style.color = "#000"; }
 </script>
 </body>
 </html>
-
-
