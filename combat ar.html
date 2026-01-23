@@ -200,9 +200,13 @@
             </div>
 
             <button class="btn" onclick="addUnitToSquad()" style="margin-top:10px;">AÑADIR OPERATIVO</button>
-        </div>
-
-        <div class="unit-list" id="squad-list"></div>
+                </div>
+                
+                <div id="forge-total" style="width:100%; max-width:400px; text-align:right; margin-bottom:5px; font-size:0.9rem; font-weight:bold; color:#fff;">
+                    PUNTOS: <span id="total-pts">0</span> / <span style="color:var(--gold)">100</span>
+                </div>
+                
+                <div class="unit-list" id="squad-list"></div>
         
         <div style="width:100%; max-width:400px; display:flex; gap:10px;">
             <button class="btn" style="background:#333; color:#fff;" onclick="closeForge()">VOLVER</button>
@@ -489,14 +493,27 @@
         const weapon = document.getElementById('u-weapon').value;
         const gear = document.getElementById('u-gear').value;
         
-        // Build Stats Object
+        // 1. Obtener datos base para calcular Coste
         const sData = FORGE_DB.species[species];
         const rData = FORGE_DB.roles[role];
         const wData = FORGE_DB.weapons[weapon];
+        const gData = FORGE_DB.gear[gear];
+        
+        // 2. Calcular Coste de la nueva unidad
+        const unitCost = sData.cost + rData.cost + wData.cost + gData.cost;
+
+        // 3. Validar límite de 100 puntos
+        const currentTotal = editorSquad.reduce((sum, u) => sum + (u.cost || 0), 0);
+        
+        if (currentTotal + unitCost > 100) {
+            alert(`¡LÍMITE EXCEDIDO! Esta unidad cuesta ${unitCost} pts y te quedan ${100 - currentTotal}.`);
+            return;
+        }
         
         const newUnit = {
             id: Date.now(),
             name: name,
+            cost: unitCost, // Guardamos el coste
             gear: gear === 'none' ? null : gear,
             stats: {
                 hp: sData.hp + rData.hp,
@@ -513,24 +530,32 @@
 
     function renderEditorSquad() {
         const c = document.getElementById('squad-list'); c.innerHTML = "";
-        let total = 0;
+        let totalCost = 0;
+
         editorSquad.forEach((u, i) => {
+            // Sumamos al total
+            totalCost += (u.cost || 0);
+
             let div = document.createElement('div');
             div.className = "unit-item";
             div.innerHTML = `
                 <div class="unit-info">
-                    <div style="color:var(--c); font-weight:bold;">${u.name}</div>
+                    <div style="color:var(--c); font-weight:bold;">${u.name} <span style="color:var(--gold); font-size:0.6rem;">[${u.cost} PTS]</span></div>
                     <div style="color:#666;">HP:${u.stats.hp} SV:${u.stats.sv} | ${u.gear ? u.gear : 'NO GEAR'}</div>
                 </div>
                 <button class="btn btn-del" onclick="removeEditorUnit(${i})">X</button>
             `;
             c.appendChild(div);
         });
-    }
 
-    window.removeEditorUnit = function(i) {
-        editorSquad.splice(i, 1);
-        renderEditorSquad();
+        // Actualizamos el contador visual
+        const totalLabel = document.getElementById('total-pts');
+        totalLabel.innerText = totalCost;
+        
+        // Cambio de color visual si nos acercamos al límite
+        if(totalCost > 100) totalLabel.style.color = "red"; // No debería pasar por la validación, pero por seguridad
+        else if(totalCost === 100) totalLabel.style.color = "var(--gold)";
+        else totalLabel.style.color = "#fff";
     }
 
     function deployToLobby() {
@@ -1057,5 +1082,6 @@
 </script>
 </body>
 </html>
+
 
 
