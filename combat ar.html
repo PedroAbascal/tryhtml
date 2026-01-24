@@ -1269,6 +1269,7 @@ window.endTurnFinal = function() {
             ind.className = "turn-badge my-turn"; ind.innerText = "TU TURNO";
             document.querySelector('.hud-bottom').style.pointerEvents = "auto";
             document.querySelector('.hud-bottom').style.opacity = "1";
+            currentPhase = 1;
             autoSelectValidUnit(); 
         } else {
             ind.className = "turn-badge enemy-turn"; ind.innerText = "TURNO RIVAL";
@@ -1392,6 +1393,7 @@ window.endTurnFinal = function() {
 </script>
 </body>
 </html>
+
 
 
 
