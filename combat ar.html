@@ -184,10 +184,17 @@
                     <select id="u-role" onchange="calcForge()"></select>
                 </div>
                 <div>
-                    <div class="forge-label">ARMA</div>
-                    <select id="u-weapon" onchange="calcForge()"></select>
-                </div>
-            </div>
+                   <div class="input-group">
+                        <label>ARMA A DISTANCIA (Ranged)</label>
+                        <select id="u-weapon-r" onchange="calcForge()"></select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>ARMA DE CHOQUE (Melee)</label>
+                        <select id="u-weapon-m" onchange="calcForge()"></select>
+                    </div>
+                                    </div>
+                                </div>
             
             <div class="forge-label">EQUIPAMIENTO</div>
             <select id="u-gear" onchange="calcForge()"></select>
@@ -453,121 +460,135 @@
     }
 
     function initForgeSelects() {
-        const fill = (id, obj) => {
+        const fill = (id, data, filterType = null) => {
             const el = document.getElementById(id);
-            if(el.options.length > 0) return; // Ya llenado
-            for(let k in obj) {
+            el.innerHTML = "";
+            
+            for (let k in data) {
+                const item = data[k];
+                // FILTRO: Si pedimos un tipo específico (Ranged/Melee) y no coincide, saltamos
+                if (filterType && item.type !== filterType) continue;
+
                 let opt = document.createElement('option');
-                opt.value = k; opt.innerText = obj[k].name;
+                opt.value = k;
+                opt.innerText = `${item.name} [${item.cost}pts]`;
                 el.appendChild(opt);
             }
         };
-        fill('u-base', FORGE_DB.bases);
+
         fill('u-species', FORGE_DB.species);
         fill('u-role', FORGE_DB.roles);
-        fill('u-weapon', FORGE_DB.weapons);
+        
+        // --- AQUÍ ESTÁ EL TRUCO: FILTRAMOS POR TIPO ---
+        fill('u-weapon-r', FORGE_DB.weapons, "Ranged");
+        fill('u-weapon-m', FORGE_DB.weapons, "Melee");
+        
         fill('u-gear', FORGE_DB.gear);
+        fill('u-base', FORGE_DB.bases);
+        
         calcForge();
     }
 
-    function calcForge() {
-        // 1. Obtener claves
+  function calcForge() {
+        // 1. Obtener claves (AHORA SON 2 ARMAS)
         const sKey = document.getElementById('u-species').value;
         const rKey = document.getElementById('u-role').value;
-        const wKey = document.getElementById('u-weapon').value;
+        const wrKey = document.getElementById('u-weapon-r').value; // Ranged
+        const wmKey = document.getElementById('u-weapon-m').value; // Melee
         const gKey = document.getElementById('u-gear').value;
-        const bKey = document.getElementById('u-base').value; // <--- NUEVO
+        const bKey = document.getElementById('u-base').value;
 
-        // 2. Cargar objetos (con protección)
-        const s = FORGE_DB.species[sKey] || { hp:1, cost:0, sv:"-", r_hit:"6+", m_hit:"6+" };
-        const r = FORGE_DB.roles[rKey] || { modHP:0, cost:0, modA:0, modHit:0 };
-        const w = FORGE_DB.weapons[wKey] || { cost:0, A:0, D:0, type:"Ranged" };
-        const g = FORGE_DB.gear[gKey] || { cost:0 };
-        const b = FORGE_DB.bases[bKey] || { cost:0, hp:0 }; // <--- NUEVO
+        // 2. Cargar Objetos
+        const s = FORGE_DB.species[sKey] || { hp:0, cost:0, sv:"-", r_hit:"6+", m_hit:"6+" };
+        const r = FORGE_DB.roles[rKey]   || { modHP:0, cost:0, modA:0, modHit:0 };
+        const wr = FORGE_DB.weapons[wrKey] || { cost:0, A:0, D:0 };
+        const wm = FORGE_DB.weapons[wmKey] || { cost:0, A:0, D:0 };
+        const g = FORGE_DB.gear[gKey]    || { cost:0 };
+        const b = FORGE_DB.bases[bKey]   || { cost:0, hp:0 };
 
         // 3. Cálculos
-        // HP = Base Especie + Mod Rol + Mod Peana
         const totalHP = (s.hp || 0) + (r.modHP || 0) + (b.hp || 0);
+        // Coste = Suma Base + Rol + Arma R + Arma M + Equipo + Peana
+        const totalCost = s.cost + r.cost + wr.cost + wm.cost + g.cost + b.cost;
+
+        // Cálculos de Hit (Rango y Melee por separado)
+        // Ranged Hit
+        let rhVal = parseInt(s.r_hit) + r.modHit;
+        if(rhVal < 2) rhVal = 2; if(rhVal > 6) rhVal = 6;
         
-        // Coste = Suma de todo (incluyendo peana)
-        const totalCost = (s.cost||0) + (r.cost||0) + (w.cost||0) + (g.cost||0) + (b.cost||0);
-        
-        // ... (El resto de lógica de HIT/ATK se mantiene igual) ...
-        const baseHitStr = w.type === 'Melee' ? s.m_hit : s.r_hit;
-        const baseHitVal = parseInt(baseHitStr.replace('+','')) || 4;
-        let finalHitVal = baseHitVal + (r.modHit || 0); 
-        if(finalHitVal < 2) finalHitVal = 2;
-        if(finalHitVal > 6) finalHitVal = 6;
-        const totalAtk = (w.A || 0) + (r.modA || 0);
+        // Melee Hit
+        let mhVal = parseInt(s.m_hit) + r.modHit;
+        if(mhVal < 2) mhVal = 2; if(mhVal > 6) mhVal = 6;
 
         // 4. Actualizar UI
         const name = document.getElementById('u-name').value || "OPERATIVO";
-        document.getElementById('preview-text').innerText = `${name} [${b.name}]`; // Muestra la peana en el título
-        document.getElementById('p-hp').innerText = totalHP; // HP Actualizado
+        document.getElementById('preview-text').innerText = `${name} [${r.name}]`;
+        
+        document.getElementById('p-hp').innerText = totalHP;
         document.getElementById('p-sv').innerText = s.sv;
-        document.getElementById('p-cost').innerText = totalCost; // Coste Actualizado
+        document.getElementById('p-cost').innerText = totalCost;
 
-        // Renderizar stats de ataque
-        if(w.type === 'Ranged') {
-            document.getElementById('p-ratk').innerText = totalAtk; 
-            document.getElementById('p-rhit').innerText = finalHitVal + "+";
-            document.getElementById('p-matk').innerText = "-"; 
-            document.getElementById('p-mhit').innerText = "-";
-        } else {
-            document.getElementById('p-ratk').innerText = "-"; 
-            document.getElementById('p-rhit').innerText = "-";
-            document.getElementById('p-matk').innerText = totalAtk; 
-            document.getElementById('p-mhit').innerText = finalHitVal + "+";
-        }
+        // Mostrar Stats RANGED (Fila Superior)
+        document.getElementById('p-ratk').innerText = (wr.A + r.modA);
+        document.getElementById('p-rhit').innerText = rhVal + "+";
+
+        // Mostrar Stats MELEE (Fila Inferior)
+        document.getElementById('p-matk').innerText = (wm.A + r.modA);
+        document.getElementById('p-mhit').innerText = mhVal + "+";
     }
 
    function addUnitToSquad() {
         const name = document.getElementById('u-name').value || "Soldado " + (editorSquad.length+1);
         const sKey = document.getElementById('u-species').value;
         const rKey = document.getElementById('u-role').value;
-        const wKey = document.getElementById('u-weapon').value;
+        const wrKey = document.getElementById('u-weapon-r').value;
+        const wmKey = document.getElementById('u-weapon-m').value;
         const gKey = document.getElementById('u-gear').value;
-        const bKey = document.getElementById('u-base').value; // <--- NUEVO
+        const bKey = document.getElementById('u-base').value;
 
+        // DB Data
         const s = FORGE_DB.species[sKey];
         const r = FORGE_DB.roles[rKey];
-        const w = FORGE_DB.weapons[wKey];
+        const wr = FORGE_DB.weapons[wrKey]; // Arma Rango
+        const wm = FORGE_DB.weapons[wmKey]; // Arma Melee
         const g = FORGE_DB.gear[gKey];
-        const b = FORGE_DB.bases[bKey] || { cost:0, hp:0 }; // <--- NUEVO
+        const b = FORGE_DB.bases[bKey];
 
         // Coste Total
-        const unitCost = s.cost + r.cost + w.cost + g.cost + b.cost;
+        const unitCost = s.cost + r.cost + wr.cost + wm.cost + g.cost + b.cost;
 
-        // Validar Límite 100
+        // Validar 100pts
         const currentTotal = editorSquad.reduce((sum, u) => sum + u.cost, 0);
         if (currentTotal + unitCost > 100) {
-            alert(`Límite excedido. Coste unidad: ${unitCost}. Restante: ${100 - currentTotal}`);
+            alert(`Límite excedido. Coste: ${unitCost}. Restante: ${100 - currentTotal}`);
             return;
         }
 
-        // Stats Finales
-        const hitBase = w.type === 'Melee' ? parseInt(s.m_hit) : parseInt(s.r_hit);
-        let hitMod = hitBase + r.modHit; 
-        if(hitMod < 2) hitMod = 2;
+        // Calcular Hits
+        let rhVal = parseInt(s.r_hit) + r.modHit; if(rhVal<2) rhVal=2;
+        let mhVal = parseInt(s.m_hit) + r.modHit; if(mhVal<2) mhVal=2;
 
         const finalStats = {
-            hp: s.hp + r.modHP + b.hp, // <--- HP INCLUYE PEANA
+            hp: s.hp + r.modHP + b.hp,
             sv: s.sv,
-            r_atk: w.type === 'Ranged' ? (w.A + r.modA) : 0,
-            r_hit: w.type === 'Ranged' ? (hitMod + "+") : "-",
-            r_dmg: w.type === 'Ranged' ? w.D : 0,
-            m_atk: w.type === 'Melee' ? (w.A + r.modA) : 0,
-            m_hit: w.type === 'Melee' ? (hitMod + "+") : "-",
-            m_dmg: w.type === 'Melee' ? w.D : 0
+            // Stats Rango
+            r_atk: wr.A + r.modA,
+            r_hit: rhVal + "+",
+            r_dmg: wr.D,
+            // Stats Melee
+            m_atk: wm.A + r.modA,
+            m_hit: mhVal + "+",
+            m_dmg: wm.D
         };
 
         editorSquad.push({
             id: Date.now(),
             name: name,
             cost: unitCost,
-            base: b.name, // Guardamos nombre de la peana por referencia
+            base: b.name,
             gear: gKey === 'none' ? null : gKey,
-            stats: finalStats
+            stats: finalStats,
+            weapons: { r: wr.name, m: wm.name } // Opcional: guardar nombres para referencia
         });
         
         renderEditorSquad();
@@ -1151,6 +1172,7 @@ function renderEditorSquad() {
 </script>
 </body>
 </html>
+
 
 
 
