@@ -1395,12 +1395,13 @@ function renderEditorSquad() {
         else if(item.func === 'USE_MEDKIT') { globalHP[me.uid].c = Math.min(globalHP[me.uid].m, globalHP[me.uid].c + 3); publish({type: 'SYNC_HP', state: globalHP}); log("MEDKIT USADO"); updateHUD(); passTurn(0); } 
         if(item.oneUse) { me.gearUsed = true; updateHUD(); } 
     }
-    window.tryPass = function(btnId) { const btn = document.getElementById(btnId); if (passConfirm === btnId) { performOp('PASAR'); resetPassButtons(); } else { resetPassButtons(); passConfirm = btnId; btn.innerText = "¿CONFIRMAR?"; btn.style.background = "var(--gold)"; btn.style.color = "#000"; } }
-    // Función auxiliar necesaria para el botón de pasar
+    window.tryPass = function(btnId) { const btn = document.getElementById(btnId); if (passConfirm === btnId) { performOp('PASAR'); resetPassButtons(); } else { resetPassButtons(); passConfirm = btnId; btn.innerText = "¿CONFIRMAR?"; btn.style.background = "var(--gold)"; btn.style.color = "#000";
+        }
+    };
+
     window.resetPassButtons = function() {
         passConfirm = null;
-        const btns = ['btn-pass-open', 'btn-op-pass'];
-        btns.forEach(id => {
+        ['btn-pass-open', 'btn-op-pass'].forEach(id => {
             const el = document.getElementById(id);
             if(el) {
                 el.innerText = "PASAR";
@@ -1408,8 +1409,50 @@ function renderEditorSquad() {
                 el.style.color = "#fff";
             }
         });
-};
-        
+    };
+
+    /* --- SISTEMA Y CONEXIÓN (RECUPERADO) --- */
+    
+    function initSystem() {
+        MY_ID = "OP_" + Math.floor(Math.random() * 10000);
+        console.log("Iniciando sistema. ID:", MY_ID);
+        connectMQTT();
+    }
+
+    // --- MQTT SETUP ---
+    const client = new Paho.MQTT.Client("broker.hivemq.com", 8000, "SquadForge_" + parseInt(Math.random()*100000));
+
+    client.onConnectionLost = function(responseObject) {
+        if (responseObject.errorCode !== 0) {
+            log("CONEXIÓN PERDIDA: " + responseObject.errorMessage, 'danger');
+            // Intentar reconectar en 5s
+            setTimeout(connectMQTT, 5000);
+        }
+    };
+
+    client.onMessageArrived = onMessageArrived; // Asegúrate de que esta función existe arriba en tu código
+
+    function connectMQTT() {
+        log("CONECTANDO A LA RED...");
+        client.connect({
+            onSuccess: function() {
+                log("CONEXIÓN ESTABLECIDA.", "success");
+                client.subscribe("squad_command/global");
+                // Reset visual
+                document.getElementById('loading').classList.add('hidden');
+            },
+            onFailure: function(m) {
+                log("FALLO DE CONEXIÓN. REINTENTANDO...", 'danger');
+                setTimeout(connectMQTT, 3000);
+            }
+        });
+    }
+
+    // --- ARRANQUE ---
+    window.onload = function() {
+        initSystem();
+    };
+
 </script>
 </body>
 </html>
