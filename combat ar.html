@@ -141,18 +141,6 @@
         .modal-text { color: var(--gold); font-size: 0.9rem; margin-bottom: 20px; font-weight: bold; }
         .modal-btn-row { display: flex; gap: 10px; justify-content: center; }
         .btn-modal-yes { background: var(--gold); color: #000; padding: 10px 20px; border: none; font-weight: bold; cursor: pointer; }
-
-        .phase-dot {
-            font-size: 0.6rem; color: #555; padding: 2px 5px; border: 1px solid #333; flex: 1; text-align: center; transition: 0.3s;
-        }
-        .phase-dot.active {
-            background: var(--c); color: #000; font-weight: bold; box-shadow: 0 0 10px var(--c); border-color: #fff;
-        }
-        .phase-dot.done {
-            background: #004444; color: var(--c); opacity: 0.5;
-        }
-        #btn-cover-action { background: #444; border: 1px solid #888; color: #fff; }
-        
     </style>
 </head>
 <body>
@@ -277,16 +265,7 @@
                 <div class="score-detail" id="mission-info">DOMINACION</div>
             </div>
             <button type="button" id="btn-claim-secret" onclick="tryClaimSecret()">RECLAMAR SECRETA</button>
-
-            <div class="phase-bar" style="display:flex; justify-content:space-between; width:100%; margin-top:5px; background:rgba(0,0,0,0.5); padding:2px;">
-            <div id="phase-1" class="phase-dot">1: MOV</div>
-            <div id="phase-2" class="phase-dot">2: ACCIÓN</div>
-            <div id="phase-3" class="phase-dot">3: RES</div>
-            </div>
-            <div style="font-size:0.8rem; color:var(--gold); margin-top:5px; text-align:center; width:100%;">
-                CMD POINTS: <span id="cp-display" style="font-weight:bold; font-size:1rem;">2</span> CP
-            </div>
-            </div>
+        </div>
         
         <div class="log-area" id="combat-log"></div>
 
@@ -330,10 +309,6 @@
                     <div id="en-ready-mark" class="ready-marker">¡LISTO!</div>
                 </div>
             </div>
-             <button id="btn-end-move" class="btn" onclick="finishMovePhase()" 
-                    style="display:none; width:95%; margin: 0 auto 10px auto; background:var(--gold); color:#000; font-weight:bold; border:1px solid #fff; padding: 15px;">
-                    🏃 TERMINAR MOVIMIENTO (FASE 1)
-                </button>
             <div id="combat-actions">
                 <button type="button" class="btn" id="btn-combat-mode" style="width:40px; background:#333; color:#fff;" onclick="resetPassButtons(); switchMode()"><span>🔫</span></button>
                 <button type="button" class="btn" id="btn-pass-open" style="flex:1; background:#555; color:#fff;" onclick="tryPass('btn-pass-open')"><span>PASAR</span></button>
@@ -470,164 +445,6 @@
     let atkRolls = [], defRolls = [], selectedIndices = [], canReroll = true;
     let combatTargetVal = 4, currentWeaponDmg = 1;
     let pendingAtkStats = null, coverActive = false;
-
-    let currentPhase = 0; // 0: Enemy, 1: Move, 2: Action, 3: Resolution
-    let myCP = 2; // Puntos de Mando iniciales (Command Points)
-    let actionsPerformed = { move: false, action: false };
-    
-    // 1. INICIAR TURNO (Sobrescribe o llama a esto cuando sea tu turno)
-    function startMyPhaseTurn() {
-        gameState = 'MY_TURN';
-        currentPhase = 1; 
-        actionsPerformed = { move: false, action: false };
-        
-        // Resetear estados visuales
-        document.getElementById('turn-indicator').innerText = "MI TURNO";
-        document.getElementById('turn-indicator').className = "turn-badge my-turn";
-        
-        function updatePhaseUI() {
-    // A. Actualizar indicador visual de arriba (los dots)
-    [1,2,3].forEach(i => {
-        const el = document.getElementById(`phase-${i}`);
-        if(el) el.className = 'phase-dot' + (currentPhase === i ? ' active' : (currentPhase > i ? ' done' : ''));
-    });
-    
-    if(document.getElementById('cp-display')) document.getElementById('cp-display').innerText = myCP;
-
-    // B. Referencias a los contenedores de hud-bottom
-    const btnMove = document.getElementById('btn-end-move');
-    const combatActs = document.getElementById('combat-actions');
-    const opsActs = document.getElementById('ops-actions');
-    const ind = document.getElementById('turn-indicator');
-
-    // C. LIMPIEZA: Ocultar todo primero para evitar conflictos
-    if(btnMove) btnMove.style.display = 'none';
-    if(combatActs) combatActs.style.display = 'none';
-    if(opsActs) opsActs.style.display = 'none';
-
-    // D. LÓGICA DE FASES
-    if (currentPhase === 1) {
-        // --- FASE 1: MOVER ---
-        if(ind) ind.innerText = "FASE 1: MOVER";
-        // Solo mostramos el botón grande amarillo
-        if(btnMove) btnMove.style.display = 'block';
-    } 
-    else if (currentPhase === 2) {
-        // --- FASE 2: ACCIONES ---
-        if(ind) ind.innerText = "FASE 2: ACCIÓN";
-        
-        // Mostramos el panel de combate
-        if(combatActs) combatActs.style.display = 'flex';
-        
-        // OPCIONAL: Si quieres que DASH y MISIÓN estén disponibles en Fase 2,
-        // descomenta la siguiente línea. Si quieres que solo sea ATACAR, déjala oculta.
-        /* if(opsActs) opsActs.style.display = 'grid'; */
-        
-        // Inyectamos botón de Cubrirse si no existe
-        if(!document.getElementById('btn-cover-act')) {
-             const btn = document.createElement('button');
-             btn.id = 'btn-cover-act'; btn.className = 'btn'; 
-             btn.innerHTML = '🛡️<br>CUBRIR'; // Salto de línea para ahorrar espacio
-             btn.style.background = '#445566'; btn.style.fontSize = '0.7rem';
-             btn.onclick = () => performCoverAction();
-             // Lo insertamos en combat-actions para que esté junto a atacar
-             if(combatActs) combatActs.appendChild(btn);
-        }
-    } 
-    else if (currentPhase === 3) {
-        // --- FASE 3: RESOLUCIÓN / FIN ---
-        if(ind) ind.innerText = "FASE 3: FIN";
-        
-        // Usamos el panel de ops para mostrar el botón de terminar turno
-        if(opsActs) {
-            opsActs.style.display = 'grid'; // Grid para que ocupe todo
-            opsActs.innerHTML = `<button class="btn" onclick="endTurnFinal()" style="grid-column: 1 / -1; background:#ff4444; color:#fff; font-weight:bold; padding:15px;">🛑 FINALIZAR TURNO</button>`;
-        }
-    }
-}
-    
-    // Helper para botones de fase rápida
-    function showPhaseControls(text, funcStr) {
-        const ops = document.getElementById('ops-actions');
-        ops.style.display = 'grid';
-        ops.innerHTML = `<button class="btn btn-op op-dash" onclick="${funcStr}" style="grid-column: span 3; background:var(--gold); color:#000;">${text}</button>`;
-    }
-    
-    // --- ACCIONES DE FASE ---
-    
-    // FIN FASE 1
-    window.finishMovePhase = function() {
-        // Aquí podrías desencadenar trampas o chequeos de terreno
-        log("Movimiento completado.");
-        currentPhase = 2;
-        updatePhaseUI();
-    }
-    
-    // ACCIÓN: CUBRIRSE (Nueva mecánica Fase 2)
-    window.performCoverAction = function() {
-        const me = myUnits[myIdx];
-        // Gastar acción
-        log(`${me.name} toma POSICIÓN DEFENSIVA.`);
-        publish({type:'Log', text: `${me.name} se CUBRE (+1 SV)`});
-        
-        // Aquí podrías poner un estado visual "covered"
-        // publish({type: 'STATE_UPDATE', uid: me.uid, state: 'COVER'}); 
-        
-        currentPhase = 3; // Pasa a resolución
-        updatePhaseUI();
-    }
-    
-    // MODIFICACIÓN: Disparar (initiateCombat) ahora debe avanzar fase
-    const originalInitiateCombat = window.initiateCombat; // Guardar referencia si existe
-    window.initiateCombat = function() {
-        if(currentPhase !== 2) { log("¡No es fase de Acción!"); return; }
-        // Llama a la lógica original de combate
-        // NOTA: Debes asegurarte que cuando termine el combate, llame a finishCombatPhase()
-        // Si tu código original no tiene callback, agrégalo al final de endCombatTurn()
-        if(typeof originalInitiateCombat === 'function') originalInitiateCombat();
-        else {
-            // Fallback si no existe
-            switchMode(); // Abrir modos de combate
-        }
-    }
-    
-    // Callback para cuando termina el combate (llámalo desde endCombatTurn)
-    window.finishCombatPhase = function() {
-        currentPhase = 3;
-        updatePhaseUI();
-    }
-    
-    // ACCIÓN: DASH (Modificada para Fase 2)
-    window.performOp = function(op) {
-        if(currentPhase !== 2 && op !== 'PASAR') return;
-    
-        const me = myUnits[myIdx];
-        if (op === 'DASH') {
-            log("DASH: Movimiento extra realizado.");
-            // Lógica de Dash...
-        } else if (op === 'MISION') {
-            // Lógica de misión...
-            let currentVP = parseInt(document.getElementById('my-score').innerText);
-            document.getElementById('my-score').innerText = currentVP + 1;
-            publish({type: 'SCORE_UPDATE', score: currentVP + 1});
-            log("Punto de Misión asegurado.");
-        }
-        
-        currentPhase = 3; // Dash y Misión terminan la fase de acción
-        updatePhaseUI();
-    }
-    
-    // FIN FASE 3 (Fin del Turno del Operativo)
-    window.endTurnFinal = function() {
-        log("Turno finalizado. Resolviendo efectos...");
-        // Aquí puedes regenerar CP, resolver sangrados, etc.
-        
-        passTurn(0); // Llama a tu función original de pasar turno MQTT
-        currentPhase = 0;
-        updatePhaseUI();
-    }
-
-    
 
     // --- FORGE FUNCTIONS (LOGICA CREADOR) ---
     function openForge() {
@@ -874,8 +691,8 @@ function renderEditorSquad() {
     }
 
     // --- NETWORK HANDLER ---
-    function onMessageArrived(msg) {
-        if(typeof isGameOver !== 'undefined' && isGameOver) return;
+    function onMessage(msg) {
+        if(isGameOver) return;
         const d = JSON.parse(msg.payloadString);
         if(d.sender === MY_ID) return;
 
@@ -885,12 +702,9 @@ function renderEditorSquad() {
                 publish({type: 'JOIN_ACK', squad: myUnits, rounds: maxRounds, pMission: primaryMission, secActive: secondaryActive});
                 enemyUnits.forEach(u => { if(!globalHP[u.uid] && u.stats) globalHP[u.uid] = {c:parseInt(u.stats.hp)||1, m:parseInt(u.stats.hp)||1}; });
                 const btn = document.getElementById('btn-ready');
-                if(btn) {
-                    btn.disabled = false; btn.querySelector('span').innerText = "CONFIRMAR ÓRDENES";
-                    btn.style.background = "var(--c)"; btn.style.color = "#000";
-                }
-                if(typeof updateHUD === 'function') updateHUD(); 
-                log(`RIVAL CONECTADO.`);
+                btn.disabled = false; btn.querySelector('span').innerText = "CONFIRMAR ÓRDENES";
+                btn.style.background = "var(--c)"; btn.style.color = "#000";
+                updateHUD(); log(`RIVAL CONECTADO.`);
             }
         }
         else if(d.type === 'JOIN_ACK') {
@@ -901,19 +715,14 @@ function renderEditorSquad() {
                 if(typeof d.secActive !== 'undefined') { secondaryActive = d.secActive; assignSecretMission(); }
                 enemyUnits.forEach(u => { if(!globalHP[u.uid] && u.stats) globalHP[u.uid] = {c:parseInt(u.stats.hp)||1, m:parseInt(u.stats.hp)||1}; });
                 const btn = document.getElementById('btn-ready');
-                if(btn) {
-                    btn.disabled = false; btn.querySelector('span').innerText = "CONFIRMAR ÓRDENES";
-                    btn.style.background = "var(--c)"; btn.style.color = "#000";
-                }
-                if(typeof updateMissionDisplay === 'function') updateMissionDisplay(); 
-                if(typeof updateHUD === 'function') updateHUD(); 
-                log(`REGLAS SINCRONIZADAS.`);
+                btn.disabled = false; btn.querySelector('span').innerText = "CONFIRMAR ÓRDENES";
+                btn.style.background = "var(--c)"; btn.style.color = "#000";
+                updateMissionDisplay(); updateHUD(); log(`REGLAS SINCRONIZADAS.`);
             }
         }
         else if(d.type === 'READY') {
             enemyUnits = d.squad; enemyIsReady = true; enemyInitRoll = d.roll;
-            if(document.getElementById('en-ready-mark')) document.getElementById('en-ready-mark').classList.add('show'); 
-            checkStartRound();
+            document.getElementById('en-ready-mark').classList.add('show'); checkStartRound();
         }
         else if(d.type === 'COMBAT_SYNC') { handleCombatSync(d); }
         else if(d.type === 'SCORE_UPDATE') { enemyVP = d.vp; updateHUD(); }
@@ -934,140 +743,462 @@ function renderEditorSquad() {
             log(`RIVAL USA ${d.gearName}: ${d.desc}`);
             if(d.dmg) { applyDamage(d.dmg); log(`RECIBES ${d.dmg} DAÑO`, 'danger'); }
         }
-        else if(d.type === 'OP_ACTION') { 
-            if(gameState !== 'PLANNING'){ 
-                log(`RIVAL: ${d.opType}`); 
-                if(typeof startMyPhaseTurn === 'function') startMyPhaseTurn(); 
-            } 
-        }
-        else if(d.type === 'CHANGE_TURN') { 
-            if(gameState !== 'PLANNING') { 
-                if(typeof startMyPhaseTurn === 'function') startMyPhaseTurn(); 
-            } 
-        }
+        else if(d.type === 'OP_ACTION') { if(gameState!=='PLANNING'){ log(`RIVAL: ${d.opType}`); setTurn('MY_TURN', 0); } }
+        else if(d.type === 'CHANGE_TURN') { if(gameState!=='PLANNING') setTurn('MY_TURN', d.passes || 0); }
         else if(d.type === 'ROUND_OVER') resetRound();
-    } // <--- CIERRE DE onMessageArrived (¡IMPORTANTE!)
+    }
 
-    // 2. SISTEMA DE FASES (NUEVO)
-    window.startMyPhaseTurn = function() {
-        gameState = 'MY_TURN';
-        currentPhase = 1; 
-        actionsPerformed = { move: false, action: false };
-        if(document.getElementById('turn-indicator')) {
-            document.getElementById('turn-indicator').innerText = "MI TURNO";
-            document.getElementById('turn-indicator').className = "turn-badge my-turn";
+    // --- COMBAT LOGIC ---
+    function initiateCombat() {
+        if(gameState !== 'MY_TURN') return;
+        const me = myUnits[myIdx];
+        if(me.activations >= 2) { log("UNIDAD AGOTADA"); return; }
+        if(me.mode !== 'open') { log("ERROR: REQUIERE ORDEN DE ATAQUE", "danger"); return; }
+
+        let diceCount = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
+        combatTargetVal = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
+        let dmgRaw = combatMode==='ranged' ? me.stats.r_dmg : me.stats.m_dmg;
+        currentWeaponDmg = parseInt(dmgRaw) || 1;
+        if(me.activations === 1) { combatTargetVal++; log("FATIGA: +1 DIFICULTAD", "danger"); }
+
+        setupCombatUI('ATTACKER');
+        atkRolls = []; for(let i=0; i<diceCount; i++) atkRolls.push(Math.ceil(Math.random()*6));
+        renderDiceFaces(atkRolls, 'pool-atk', true);
+        syncVisuals('PRE_ATTACK', atkRolls);
+        logCombat(`${me.name} inicia ataque...`);
+    }
+
+    function rerollDice(type) {
+        if(!canReroll || selectedIndices.length === 0) return;
+        let targetArray = (type === 'ATK') ? atkRolls : defRolls;
+        selectedIndices.forEach(idx => { targetArray[idx] = Math.ceil(Math.random()*6); });
+        canReroll = false; selectedIndices = [];
+        if(type === 'ATK') {
+            renderDiceFaces(atkRolls, 'pool-atk', false);
+            document.getElementById('btn-reroll').style.display = 'none';
+            syncVisuals('ATK_REROLL', atkRolls);
+            logCombat(">> ATACANTE RE-TIRA");
+        } else {
+            renderDiceFaces(defRolls, 'pool-def', false);
+            document.getElementById('btn-reroll-def').style.display = 'none';
+            logCombat(">> DEFENSA RE-TIRA");
         }
-        updatePhaseUI();
-    };
+    }
 
-    window.updatePhaseUI = function() {
-        // Dots
-        [1,2,3].forEach(i => {
-            const el = document.getElementById(`phase-${i}`);
-            if(el) el.className = 'phase-dot' + (currentPhase === i ? ' active' : (currentPhase > i ? ' done' : ''));
-        });
-        // CP
-        if(document.getElementById('cp-display')) document.getElementById('cp-display').innerText = myCP;
+    function confirmAttack() {
+        hideAllCombatButtons();
+        document.getElementById('btn-cancel-combat').style.display = 'inline-block';
+        renderStars(atkRolls, 'pool-atk');
+        let hits = 0, crits = 0;
+        atkRolls.forEach(r => { if(r===6) crits++; else if(r>=combatTargetVal) hits++; });
+        let potDmg = (hits + crits) * currentWeaponDmg;
+        logCombat(`CONFIRMADO: ${hits} Hits, ${crits} Crits.`);
+        publish({ type: 'COMBAT_SYNC', stage: 'ATTACK_CONFIRMED', rolls: atkRolls, dmg: potDmg, hitsStruct: { normal: hits, crit: crits, dmgValue: currentWeaponDmg }, uName: myUnits[myIdx].name });
+    }
 
-        // UI Zones
-        const btnMove = document.getElementById('btn-end-move');
-        const combatActs = document.getElementById('combat-actions');
-        const opsActs = document.getElementById('ops-actions');
-        const ind = document.getElementById('turn-indicator');
+    function startDefenseSequence(stats, enemyRolls) {
+        pendingAtkStats = stats;
+        setupCombatUI('DEFENDER');
+        document.getElementById('pool-atk').innerHTML = '';
+        renderStars(enemyRolls, 'pool-atk');
+        
+        defRolls = []; for(let i=0; i<3; i++) defRolls.push(Math.ceil(Math.random()*6));
+        renderDiceFaces(defRolls, 'pool-def', true);
+        logCombat(`RECIBES ATAQUE. Tira defensa...`);
+    }
 
-        // Reset
-        if(btnMove) btnMove.style.display = 'none';
-        if(combatActs) combatActs.style.display = 'none';
-        if(opsActs) opsActs.style.display = 'none';
+    function confirmDefense() {
+        hideAllCombatButtons();
+        renderStars(defRolls, 'pool-def');
+        let defHits = 0, defCrits = 0;
+        let sv = parseInt(myUnits[myIdx].stats.sv.replace('+','')) || 3;
+        
+        defRolls.forEach(r => { if(r===6) defCrits++; else if(r>=sv) defHits++; });
+        if(coverActive) { defHits++; logCombat("COBERTURA: +1 Bloqueo Normal"); }
 
-        // Logic
-        if (currentPhase === 1) {
-            if(ind) ind.innerText = "FASE 1: MOVER";
-            if(btnMove) btnMove.style.display = 'block';
-        } else if (currentPhase === 2) {
-            if(ind) ind.innerText = "FASE 2: ACCIÓN";
-            if(combatActs) combatActs.style.display = 'flex';
-        } else if (currentPhase === 3) {
-            if(ind) ind.innerText = "FASE 3: FIN";
-            if(opsActs) {
-                opsActs.style.display = 'grid';
-                opsActs.innerHTML = `<button class="btn" onclick="endTurnFinal()" style="grid-column: 1 / -1; background:#ff4444; color:#fff; font-weight:bold; padding:15px;">🛑 FINALIZAR TURNO</button>`;
-            }
-        }
-    };
+        let incCrit = pendingAtkStats.crit;
+        let incNorm = pendingAtkStats.normal;
+        let dmgPerHit = pendingAtkStats.dmgValue;
 
-    window.finishMovePhase = function() {
-        currentPhase = 2; updatePhaseUI();
-    };
+        let blockedCrits = Math.min(incCrit, defCrits);
+        let remainingAtkCrits = incCrit - blockedCrits;
+        let remainingDefCrits = defCrits - blockedCrits;
+        let convertedDefHits = remainingDefCrits * 2; 
+        let totalDefNormal = defHits + convertedDefHits;
+        let blockedNormals = Math.min(incNorm, totalDefNormal);
+        let remainingAtkNormals = incNorm - blockedNormals;
+        let totalUnblockedHits = remainingAtkCrits + remainingAtkNormals;
+        let finalDmg = totalUnblockedHits * dmgPerHit;
 
-    window.endTurnFinal = function() {
-        log("Turno finalizado.");
-        passTurn(0); // Llama a la función original de MQTT
-        currentPhase = 0;
-        updatePhaseUI();
-    };
+        logCombat(`DEF: ${defCrits} Crit, ${defHits} Hit. BLQ: ${blockedCrits} Crit, ${blockedNormals} Norm.`);
+        logCombat(`DAÑO FINAL: ${finalDmg}`);
+        
+        // Guardamos el daño calculado en un atributo del botón para usarlo al hacer click
+        const btnApply = document.getElementById('btn-apply-dmg');
+        btnApply.style.display = 'inline-block';
+        btnApply.innerText = `RECIBIR ${finalDmg} DAÑO`;
+        btnApply.dataset.dmg = finalDmg; // Store damage value
+    }
 
-    // 3. UTILIDADES DE INTERFAZ
-    window.tryPass = function(btnId) { 
-        const btn = document.getElementById(btnId); 
-        if (passConfirm === btnId) { 
-            performOp('PASAR'); resetPassButtons(); 
-        } else { 
-            resetPassButtons(); passConfirm = btnId; 
-            btn.innerText = "¿CONFIRMAR?"; 
-            btn.style.background = "var(--gold)"; btn.style.color = "#000"; 
+    function applyCombatResult() {
+        const btn = document.getElementById('btn-apply-dmg');
+        const finalDmg = parseInt(btn.dataset.dmg);
+        applyDamage(finalDmg);
+        publish({type: 'COMBAT_SYNC', stage: 'RESOLVED', rolls: defRolls, finalDmg: finalDmg});
+        closeCombatOverlay();
+    }
+
+    function handleCombatSync(d) {
+        const overlay = document.getElementById('dice-overlay');
+        if (d.stage === 'PRE_ATTACK') {
+            overlay.style.display = 'flex';
+            document.getElementById('combat-log-visual').innerHTML = '';
+            document.getElementById('pool-def').innerHTML = 'Esperando confirmación...';
+            hideAllCombatButtons();
+            renderDiceFaces(d.rolls, 'pool-atk', false);
+            logCombat(`ENEMIGO prepara ataque...`);
         } 
-    };
-
-    window.resetPassButtons = function() {
-        passConfirm = null;
-        ['btn-pass-open', 'btn-op-pass'].forEach(id => {
-            const el = document.getElementById(id);
-            if(el) { el.innerText = "PASAR"; el.style.background = "#555"; el.style.color = "#fff"; }
-        });
-    };
-
-    // 4. INICIALIZACIÓN Y CONEXIÓN (ARRANQUE)
-    function initSystem() {
-        MY_ID = "OP_" + Math.floor(Math.random() * 10000);
-        console.log("Iniciando sistema. ID:", MY_ID);
-        connectMQTT();
-    }
-
-    // Configuración MQTT
-    const client = new Paho.MQTT.Client("broker.hivemq.com", 8000, "SquadForge_" + parseInt(Math.random()*100000));
-
-    client.onConnectionLost = function(responseObject) {
-        if (responseObject.errorCode !== 0) {
-            log("CONEXIÓN PERDIDA: " + responseObject.errorMessage, 'danger');
-            setTimeout(connectMQTT, 5000);
+        else if (d.stage === 'ATK_REROLL') {
+            renderDiceFaces(d.rolls, 'pool-atk', false);
+            logCombat(`>> ENEMIGO RE-TIRA DADOS`);
         }
-    };
+        else if (d.stage === 'ATTACK_CONFIRMED') {
+            renderStars(d.rolls, 'pool-atk');
+            logCombat(`ATAQUE ENTRANTE: ${d.hitsStruct.crit} Crits, ${d.hitsStruct.normal} Hits`);
+            startDefenseSequence(d.hitsStruct, d.rolls);
+        }
+        else if (d.stage === 'RESOLVED') {
+            renderStars(d.rolls, 'pool-def');
+            logCombat(`RIVAL defendió. Daño Aplicado: ${d.finalDmg}`);
+            hideAllCombatButtons();
+            const btnClose = document.getElementById('btn-close-combat');
+            btnClose.style.display = 'inline-block';
+            btnClose.innerText = "TERMINAR ACTIVACIÓN";
+        }
+        else if (d.stage === 'CANCEL') {
+            closeCombatOverlay(); log("COMBATE CANCELADO POR RIVAL", "warning");
+        }
+    }
 
-    // VINCULACIÓN CRÍTICA: Unimos la función de arriba con el cliente
-    client.onMessageArrived = onMessageArrived; 
+    // --- UTILS ---
+    function updateHUD() {
+        if(!myUnits.length) return;
+        if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit();
+        const me = myUnits[myIdx]; const en = enemyUnits[enIdx];
+        
+        document.getElementById('my-name').innerText = me.name;
+        const card = document.getElementById('my-card'); card.className = "card my";
+        if(me.activations === 1) card.classList.add('fatigued');
+        if(me.activations >= 2) card.classList.add('exhausted');
+        if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) card.classList.add('locked');
+        
+        let statusText = "LISTO"; if(me.activations===1) statusText="FATIGADO"; if(me.activations===2) statusText="AGOTADO";
+        document.getElementById('my-status-text').innerText = statusText;
+        if(globalHP[me.uid]) document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
+        
+        document.getElementById('btn-mode-open').className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
+        document.getElementById('btn-mode-hidden').className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
+        
+        const combatPanel = document.getElementById('combat-actions');
+        const opsPanel = document.getElementById('ops-actions');
+        document.getElementById('btn-combat-mode').innerHTML = combatMode === 'ranged' ? "<span>🔫</span>" : "<span>⚔️</span>";
+        document.getElementById('btn-act').innerHTML = combatMode === 'ranged' ? "<span>DISPARAR</span>" : "<span>GOLPEAR</span>";
 
-    function connectMQTT() {
-        log("CONECTANDO A LA RED...");
-        client.connect({
-            onSuccess: function() {
-                log("CONEXIÓN ESTABLECIDA.", "success");
-                client.subscribe("squad_command/global");
-                const loading = document.getElementById('loading');
-                if(loading) loading.classList.add('hidden');
-            },
-            onFailure: function(m) {
-                log("FALLO DE CONEXIÓN. REINTENTANDO...", 'danger');
-                setTimeout(connectMQTT, 3000);
-            }
+        if(me.mode === 'hidden') { combatPanel.style.display = 'none'; opsPanel.style.display = 'grid'; } 
+        else { opsPanel.style.display = 'none'; combatPanel.style.display = 'flex'; }
+
+        document.getElementById('my-r').innerText = me.stats.r_atk;
+        document.getElementById('my-m').innerText = me.stats.m_atk;
+        document.getElementById('my-sv').innerText = me.stats.sv;
+
+        const tagContainer = document.getElementById('my-tags'); 
+        tagContainer.innerHTML = '';
+
+        // --- INICIO DE CAMBIOS: VISUALIZACIÓN DE ARMAS ---
+        // Recuperamos nombres (o usamos genéricos si no existen)
+        const wR = me.weapons ? me.weapons.r : 'Rango';
+        const wM = me.weapons ? me.weapons.m : 'Melee';
+
+        // ARMA RANGO (Solo si tiene ataques)
+        if (me.stats.r_atk > 0) {
+            // Si el modo actual es 'ranged', iluminamos en CYAN, si no, lo oscurecemos
+            const styleR = combatMode === 'ranged' 
+                ? "border:1px solid var(--c); color:#fff; background:rgba(0,242,255,0.15); width:98%; display:block; margin-bottom:2px; text-shadow:0 0 5px var(--c);" 
+                : "border:1px solid #333; color:#555; width:98%; display:block; margin-bottom:2px;";
+            
+            // Creamos el HTML con los datos
+            const infoR = `🔫 ${wR} <span style="float:right; font-family:monospace; font-size:0.6rem;">A:${me.stats.r_atk} H:${me.stats.r_hit} D:${me.stats.r_dmg}</span>`;
+            tagContainer.innerHTML += `<div class="tag" style="${styleR}">${infoR}</div>`;
+        }
+
+        // ARMA MELEE (Solo si tiene ataques)
+        if (me.stats.m_atk > 0) {
+            // Si el modo actual es 'melee', iluminamos en GOLD, si no, lo oscurecemos
+            const styleM = combatMode === 'melee' 
+                ? "border:1px solid var(--gold); color:#fff; background:rgba(255,204,0,0.15); width:98%; display:block; margin-bottom:2px; text-shadow:0 0 5px var(--gold);" 
+                : "border:1px solid #333; color:#555; width:98%; display:block; margin-bottom:2px;";
+            
+            const infoM = `⚔️ ${wM} <span style="float:right; font-family:monospace; font-size:0.6rem;">A:${me.stats.m_atk} H:${me.stats.m_hit} D:${me.stats.m_dmg}</span>`;
+            tagContainer.innerHTML += `<div class="tag" style="${styleM}">${infoM}</div>`;
+        }
+        // --- FIN DE CAMBIOS ---
+
+        let showGearBtn = false; let gearBtnText = "ITEM";
+        me.mechanics.forEach(m => {
+            let css = m.type === 'ACTIVE' ? "tag active-gear" : "tag passive";
+            if(m.oneUse && me.gearUsed) css += " used";
+            else if(m.type === 'ACTIVE' && !me.gearUsed && gameState === 'MY_TURN') { showGearBtn = true; gearBtnText = m.name; }
+            tagContainer.innerHTML += `<span class="${css}">${m.icon} ${m.name}</span>`;
+        });
+        const btnGear = document.getElementById('btn-gear');
+        if(showGearBtn) { btnGear.style.display='block'; btnGear.querySelector('span').innerText=gearBtnText; } else btnGear.style.display='none';
+
+        if(en && globalHP[en.uid]) {
+            document.getElementById('enemy-name').innerText = en.name;
+            document.getElementById('enemy-hp').style.width = (globalHP[en.uid].c/globalHP[en.uid].m*100)+"%";
+        }
+        document.getElementById('my-score').innerText = myVP;
+        document.getElementById('enemy-score').innerText = enemyVP;
+        document.getElementById('round-display').innerText = `RND ${currentRound}/${maxRounds}`;
+
+        const btnSecret = document.getElementById('btn-claim-secret');
+        if (secondaryActive && !secretClaimed && gameState !== 'PLANNING') {
+            btnSecret.style.display = 'block';
+            btnSecret.innerText = `RECLAMAR: ${secretMission} (+2 PV)`;
+        } else { btnSecret.style.display = 'none'; }
+    }
+    function renderDiceFaces(rolls, containerId, interactive) {
+        const container = document.getElementById(containerId); container.innerHTML = '';
+        const faces = ['?','⚀','⚁','⚂','⚃','⚄','⚅'];
+        rolls.forEach((val, index) => {
+            let div = document.createElement('div'); div.className = 'die-face'; div.innerText = faces[val];
+            if (interactive && canReroll) {
+                div.onclick = (e) => toggleDieSelection(index, e);
+                if (selectedIndices.includes(index)) div.classList.add('selected');
+            } else { div.classList.add('locked'); }
+            container.appendChild(div);
         });
     }
 
-    // ARRANQUE FINAL
-    window.onload = function() {
-        initSystem();
-    };
+    function toggleDieSelection(index, event) {
+        if(!canReroll) return;
+        const parentId = event.target.parentElement.id; 
+        const isAtk = parentId === 'pool-atk';
+        if (gameState === 'MY_TURN' && !isAtk) return; 
+        if (gameState !== 'MY_TURN' && isAtk) return;  
+        const div = event.target;
+        if (selectedIndices.includes(index)) { selectedIndices = selectedIndices.filter(i => i !== index); div.classList.remove('selected'); } 
+        else { selectedIndices.push(index); div.classList.add('selected'); }
+        const btnId = (gameState === 'MY_TURN') ? 'btn-reroll' : 'btn-reroll-def';
+        const btn = document.getElementById(btnId);
+        if (selectedIndices.length > 0) { btn.style.display = 'inline-block'; btn.innerText = `RE-TIRAR (${selectedIndices.length})`; } 
+        else { btn.style.display = 'none'; }
+    }
 
+    function renderStars(rolls, elementId) {
+        const el = document.getElementById(elementId); el.innerHTML = '';
+        rolls.forEach(r => {
+            let span = document.createElement('span'); span.className = 'd-icon';
+            if(r >= 6) { span.innerHTML = '★'; span.classList.add('star-gold'); }
+            else if(r >= 3) { span.innerHTML = '★'; span.classList.add('star-blue'); }
+            else { span.innerHTML = '•'; span.classList.add('star-miss'); }
+            el.appendChild(span);
+        });
+    }
+
+    function setupCombatUI(role) {
+        canReroll = true; selectedIndices = [];
+        document.getElementById('dice-overlay').style.display = 'flex';
+        document.getElementById('combat-log-visual').innerHTML = '';
+        hideAllCombatButtons();
+        if(role === 'ATTACKER') {
+            document.getElementById('pool-atk').innerHTML = '';
+            document.getElementById('pool-def').innerHTML = 'Esperando...';
+            document.getElementById('btn-confirm-atk').style.display = 'inline-block';
+            document.getElementById('btn-cancel-combat').style.display = 'inline-block';
+        } else {
+            document.getElementById('pool-def').innerHTML = '';
+            document.getElementById('btn-confirm-def').style.display = 'inline-block';
+            document.getElementById('btn-cover-toggle').style.display = 'block';
+        }
+    }
+
+    function returnToLobby() {
+        if(!isGameOver) return;
+        if(client) { try{ client.disconnect(); } catch(e){} client=null; }
+        document.getElementById('game-over-screen').classList.remove('show');
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('lobby-screen').classList.remove('hidden');
+        document.getElementById('dice-overlay').style.display = 'none';
+        document.getElementById('combat-log').innerHTML = "";
+        isGameOver = false; myUnits = []; enemyUnits = []; globalHP = {};
+        myVP = 0; enemyVP = 0; currentRound = 1;
+        iAmReady = false; enemyIsReady = false;
+        resetPassButtons(); coverActive = false;
+    }
+
+    function triggerGameOver(resultText, colorStr, subText) {
+        isGameOver = true;
+        document.getElementById('dice-overlay').style.display = 'none';
+        const screen = document.getElementById('game-over-screen');
+        const title = document.getElementById('end-title');
+        const score = document.getElementById('end-score');
+        if(!resultText) {
+            if(myVP > enemyVP) { resultText="VICTORIA"; colorStr="#00ff99"; subText="POR PUNTOS"; }
+            else if(myVP < enemyVP) { resultText="DERROTA"; colorStr="#ff0055"; subText="POR PUNTOS"; }
+            else { resultText="EMPATE"; colorStr="#ffcc00"; subText="TIEMPO AGOTADO"; }
+        }
+        screen.classList.add('show');
+        title.innerText = resultText; title.style.color = colorStr;
+        score.innerHTML = `<div style="font-size:0.8rem; color:#888; margin-bottom:10px;">${subText}</div>YO: ${myVP} - RIV: ${enemyVP}`;
+        if(client) try{ client.disconnect(); } catch(e){}
+    }
+    const checkWinCondition = () => triggerGameOver(null, null, null);
+
+    function checkAliveStatus() {
+        if(isGameOver || !myUnits.length || !enemyUnits.length) return;
+        const myLiveCount = myUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
+        const enLiveCount = enemyUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
+        if (myLiveCount === 0) triggerGameOver("DERROTA", "#ff0055", "SQUAD ELIMINADO");
+        else if (enLiveCount === 0) triggerGameOver("VICTORIA", "#00ff99", "ENEMIGO ANIQUILADO");
+    }
+
+    function checkRoundOver() {
+        if(isGameOver) return;
+        const myReady = myUnits.filter(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0).length;
+        const enReady = enemyUnits.filter(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0).length;
+        if (myReady === 0 && enReady === 0) { log("FIN DE RONDA"); publish({type:'ROUND_OVER'}); resetRound(); return true; }
+        return false;
+    }
+
+    function setTurn(state, passes) {
+        gameState = state; 
+        const ind = document.getElementById('turn-indicator');
+        if(gameState === 'MY_TURN') {
+            checkAutoMechanics(); if(checkRoundOver()) return;
+            ind.className = "turn-badge my-turn"; ind.innerText = "TU TURNO";
+            document.querySelector('.hud-bottom').style.pointerEvents = "auto";
+            document.querySelector('.hud-bottom').style.opacity = "1";
+            autoSelectValidUnit(); 
+        } else {
+            ind.className = "turn-badge enemy-turn"; ind.innerText = "TURNO RIVAL";
+            document.querySelector('.hud-bottom').style.pointerEvents = "none";
+            document.querySelector('.hud-bottom').style.opacity = "0.7";
+        }
+        updateHUD();
+    }
+
+    function passTurn(passes) {
+        const me = myUnits[myIdx];
+        if (me.activations < 2) me.activations++;
+        publish({type: 'SYNC_SQUAD', squad: myUnits});
+        if(passes >= 2) { publish({type:'ROUND_OVER'}); resetRound(); } 
+        else { if(!checkRoundOver()) { setTurn('ENEMY_TURN', passes); publish({type: 'CHANGE_TURN', passes: passes}); } }
+    }
+
+    function applyDamage(n) { 
+        if(n>0){ 
+            document.getElementById('flash-fx').className='flash'; setTimeout(()=>document.getElementById('flash-fx').className='',300); 
+            globalHP[myUnits[myIdx].uid].c=Math.max(0,globalHP[myUnits[myIdx].uid].c-n); 
+            publish({type:'SYNC_HP',state:globalHP}); updateHUD(); checkAliveStatus();
+        } 
+    }
+
+    function canUnitAct(unit, team, opponents) {
+        if (!globalHP[unit.uid] || globalHP[unit.uid].c <= 0) return false; 
+        if (unit.activations >= 2) return false; 
+        if (unit.activations === 0) return true; 
+        const iHaveReady = team.some(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
+        if (iHaveReady) return false;
+        const enemyHasReady = opponents.some(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
+        return !!enemyHasReady; 
+    }
+    function canSelectUnit(index) { if (!myUnits[index]) return false; return canUnitAct(myUnits[index], myUnits, enemyUnits); }
+    function autoSelectValidUnit() {
+        if (canSelectUnit(myIdx)) return;
+        const freshIdx = myUnits.findIndex(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
+        if (freshIdx !== -1) { myIdx = freshIdx; return; }
+        const tiredIdx = myUnits.findIndex((u, i) => canSelectUnit(i));
+        if (tiredIdx !== -1) myIdx = tiredIdx;
+    }
+    function executeSecretClaim() { secretClaimed = true; myVP += 2; log(`SECRETA ACEPTADA (+2 PV)`); document.getElementById('btn-claim-secret').style.display = 'none'; publish({type: 'SCORE_UPDATE', vp: myVP}); updateHUD(); }
+    function showConfirmModal(text, reqData) { pendingRequest = reqData; const modal = document.getElementById('confirm-modal'); document.getElementById('modal-msg').innerText = text; modal.classList.add('show'); }
+    function assignSecretMission() { if(secondaryActive) secretMission = SECRET_POOL[Math.floor(Math.random()*SECRET_POOL.length)]; else secretMission = null; }
+    function updateMissionDisplay() { 
+        const container = document.getElementById('mission-info');
+        if (secondaryActive && secretMission) container.innerHTML = `${primaryMission} <span style="color:#666">|</span> <span class="secret-hl">SEC: ${secretMission}</span>`;
+        else if (secondaryActive) container.innerHTML = `${primaryMission} <span style="color:#666">|</span> SEC: ???`;
+        else container.innerText = primaryMission;
+    }
+    function commitPlanning() { 
+        if(gameState !== 'PLANNING') return; 
+        if(enemyUnits.length === 0) { log("ESPERANDO RIVAL..."); return; }
+        iAmReady = true; myInitRoll = Math.ceil(Math.random()*100); 
+        document.getElementById('planning-controls').style.display = 'none'; document.getElementById('my-ready-mark').classList.add('show'); 
+        publish({type: 'READY', squad: myUnits, roll: myInitRoll}); checkStartRound(); 
+    }
+    function checkStartRound() { 
+        if(iAmReady && enemyIsReady) { 
+            log(`INICIATIVA: YO ${myInitRoll} vs ${enemyInitRoll} RIV`); 
+            gameState = (myInitRoll >= enemyInitRoll) ? 'MY_TURN' : 'ENEMY_TURN'; 
+            document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show')); setTurn(gameState, 0); 
+        } 
+    }
+    function getKillPoints(total) { return total <= 4 ? 4 : (total <= 7 ? 3 : 1); }
+    function checkAutoMechanics() { 
+        const me = myUnits[myIdx]; if(!me || globalHP[me.uid].c <= 0) return; 
+        me.mechanics.forEach(m => { if(m.type === 'AUTO' && m.func === 'AUTO_REGEN' && globalHP[me.uid].c < globalHP[me.uid].m) { globalHP[me.uid].c++; publish({type: 'SYNC_HP', state: globalHP}); log(`REGEN: ${me.name} recupera 1 HP`); updateHUD(); } }); 
+    }
+    function syncVisuals(stage, rollsData) { publish({ type: 'COMBAT_SYNC', stage: stage, rolls: rollsData, uName: myUnits[myIdx].name }); }
+    function logCombat(msg) { const log = document.getElementById('combat-log-visual'); log.innerHTML += `<div class="log-line">> ${msg}</div>`; log.scrollTop = log.scrollHeight; }
+    function log(t, type='info') { const c = document.getElementById('combat-log'); while(c.children.length>=6) c.lastChild.remove(); const el = document.createElement('div'); el.innerText = `> ${t}`; el.className = `log-entry ${type}`; c.prepend(el); setTimeout(()=>el.remove(), 10000); }
+    function publish(p) { if(client){ p.sender=MY_ID; client.send(TOPIC, JSON.stringify(p)); } }
+    function resetRound() { 
+        if(isGameOver) return; 
+        if(currentRound>=maxRounds) { checkWinCondition(); return; } 
+        currentRound++; gameState='PLANNING'; iAmReady=false; enemyIsReady=false; 
+        myUnits.forEach(u=>{u.activations=0;u.gearUsed=false;}); 
+        resetPassButtons(); document.getElementById('planning-controls').style.display='block'; 
+        document.getElementById('turn-indicator').innerText='PLANIFICACIÓN'; 
+        document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show')); 
+        updateHUD(); log(`INICIO RONDA ${currentRound}`); 
+    }
+    function cancelCombat() { publish({type:'COMBAT_SYNC', stage:'CANCEL'}); closeCombatOverlay(); }
+    function endCombatTurn() { document.getElementById('dice-overlay').style.display = 'none'; passTurn(0); }
+    function closeCombatOverlay() { document.getElementById('dice-overlay').style.display = 'none'; }
+    function hideAllCombatButtons() { const ids = ['btn-reroll', 'btn-reroll-def', 'btn-confirm-atk', 'btn-confirm-def', 'btn-apply-dmg', 'btn-cancel-combat', 'btn-close-combat', 'btn-cover-toggle']; ids.forEach(id => document.getElementById(id).style.display = 'none'); }
+    
+    // UI Helpers
+    window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; updateHUD(); } }
+    window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); updateHUD(); }
+    window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
+    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
+    window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
+    window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
+    window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
+    window.performOp = function(op) {
+        if(gameState !== 'MY_TURN') return;
+        const me = myUnits[myIdx];
+        if(op === 'MISION') {
+            if(me.mode !== 'hidden') {
+                log("ERROR: REQUIERE ORDEN TÁCTICA", "danger");
+                document.getElementById('btn-mode-hidden').style.borderColor = "red"; setTimeout(()=>document.getElementById('btn-mode-hidden').style.borderColor = "#555", 500);
+                return;
+            }
+            myVP+=1; publish({type:'SCORE_UPDATE', vp:myVP}); log("MISION CUMPLIDA"); 
+        } else log(op);
+        publish({type:'OP_ACTION', opType: op}); passTurn(0);
+    }
+    window.useSpecialGear = function() { 
+        if(gameState !== 'MY_TURN') return; 
+        const me = myUnits[myIdx]; const item = me.mechanics.find(m => m.type === 'ACTIVE' && !me.gearUsed); 
+        if(!item) return; 
+        if(item.func === 'THROW_GRENADE') { log(`GRANADA LANZADA!`); publish({type: 'GEAR_EFFECT', gearName: 'GRANADA', desc: `BOOM! 3 Daño`, dmg: 3}); passTurn(0); } 
+        else if(item.func === 'USE_MEDKIT') { globalHP[me.uid].c = Math.min(globalHP[me.uid].m, globalHP[me.uid].c + 3); publish({type: 'SYNC_HP', state: globalHP}); log("MEDKIT USADO"); updateHUD(); passTurn(0); } 
+        if(item.oneUse) { me.gearUsed = true; updateHUD(); } 
+    }
+    window.tryPass = function(btnId) { const btn = document.getElementById(btnId); if (passConfirm === btnId) { performOp('PASAR'); resetPassButtons(); } else { resetPassButtons(); passConfirm = btnId; btn.innerText = "¿CONFIRMAR?"; btn.style.background = "var(--gold)"; btn.style.color = "#000"; } }
+    window.resetPassButtons = function() { passConfirm = null; const b1 = document.getElementById('btn-pass-open'); b1.innerText = "PASAR"; b1.style.background = "#555"; b1.style.color = "#fff"; const b2 = document.getElementById('btn-op-pass'); b2.innerText = "PASAR"; b2.style.background = "#888"; b2.style.color = "#000"; }
 </script>
 </body>
 </html>
