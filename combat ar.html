@@ -1396,7 +1396,7 @@ function renderEditorSquad() {
         if(item.oneUse) { me.gearUsed = true; updateHUD(); } 
     }
     window.tryPass = function(btnId) { const btn = document.getElementById(btnId); if (passConfirm === btnId) { performOp('PASAR'); resetPassButtons(); } else { resetPassButtons(); passConfirm = btnId; btn.innerText = "¿CONFIRMAR?"; btn.style.background = "var(--gold)"; btn.style.color = "#000"; } }
-    / Función auxiliar necesaria para el botón de pasar
+    // Función auxiliar necesaria para el botón de pasar
     window.resetPassButtons = function() {
         passConfirm = null;
         const btns = ['btn-pass-open', 'btn-op-pass'];
@@ -1413,6 +1413,7 @@ function renderEditorSquad() {
 </script>
 </body>
 </html>
+
 
 
 
