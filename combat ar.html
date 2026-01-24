@@ -199,8 +199,14 @@
                 <div style="font-size:0.7rem; color:var(--gold); margin-top:5px;">COSTE: <span id="p-cost">0</span> PTS</div>
             </div>
 
-            <button class="btn" onclick="addUnitToSquad()" style="margin-top:10px;">AÑADIR OPERATIVO</button>
+          <button class="btn" onclick="addUnitToSquad()" style="margin-top:10px;">AÑADIR OPERATIVO</button>
                 </div>
+                
+                <div id="forge-total" style="width:100%; max-width:400px; text-align:right; margin-bottom:5px; font-size:0.9rem; font-weight:bold; color:#fff;">
+                    PUNTOS: <span id="total-pts">0</span> / <span style="color:var(--gold)">100</span>
+                </div>
+                
+                <div class="unit-list" id="squad-list"></div>
                 
                 <div id="forge-total" style="width:100%; max-width:400px; text-align:right; margin-bottom:5px; font-size:0.9rem; font-weight:bold; color:#fff;">
                     PUNTOS: <span id="total-pts">0</span> / <span style="color:var(--gold)">100</span>
@@ -336,6 +342,7 @@
 
 <script>
     // --- DATABASE (FORGE) ---
+
     const FORGE_DB = {
         species: {
             human: { name: "HUMANO", hp: 10, sv: "5+", r_atk: 3, r_hit: "4+", m_atk: 3, m_hit: "4+", cost: 5 },
@@ -345,48 +352,41 @@
             necron: { name: "XENOS", hp: 12, sv: "3+", r_atk: 3, r_hit: "3+", m_atk: 2, m_hit: "4+", cost: 14 }
         },
         roles: {
-            // Básicos (Coste 0-1)
             trooper: { name: "Guerrero", cost: 0, modA: 0, modHit: 0, modHP: 0 },
-            // Infantería (Coste 2)
             assault: { name: "Asalto", cost: 2, modA: 1, modHit: 0, modHP: 1 }, 
             hunter:  { name: "Cazador", cost: 2, modA: 1, modHit: -1, modHP: -2 },
-            // Especialistas (Coste 3)
             sniper:  { name: "Francotirador", cost: 3, modA: 0, modHit: -1, modHP: -1 },
             medic:   { name: "Médico", cost: 3, modA: -1, modHit: 0, modHP: 2 },
             berserk: { name: "Frenético", cost: 3, modA: 2, modHit: 1, modHP: 0 },
-            // Élites (Coste 4-5)
             heavy:   { name: "Artillero", cost: 4, modA: 1, modHit: -1, modHP: 2 },
             leader:  { name: "Líder", cost: 5, modA: 1, modHit: -1, modHP: 3 },
-            // Pesados (Coste 6+)
             tank:    { name: "Blindado", cost: 6, modA: 1, modHit: 1, modHP: 5 },
             mech:    { name: "Mecha", cost: 8, modA: 3, modHit: 0, modHP: 4 }
         },
         weapons: {
-            pistol:     { name: "Pistola",      cost: 0, A: 3, D: 3, type: "Ranged" },
+            pistol:     { name: "Pistola",       cost: 0, A: 3, D: 3, type: "Ranged" },
             autogun:    { name: "Rifle Automático",   cost: 1, A: 5, D: 3, type: "Ranged" },
-            shotgun:    { name: "Escopeta",     cost: 2, A: 3, D: 5, type: "Ranged" },
-            lasgun:     { name: "Rifle Láser",  cost: 0, A: 4, D: 3, type: "Ranged" },
-            bolter:     { name: "Bólter",       cost: 2, A: 4, D: 4, type: "Ranged" },
-            flamer:     { name: "Lanzallamas",  cost: 3, A: 8, D: 2, type: "Ranged" },
+            shotgun:    { name: "Escopeta",      cost: 2, A: 3, D: 5, type: "Ranged" },
+            lasgun:     { name: "Rifle Láser",   cost: 0, A: 4, D: 3, type: "Ranged" },
+            bolter:     { name: "Bólter",        cost: 2, A: 4, D: 4, type: "Ranged" },
+            flamer:     { name: "Lanzallamas",   cost: 3, A: 8, D: 2, type: "Ranged" },
             grenade_l:  { name: "Lanzagranad.", cost: 3, A: 2, D: 5, type: "Ranged" },
-            sniper:     { name: "Rifle Prec.",  cost: 3, A: 3, D: 5, type: "Ranged" },
-            plasma:     { name: "Plasma",       cost: 4, A: 4, D: 6, type: "Ranged" },
-            minigun:    { name: "Cañón Rotatorio",   cost: 5, A: 6, D: 4, type: "Ranged" },
+            sniper:     { name: "Rifle Prec.",   cost: 3, A: 3, D: 5, type: "Ranged" },
+            plasma:     { name: "Plasma",        cost: 4, A: 4, D: 6, type: "Ranged" },
+            minigun:    { name: "Cañón Rotatorio",    cost: 5, A: 6, D: 4, type: "Ranged" },
             rocket:     { name: "Lanzamisiles", cost: 5, A: 1, D: 9, type: "Ranged" },
             melta:      { name: "Fusil de Fusión", cost: 4, A: 2, D: 7, type: "Ranged" },
-            railgun:    { name: "Cañón Riel",   cost: 6, A: 2, D: 8, type: "Ranged" },
-
-            // MELEE
-            staff:      { name: "Bastón",       cost: 0, A: 3, D: 4, type: "Melee" },
-            knife:      { name: "Cuchillo",  cost: 0, A: 4, D: 3, type: "Melee" },
-            spear:      { name: "Lanza",        cost: 1, A: 4, D: 4, type: "Melee" },
-            axe:        { name: "Hacha",        cost: 2, A: 3, D: 5, type: "Melee" },
+            railgun:    { name: "Cañón Riel",    cost: 6, A: 2, D: 8, type: "Ranged" },
+            staff:      { name: "Bastón",        cost: 0, A: 3, D: 4, type: "Melee" },
+            knife:      { name: "Cuchillo",      cost: 0, A: 4, D: 3, type: "Melee" },
+            spear:      { name: "Lanza",         cost: 1, A: 4, D: 4, type: "Melee" },
+            axe:        { name: "Hacha",         cost: 2, A: 3, D: 5, type: "Melee" },
             chainsword: { name: "Espada Sierra",cost: 2, A: 5, D: 4, type: "Melee" },
-            whip:       { name: "Látigo",    cost: 3, A: 5, D: 3, type: "Melee" },
-            claws:      { name: "Garras",       cost: 3, A: 6, D: 4, type: "Melee" },
+            whip:       { name: "Látigo",     cost: 3, A: 5, D: 3, type: "Melee" },
+            claws:      { name: "Garras",        cost: 3, A: 6, D: 4, type: "Melee" },
             powerw:     { name: "Arma de Energía", cost: 4, A: 4, D: 6, type: "Melee" },
             fist:       { name: "Puño Combate", cost: 4, A: 3, D: 7, type: "Melee" },
-            hammer:     { name: "Martillo",  cost: 5, A: 2, D: 8, type: "Melee" }
+            hammer:     { name: "Martillo",      cost: 5, A: 2, D: 8, type: "Melee" }
         },
         gear: {
             none: { name: "NINGUNO", cost: 0 },
@@ -464,106 +464,140 @@
     }
 
     function calcForge() {
-        const s = FORGE_DB.species[document.getElementById('u-species').value];
-        const r = FORGE_DB.roles[document.getElementById('u-role').value];
-        const w = FORGE_DB.weapons[document.getElementById('u-weapon').value];
-        const g = FORGE_DB.gear[document.getElementById('u-gear').value];
+        // 1. Obtener claves seleccionadas
+        const sKey = document.getElementById('u-species').value;
+        const rKey = document.getElementById('u-role').value;
+        const wKey = document.getElementById('u-weapon').value;
+        const gKey = document.getElementById('u-gear').value;
+
+        // 2. Cargar objetos de la DB (con fallback seguro)
+        const s = FORGE_DB.species[sKey] || { hp:1, cost:0, sv:"-", r_hit:"6+", m_hit:"6+" };
+        const r = FORGE_DB.roles[rKey] || { modHP:0, cost:0, modA:0, modHit:0 };
+        const w = FORGE_DB.weapons[wKey] || { cost:0, A:0, D:0, type:"Ranged" };
+        const g = FORGE_DB.gear[gKey] || { cost:0 };
         
-        const final = {
-            hp: s.hp + r.hp,
-            cost: s.cost + r.cost + w.cost + g.cost,
-            name: document.getElementById('u-name').value || "OPERATIVO"
-        };
+        // 3. Cálculos Nuevos
+        // HP = Base + Modificador Rol
+        const totalHP = (s.hp || 0) + (r.modHP || 0);
+        // Coste = Suma de todo
+        const totalCost = (s.cost||0) + (r.cost||0) + (w.cost||0) + (g.cost||0);
         
-        document.getElementById('preview-text').innerText = `${final.name} (${s.name} ${r.name})`;
-        document.getElementById('p-hp').innerText = final.hp;
+        // Calculo de HIT (Ej: "4+" (4) - Mod (1) = "3+")
+        // Usamos base Ranged o Melee dependiendo del arma seleccionada
+        const baseHitStr = w.type === 'Melee' ? s.m_hit : s.r_hit;
+        const baseHitVal = parseInt(baseHitStr.replace('+','')) || 4;
+        // Restar el modificador (en 40k, -1 al hit es BUENO, así que aquí depende tu lógica)
+        // En tu DB tienes 'sniper modHit: -1'. Asumiré que -1 es MEJORA (4+ pasa a 3+).
+        let finalHitVal = baseHitVal + (r.modHit || 0); 
+        if(finalHitVal < 2) finalHitVal = 2; // Cap en 2+
+        if(finalHitVal > 6) finalHitVal = 6; // Cap en 6+
+
+        // Ataques = Arma A + Rol modA
+        const totalAtk = (w.A || 0) + (r.modA || 0);
+
+        // 4. Actualizar UI
+        const name = document.getElementById('u-name').value || "OPERATIVO";
+        document.getElementById('preview-text').innerText = `${name} [${w.type === 'Melee' ? 'MEL' : 'RNG'}]`;
+        document.getElementById('p-hp').innerText = totalHP;
         document.getElementById('p-sv').innerText = s.sv;
-        document.getElementById('p-ratk').innerText = w.r_atk; document.getElementById('p-rhit').innerText = w.r_hit;
-        document.getElementById('p-matk').innerText = w.m_atk; document.getElementById('p-mhit').innerText = w.m_hit;
-        document.getElementById('p-cost').innerText = final.cost;
+        
+        // Mostramos Stats según el arma elegida
+        if(w.type === 'Ranged') {
+            document.getElementById('p-ratk').innerText = totalAtk; 
+            document.getElementById('p-rhit').innerText = finalHitVal + "+";
+            document.getElementById('p-matk').innerText = "-"; 
+            document.getElementById('p-mhit').innerText = "-";
+        } else {
+            document.getElementById('p-ratk').innerText = "-"; 
+            document.getElementById('p-rhit').innerText = "-";
+            document.getElementById('p-matk').innerText = totalAtk; 
+            document.getElementById('p-mhit').innerText = finalHitVal + "+";
+        }
+        
+        document.getElementById('p-cost').innerText = totalCost;
     }
 
    function addUnitToSquad() {
-        const name = document.getElementById('u-name').value || "Operativo " + (editorSquad.length+1);
-        const species = document.getElementById('u-species').value;
-        const role = document.getElementById('u-role').value;
-        const weapon = document.getElementById('u-weapon').value;
-        const gear = document.getElementById('u-gear').value;
+        const name = document.getElementById('u-name').value || "Soldado " + (editorSquad.length+1);
+        const sKey = document.getElementById('u-species').value;
+        const rKey = document.getElementById('u-role').value;
+        const wKey = document.getElementById('u-weapon').value;
+        const gKey = document.getElementById('u-gear').value;
         
-        // 1. Obtener datos base para calcular Coste
-        const sData = FORGE_DB.species[species];
-        const rData = FORGE_DB.roles[role];
-        const wData = FORGE_DB.weapons[weapon];
-        const gData = FORGE_DB.gear[gear];
-        
-        // 2. Calcular Coste de la nueva unidad
-        const unitCost = sData.cost + rData.cost + wData.cost + gData.cost;
+        // Datos DB
+        const s = FORGE_DB.species[sKey];
+        const r = FORGE_DB.roles[rKey];
+        const w = FORGE_DB.weapons[wKey];
+        const g = FORGE_DB.gear[gKey];
 
-        // 3. Validar límite de 100 puntos
-        const currentTotal = editorSquad.reduce((sum, u) => sum + (u.cost || 0), 0);
-        
+        // Calcular Coste Unitario
+        const unitCost = s.cost + r.cost + w.cost + g.cost;
+
+        // Validar Límite 100 Puntos
+        const currentTotal = editorSquad.reduce((sum, u) => sum + u.cost, 0);
         if (currentTotal + unitCost > 100) {
-            alert(`¡LÍMITE EXCEDIDO! Esta unidad cuesta ${unitCost} pts y te quedan ${100 - currentTotal}.`);
+            alert(`LIMITE DE PUNTOS: Tienes ${currentTotal}, esta unidad cuesta ${unitCost}. Máx 100.`);
             return;
         }
+
+        // Calcular Stats Finales para el juego
+        // NOTA: Convertimos todo a tu formato de juego (r_atk, r_hit, etc.)
+        const hitBase = w.type === 'Melee' ? parseInt(s.m_hit) : parseInt(s.r_hit);
+        let hitMod = hitBase + r.modHit; 
+        if(hitMod < 2) hitMod = 2;
         
+        const finalStats = {
+            hp: s.hp + r.modHP,
+            sv: s.sv,
+            // Si el arma es Ranged, llenamos r_atk. Si es Melee, llenamos m_atk.
+            r_atk: w.type === 'Ranged' ? (w.A + r.modA) : 0,
+            r_hit: w.type === 'Ranged' ? (hitMod + "+") : "-",
+            r_dmg: w.type === 'Ranged' ? w.D : 0,
+            
+            m_atk: w.type === 'Melee' ? (w.A + r.modA) : 0,
+            m_hit: w.type === 'Melee' ? (hitMod + "+") : "-",
+            m_dmg: w.type === 'Melee' ? w.D : 0
+        };
+
         const newUnit = {
             id: Date.now(),
             name: name,
-            cost: unitCost, // Guardamos el coste
-            gear: gear === 'none' ? null : gear,
-            stats: {
-                hp: sData.hp + rData.hp,
-                sv: sData.sv,
-                r_atk: wData.r_atk, r_hit: wData.r_hit, r_dmg: wData.r_dmg,
-                m_atk: wData.m_atk, m_hit: wData.m_hit, m_dmg: wData.m_dmg
-            }
+            cost: unitCost,
+            gear: gKey === 'none' ? null : gKey,
+            stats: finalStats
         };
         
         editorSquad.push(newUnit);
         renderEditorSquad();
         document.getElementById('u-name').value = "";
     }
-
 function renderEditorSquad() {
         const c = document.getElementById('squad-list'); c.innerHTML = "";
         let totalCost = 0;
 
         editorSquad.forEach((u, i) => {
-            // Sumamos al total
-            totalCost += (u.cost || 0);
-
+            totalCost += u.cost;
             let div = document.createElement('div');
             div.className = "unit-item";
+            // Mostramos iconos de arma según sea Rango o Melee para identificar rápido
+            const wIcon = u.stats.r_atk > 0 ? "🔫" : "⚔️";
+            
             div.innerHTML = `
                 <div class="unit-info">
-                    <div style="color:var(--c); font-weight:bold;">${u.name} <span style="color:var(--gold); font-size:0.6rem;">[${u.cost} PTS]</span></div>
-                    <div style="color:#666;">HP:${u.stats.hp} SV:${u.stats.sv} | ${u.gear ? u.gear : 'NO GEAR'}</div>
+                    <div style="color:var(--c); font-weight:bold;">${u.name} <span style="color:var(--gold)">[${u.cost} PTS]</span></div>
+                    <div style="color:#666;">${wIcon} HP:${u.stats.hp} SV:${u.stats.sv} | ${u.gear ? u.gear : 'NO GEAR'}</div>
                 </div>
                 <button class="btn btn-del" onclick="removeEditorUnit(${i})">X</button>
             `;
             c.appendChild(div);
         });
 
-        // Actualizamos el contador visual
-        const totalLabel = document.getElementById('total-pts');
-        totalLabel.innerText = totalCost;
+        // Actualizar el HTML del contador
+        const lbl = document.getElementById('total-pts');
+        lbl.innerText = totalCost;
         
-        // Cambio de color visual si nos acercamos al límite
-        if(totalCost > 100) totalLabel.style.color = "red"; // No debería pasar por la validación, pero por seguridad
-        else if(totalCost === 100) totalLabel.style.color = "var(--gold)";
-        else totalLabel.style.color = "#fff";
-    }
-    window.removeEditorUnit = function(i) {
-        editorSquad.splice(i, 1);
-        renderEditorSquad();
-    }
-
-    function deployToLobby() {
-        if(editorSquad.length === 0) { alert("Escuadra vacía"); return; }
-        const json = JSON.stringify({ squad: editorSquad });
-        document.getElementById('json-input').value = json;
-        closeForge();
+        if(totalCost >= 100) lbl.style.color = "var(--gold)";
+        else lbl.style.color = "#fff";
     }
 
     // --- GAME INIT ---
@@ -1083,5 +1117,6 @@ function renderEditorSquad() {
 </script>
 </body>
 </html>
+
 
 
