@@ -1361,7 +1361,7 @@ window.endTurnFinal = function() {
     
     // UI Helpers
     window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; updateHUD(); } }
-    window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); updateHUD(); }
+    window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); currentPhase = 1; updateHUD(); }
     window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
     window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
     window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
@@ -1393,6 +1393,7 @@ window.endTurnFinal = function() {
 </script>
 </body>
 </html>
+
 
 
 
