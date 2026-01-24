@@ -638,6 +638,20 @@ function renderEditorSquad() {
         renderEditorSquad();
     }
 
+    function openForge() {
+        // 1. Ocultar Lobby y Mostrar Creador
+        document.getElementById('lobby-screen').classList.add('hidden');
+        document.getElementById('creator-screen').classList.remove('hidden');
+
+        // 2. Llenar los selectores (Si no haces esto, saldrán vacíos)
+        if (typeof initForge === 'function') {
+            initForge();
+        }
+
+        // 3. Actualizar la lista visual y los puntos
+        renderEditorSquad();
+    }
+
     function deployToLobby() {
         // 1. Validar que hay escuadra
         if (editorSquad.length === 0) {
@@ -1151,6 +1165,7 @@ function renderEditorSquad() {
 </script>
 </body>
 </html>
+
 
 
 
