@@ -294,8 +294,10 @@
             <div id="planning-controls" style="text-align:center; margin-bottom:10px;">
                 <button type="button" class="btn" id="btn-ready" onclick="commitPlanning()" disabled><span>ESPERANDO RIVAL...</span></button>
             </div>
-                <button id="btn-end-move" class="btn" onclick="finishMovePhase()" 
-            style="display:none; width:100%; background:var(--gold); color:#000; font-weight:bold; margin-bottom:8px; border:1px solid #fff;">🏃 FIN DE MOVIMIENTO</button>
+               <button id="btn-end-move" class="btn" onclick="finishMovePhase()" 
+                    style="display:none; width:95%; margin: 0 auto 10px auto; background:var(--gold); color:#000; font-weight:bold; border:1px solid #fff; padding: 15px;">
+                    🏃 TERMINAR MOVIMIENTO (FASE 1)
+                </button>
             <div class="unit-selector">
                 <div class="card my" onclick="nextMyUnit()" id="my-card">
                     <div>
@@ -483,49 +485,63 @@
         document.getElementById('turn-indicator').innerText = "MI TURNO";
         document.getElementById('turn-indicator').className = "turn-badge my-turn";
         
-        updatePhaseUI();
-    }
-    
-    // 2. GESTOR DE UI POR FASES
-   function updatePhaseUI() {
-    // 1. Actualizar los puntos (Dots) de la barra superior
+        function updatePhaseUI() {
+    // A. Actualizar indicador visual de arriba (los dots)
     [1,2,3].forEach(i => {
         const el = document.getElementById(`phase-${i}`);
         if(el) el.className = 'phase-dot' + (currentPhase === i ? ' active' : (currentPhase > i ? ' done' : ''));
     });
     
-    // Actualizar CP
     if(document.getElementById('cp-display')) document.getElementById('cp-display').innerText = myCP;
 
-    // 2. REFERENCIAS A ELEMENTOS
+    // B. Referencias a los contenedores de hud-bottom
     const btnMove = document.getElementById('btn-end-move');
     const combatActs = document.getElementById('combat-actions');
     const opsActs = document.getElementById('ops-actions');
+    const ind = document.getElementById('turn-indicator');
 
-    // 3. PRIMERO OCULTAMOS TODO (Limpieza)
+    // C. LIMPIEZA: Ocultar todo primero para evitar conflictos
     if(btnMove) btnMove.style.display = 'none';
     if(combatActs) combatActs.style.display = 'none';
     if(opsActs) opsActs.style.display = 'none';
 
-    // 4. MOSTRAR SEGÚN FASE
+    // D. LÓGICA DE FASES
     if (currentPhase === 1) {
-        // --- FASE 1: MOVIMIENTO ---
-        // AQUÍ ESTÁ LA CLAVE: Mostramos el botón de movimiento
+        // --- FASE 1: MOVER ---
+        if(ind) ind.innerText = "FASE 1: MOVER";
+        // Solo mostramos el botón grande amarillo
         if(btnMove) btnMove.style.display = 'block';
+    } 
+    else if (currentPhase === 2) {
+        // --- FASE 2: ACCIONES ---
+        if(ind) ind.innerText = "FASE 2: ACCIÓN";
         
-    } else if (currentPhase === 2) {
-        // --- FASE 2: ACCIÓN ---
+        // Mostramos el panel de combate
         if(combatActs) combatActs.style.display = 'flex';
-        // Botón cubrirse dinámico (opcional, si lo tenías)
+        
+        // OPCIONAL: Si quieres que DASH y MISIÓN estén disponibles en Fase 2,
+        // descomenta la siguiente línea. Si quieres que solo sea ATACAR, déjala oculta.
+        /* if(opsActs) opsActs.style.display = 'grid'; */
+        
+        // Inyectamos botón de Cubrirse si no existe
         if(!document.getElementById('btn-cover-act')) {
-             // Tu lógica anterior para crear botón cubrirse...
+             const btn = document.createElement('button');
+             btn.id = 'btn-cover-act'; btn.className = 'btn'; 
+             btn.innerHTML = '🛡️<br>CUBRIR'; // Salto de línea para ahorrar espacio
+             btn.style.background = '#445566'; btn.style.fontSize = '0.7rem';
+             btn.onclick = () => performCoverAction();
+             // Lo insertamos en combat-actions para que esté junto a atacar
+             if(combatActs) combatActs.appendChild(btn);
         }
-
-    } else if (currentPhase === 3) {
-        // --- FASE 3: RESOLUCIÓN ---
+    } 
+    else if (currentPhase === 3) {
+        // --- FASE 3: RESOLUCIÓN / FIN ---
+        if(ind) ind.innerText = "FASE 3: FIN";
+        
+        // Usamos el panel de ops para mostrar el botón de terminar turno
         if(opsActs) {
-            opsActs.style.display = 'grid';
-            opsActs.innerHTML = `<button class="btn" onclick="endTurnFinal()" style="grid-column: span 3; background:#ff4444; color:#fff;">🛑 FINALIZAR TURNO</button>`;
+            opsActs.style.display = 'grid'; // Grid para que ocupe todo
+            opsActs.innerHTML = `<button class="btn" onclick="endTurnFinal()" style="grid-column: 1 / -1; background:#ff4444; color:#fff; font-weight:bold; padding:15px;">🛑 FINALIZAR TURNO</button>`;
         }
     }
 }
@@ -1384,6 +1400,7 @@ function renderEditorSquad() {
 </script>
 </body>
 </html>
+
 
 
 
