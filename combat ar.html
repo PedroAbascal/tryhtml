@@ -621,6 +621,39 @@ function renderEditorSquad() {
         } catch(e) { alert("ERROR DE DATOS: " + e.message); }
     }
 
+    function removeEditorUnit(index) {
+        // Borra 1 elemento en la posición 'index'
+        editorSquad.splice(index, 1);
+        // Vuelve a renderizar la lista y recalcular puntos
+        renderEditorSquad();
+    }
+
+    function deployToLobby() {
+        // 1. Validar que hay escuadra
+        if (editorSquad.length === 0) {
+            alert("¡Necesitas al menos 1 Operativo para desplegar!");
+            return;
+        }
+
+        // 2. Transferir datos al estado del juego
+        // Usamos JSON parse/stringify para romper la referencia y crear una copia limpia
+        myUnits = JSON.parse(JSON.stringify(editorSquad));
+        
+        // 3. Resetear estado del juego para empezar limpio
+        myVP = 0;
+        currentRound = 0;
+        
+        // 4. Cambiar de pantalla (Del Creador al Lobby)
+        showScreen('lobby-screen');
+        
+        // 5. Feedback visual
+        // Si tienes una función log(), la usamos, si no, ignoramos.
+        if(typeof log === 'function') log("ESCUADRA DESPLEGADA");
+        
+        // Renderizar el Lobby (para mostrar tus unidades listas)
+        renderLobby();
+    }
+
     function startNetwork(code) {
         TOPIC = `sqcmd/v2.4/${code}`;
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
@@ -1111,6 +1144,7 @@ function renderEditorSquad() {
 </script>
 </body>
 </html>
+
 
 
 
