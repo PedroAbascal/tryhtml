@@ -911,7 +911,38 @@ function renderEditorSquad() {
         document.getElementById('my-m').innerText = me.stats.m_atk;
         document.getElementById('my-sv').innerText = me.stats.sv;
 
-        const tagContainer = document.getElementById('my-tags'); tagContainer.innerHTML = '';
+        const tagContainer = document.getElementById('my-tags'); 
+        tagContainer.innerHTML = '';
+
+        // --- INICIO DE CAMBIOS: VISUALIZACIÓN DE ARMAS ---
+        // Recuperamos nombres (o usamos genéricos si no existen)
+        const wR = me.weapons ? me.weapons.r : 'Rango';
+        const wM = me.weapons ? me.weapons.m : 'Melee';
+
+        // ARMA RANGO (Solo si tiene ataques)
+        if (me.stats.r_atk > 0) {
+            // Si el modo actual es 'ranged', iluminamos en CYAN, si no, lo oscurecemos
+            const styleR = combatMode === 'ranged' 
+                ? "border:1px solid var(--c); color:#fff; background:rgba(0,242,255,0.15); width:98%; display:block; margin-bottom:2px; text-shadow:0 0 5px var(--c);" 
+                : "border:1px solid #333; color:#555; width:98%; display:block; margin-bottom:2px;";
+            
+            // Creamos el HTML con los datos
+            const infoR = `🔫 ${wR} <span style="float:right; font-family:monospace; font-size:0.6rem;">A:${me.stats.r_atk} H:${me.stats.r_hit} D:${me.stats.r_dmg}</span>`;
+            tagContainer.innerHTML += `<div class="tag" style="${styleR}">${infoR}</div>`;
+        }
+
+        // ARMA MELEE (Solo si tiene ataques)
+        if (me.stats.m_atk > 0) {
+            // Si el modo actual es 'melee', iluminamos en GOLD, si no, lo oscurecemos
+            const styleM = combatMode === 'melee' 
+                ? "border:1px solid var(--gold); color:#fff; background:rgba(255,204,0,0.15); width:98%; display:block; margin-bottom:2px; text-shadow:0 0 5px var(--gold);" 
+                : "border:1px solid #333; color:#555; width:98%; display:block; margin-bottom:2px;";
+            
+            const infoM = `⚔️ ${wM} <span style="float:right; font-family:monospace; font-size:0.6rem;">A:${me.stats.m_atk} H:${me.stats.m_hit} D:${me.stats.m_dmg}</span>`;
+            tagContainer.innerHTML += `<div class="tag" style="${styleM}">${infoM}</div>`;
+        }
+        // --- FIN DE CAMBIOS ---
+
         let showGearBtn = false; let gearBtnText = "ITEM";
         me.mechanics.forEach(m => {
             let css = m.type === 'ACTIVE' ? "tag active-gear" : "tag passive";
@@ -936,7 +967,6 @@ function renderEditorSquad() {
             btnSecret.innerText = `RECLAMAR: ${secretMission} (+2 PV)`;
         } else { btnSecret.style.display = 'none'; }
     }
-
     function renderDiceFaces(rolls, containerId, interactive) {
         const container = document.getElementById(containerId); container.innerHTML = '';
         const faces = ['?','⚀','⚁','⚂','⚃','⚄','⚅'];
@@ -1172,6 +1202,7 @@ function renderEditorSquad() {
 </script>
 </body>
 </html>
+
 
 
 
