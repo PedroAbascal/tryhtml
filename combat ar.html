@@ -356,6 +356,7 @@
                 <div class="duel-side" id="side-def"><div class="duel-label">DEFENSOR</div><div id="pool-def" class="dice-pool">Esperando...</div></div>
             </div>
             <div id="combat-log-visual" class="combat-log"></div>
+
             <div id="combat-actions-bar" style="margin-top:20px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
                 <button id="btn-reroll" class="btn" style="background:#ff9900; color:#000; display:none;" onclick="rerollDice('ATK')">RE-TIRAR</button>
                 <button id="btn-confirm-atk" class="btn" style="background:var(--g); color:#000; display:none;" onclick="confirmAttack()">CONFIRMAR ATAQUE</button>
@@ -365,6 +366,10 @@
                 <button id="btn-cancel-combat" class="btn" style="background:#444;" onclick="cancelCombat()">CANCELAR</button>
                 <button id="btn-close-combat" class="btn" style="display:none;" onclick="endCombatTurn()">TERMINAR</button>
             </div>
+             <button id="btn-end-move" class="btn" onclick="finishMovePhase()" 
+                style="display:none; width:100%; background:var(--gold); color:#000; font-weight:bold; margin-bottom:8px; border:1px solid #fff;">
+                🏃 FIN DE MOVIMIENTO
+            </button>
         </div>
     </div>
 
@@ -1361,4 +1366,5 @@ window.endTurnFinal = function() {
 </script>
 </body>
 </html>
+
 
