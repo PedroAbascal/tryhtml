@@ -731,38 +731,45 @@ function startMyPhaseTurn() {
 
 // 2. GESTOR DE UI POR FASES
 function updatePhaseUI() {
-    // Resetear dots
+    // 1. Actualizar los puntos (Dots) de la barra superior
     [1,2,3].forEach(i => {
-        const el = document.getElementById(`phase-1`); // corrección abajo
-        document.getElementById(`phase-${i}`).className = 'phase-dot' + (currentPhase === i ? ' active' : (currentPhase > i ? ' done' : ''));
+        const el = document.getElementById(`phase-${i}`);
+        if(el) el.className = 'phase-dot' + (currentPhase === i ? ' active' : (currentPhase > i ? ' done' : ''));
     });
-    document.getElementById('cp-display').innerText = myCP;
+    
+    // Actualizar CP
+    if(document.getElementById('cp-display')) document.getElementById('cp-display').innerText = myCP;
 
-    // Ocultar todo primero
-    document.getElementById('combat-actions').style.display = 'none';
-    document.getElementById('ops-actions').style.display = 'none';
+    // 2. REFERENCIAS A ELEMENTOS
+    const btnMove = document.getElementById('btn-end-move');
+    const combatActs = document.getElementById('combat-actions');
+    const opsActs = document.getElementById('ops-actions');
 
-    // Lógica por Fase
+    // 3. PRIMERO OCULTAMOS TODO (Limpieza)
+    if(btnMove) btnMove.style.display = 'none';
+    if(combatActs) combatActs.style.display = 'none';
+    if(opsActs) opsActs.style.display = 'none';
+
+    // 4. MOSTRAR SEGÚN FASE
     if (currentPhase === 1) {
-        // FASE 1: MOVIMIENTO
-        // Aquí mostramos un botón especial para confirmar que ya movimos la mini
-        showPhaseControls("CONFIRMAR MOVIMIENTO", "finishMovePhase()");
-    } 
-    else if (currentPhase === 2) {
-        // FASE 2: ACCIONES (Elegir qué hacer)
-        document.getElementById('combat-actions').style.display = 'flex';
-        // Añadir dinámicamente el botón "CUBRIRSE" si no existe
+        // --- FASE 1: MOVIMIENTO ---
+        // AQUÍ ESTÁ LA CLAVE: Mostramos el botón de movimiento
+        if(btnMove) btnMove.style.display = 'block';
+        
+    } else if (currentPhase === 2) {
+        // --- FASE 2: ACCIÓN ---
+        if(combatActs) combatActs.style.display = 'flex';
+        // Botón cubrirse dinámico (opcional, si lo tenías)
         if(!document.getElementById('btn-cover-act')) {
-            const btn = document.createElement('button');
-            btn.id = 'btn-cover-act'; btn.className = 'btn'; btn.innerText = '🛡️ CUBRIRSE';
-            btn.style.flex = '1'; btn.style.background = '#445566';
-            btn.onclick = () => performCoverAction();
-            document.getElementById('combat-actions').insertBefore(btn, document.getElementById('btn-pass-open'));
+             // Tu lógica anterior para crear botón cubrirse...
         }
-    } 
-    else if (currentPhase === 3) {
-        // FASE 3: RESOLUCIÓN (Finalizar)
-        showPhaseControls("FIN DE TURNO", "endTurnFinal()");
+
+    } else if (currentPhase === 3) {
+        // --- FASE 3: RESOLUCIÓN ---
+        if(opsActs) {
+            opsActs.style.display = 'grid';
+            opsActs.innerHTML = `<button class="btn" onclick="endTurnFinal()" style="grid-column: span 3; background:#ff4444; color:#fff;">🛑 FINALIZAR TURNO</button>`;
+        }
     }
 }
 
@@ -1366,5 +1373,6 @@ window.endTurnFinal = function() {
 </script>
 </body>
 </html>
+
 
 
