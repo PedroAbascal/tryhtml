@@ -141,6 +141,19 @@
         .modal-text { color: var(--gold); font-size: 0.9rem; margin-bottom: 20px; font-weight: bold; }
         .modal-btn-row { display: flex; gap: 10px; justify-content: center; }
         .btn-modal-yes { background: var(--gold); color: #000; padding: 10px 20px; border: none; font-weight: bold; cursor: pointer; }
+
+        /* --- PHASE SYSTEM STYLES --- */
+        .phase-dot {
+            font-size: 0.6rem; color: #555; padding: 2px 5px; border: 1px solid #333; flex: 1; text-align: center; transition: 0.3s;
+        }
+        .phase-dot.active {
+            background: var(--c); color: #000; font-weight: bold; box-shadow: 0 0 10px var(--c); border-color: #fff;
+        }
+        .phase-dot.done {
+            background: #004444; color: var(--c); opacity: 0.5;
+        }
+        #btn-cover-action { background: #444; border: 1px solid #888; color: #fff; }
+        
     </style>
 </head>
 <body>
@@ -265,6 +278,16 @@
                 <div class="score-detail" id="mission-info">DOMINACION</div>
             </div>
             <button type="button" id="btn-claim-secret" onclick="tryClaimSecret()">RECLAMAR SECRETA</button>
+
+            <div class="phase-bar" style="display:flex; justify-content:space-between; width:100%; margin-top:5px; background:rgba(0,0,0,0.5); padding:2px;">
+                <div id="phase-1" class="phase-dot">1: MOV</div>
+                <div id="phase-2" class="phase-dot">2: ACCIÓN</div>
+                <div id="phase-3" class="phase-dot">3: RES</div>
+            </div>
+            <div style="font-size:0.8rem; color:var(--gold); margin-top:5px; text-align:center; width:100%;">
+                CMD POINTS: <span id="cp-display" style="font-weight:bold; font-size:1rem;">2</span> CP
+            </div>
+            
         </div>
         
         <div class="log-area" id="combat-log"></div>
@@ -682,6 +705,144 @@ function renderEditorSquad() {
         console.log("Escuadra transferida al Lobby");
     }
 
+
+// --- STATE VARIABLES (NUEVAS) ---
+let currentPhase = 0; // 0: Enemy, 1: Move, 2: Action, 3: Resolution
+let myCP = 2; // Puntos de Mando iniciales (Command Points)
+let actionsPerformed = { move: false, action: false };
+
+// 1. INICIAR TURNO (Sobrescribe o llama a esto cuando sea tu turno)
+function startMyPhaseTurn() {
+    gameState = 'MY_TURN';
+    currentPhase = 1; 
+    actionsPerformed = { move: false, action: false };
+    
+    // Resetear estados visuales
+    document.getElementById('turn-indicator').innerText = "MI TURNO";
+    document.getElementById('turn-indicator').className = "turn-badge my-turn";
+    
+    updatePhaseUI();
+}
+
+// 2. GESTOR DE UI POR FASES
+function updatePhaseUI() {
+    // Resetear dots
+    [1,2,3].forEach(i => {
+        const el = document.getElementById(`phase-1`); // corrección abajo
+        document.getElementById(`phase-${i}`).className = 'phase-dot' + (currentPhase === i ? ' active' : (currentPhase > i ? ' done' : ''));
+    });
+    document.getElementById('cp-display').innerText = myCP;
+
+    // Ocultar todo primero
+    document.getElementById('combat-actions').style.display = 'none';
+    document.getElementById('ops-actions').style.display = 'none';
+
+    // Lógica por Fase
+    if (currentPhase === 1) {
+        // FASE 1: MOVIMIENTO
+        // Aquí mostramos un botón especial para confirmar que ya movimos la mini
+        showPhaseControls("CONFIRMAR MOVIMIENTO", "finishMovePhase()");
+    } 
+    else if (currentPhase === 2) {
+        // FASE 2: ACCIONES (Elegir qué hacer)
+        document.getElementById('combat-actions').style.display = 'flex';
+        // Añadir dinámicamente el botón "CUBRIRSE" si no existe
+        if(!document.getElementById('btn-cover-act')) {
+            const btn = document.createElement('button');
+            btn.id = 'btn-cover-act'; btn.className = 'btn'; btn.innerText = '🛡️ CUBRIRSE';
+            btn.style.flex = '1'; btn.style.background = '#445566';
+            btn.onclick = () => performCoverAction();
+            document.getElementById('combat-actions').insertBefore(btn, document.getElementById('btn-pass-open'));
+        }
+    } 
+    else if (currentPhase === 3) {
+        // FASE 3: RESOLUCIÓN (Finalizar)
+        showPhaseControls("FIN DE TURNO", "endTurnFinal()");
+    }
+}
+
+// Helper para botones de fase rápida
+function showPhaseControls(text, funcStr) {
+    const ops = document.getElementById('ops-actions');
+    ops.style.display = 'grid';
+    ops.innerHTML = `<button class="btn btn-op op-dash" onclick="${funcStr}" style="grid-column: span 3; background:var(--gold); color:#000;">${text}</button>`;
+}
+
+// --- ACCIONES DE FASE ---
+
+// FIN FASE 1
+window.finishMovePhase = function() {
+    // Aquí podrías desencadenar trampas o chequeos de terreno
+    log("Movimiento completado.");
+    currentPhase = 2;
+    updatePhaseUI();
+}
+
+// ACCIÓN: CUBRIRSE (Nueva mecánica Fase 2)
+window.performCoverAction = function() {
+    const me = myUnits[myIdx];
+    // Gastar acción
+    log(`${me.name} toma POSICIÓN DEFENSIVA.`);
+    publish({type:'Log', text: `${me.name} se CUBRE (+1 SV)`});
+    
+    // Aquí podrías poner un estado visual "covered"
+    // publish({type: 'STATE_UPDATE', uid: me.uid, state: 'COVER'}); 
+    
+    currentPhase = 3; // Pasa a resolución
+    updatePhaseUI();
+}
+
+// MODIFICACIÓN: Disparar (initiateCombat) ahora debe avanzar fase
+const originalInitiateCombat = window.initiateCombat; // Guardar referencia si existe
+window.initiateCombat = function() {
+    if(currentPhase !== 2) { log("¡No es fase de Acción!"); return; }
+    // Llama a la lógica original de combate
+    // NOTA: Debes asegurarte que cuando termine el combate, llame a finishCombatPhase()
+    // Si tu código original no tiene callback, agrégalo al final de endCombatTurn()
+    if(typeof originalInitiateCombat === 'function') originalInitiateCombat();
+    else {
+        // Fallback si no existe
+        switchMode(); // Abrir modos de combate
+    }
+}
+
+// Callback para cuando termina el combate (llámalo desde endCombatTurn)
+window.finishCombatPhase = function() {
+    currentPhase = 3;
+    updatePhaseUI();
+}
+
+// ACCIÓN: DASH (Modificada para Fase 2)
+window.performOp = function(op) {
+    if(currentPhase !== 2 && op !== 'PASAR') return;
+
+    const me = myUnits[myIdx];
+    if (op === 'DASH') {
+        log("DASH: Movimiento extra realizado.");
+        // Lógica de Dash...
+    } else if (op === 'MISION') {
+        // Lógica de misión...
+        let currentVP = parseInt(document.getElementById('my-score').innerText);
+        document.getElementById('my-score').innerText = currentVP + 1;
+        publish({type: 'SCORE_UPDATE', score: currentVP + 1});
+        log("Punto de Misión asegurado.");
+    }
+    
+    currentPhase = 3; // Dash y Misión terminan la fase de acción
+    updatePhaseUI();
+}
+
+// FIN FASE 3 (Fin del Turno del Operativo)
+window.endTurnFinal = function() {
+    log("Turno finalizado. Resolviendo efectos...");
+    // Aquí puedes regenerar CP, resolver sangrados, etc.
+    
+    passTurn(0); // Llama a tu función original de pasar turno MQTT
+    currentPhase = 0;
+    updatePhaseUI();
+}
+
+    
     function startNetwork(code) {
         TOPIC = `sqcmd/v2.4/${code}`;
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
@@ -743,9 +904,7 @@ function renderEditorSquad() {
             log(`RIVAL USA ${d.gearName}: ${d.desc}`);
             if(d.dmg) { applyDamage(d.dmg); log(`RECIBES ${d.dmg} DAÑO`, 'danger'); }
         }
-        else if(d.type === 'OP_ACTION') { if(gameState!=='PLANNING'){ log(`RIVAL: ${d.opType}`); setTurn('MY_TURN', 0); } }
-        else if(d.type === 'CHANGE_TURN') { if(gameState!=='PLANNING') setTurn('MY_TURN', d.passes || 0); }
-        else if(d.type === 'ROUND_OVER') resetRound();
+       finishCombatPhase();
     }
 
     // --- COMBAT LOGIC ---
@@ -1164,7 +1323,7 @@ function renderEditorSquad() {
         updateHUD(); log(`INICIO RONDA ${currentRound}`); 
     }
     function cancelCombat() { publish({type:'COMBAT_SYNC', stage:'CANCEL'}); closeCombatOverlay(); }
-    function endCombatTurn() { document.getElementById('dice-overlay').style.display = 'none'; passTurn(0); }
+    function endCombatTurn() { document.getElementById('dice-overlay').style.display = 'none'; passTurn(0); finishCombatPhase();}
     function closeCombatOverlay() { document.getElementById('dice-overlay').style.display = 'none'; }
     function hideAllCombatButtons() { const ids = ['btn-reroll', 'btn-reroll-def', 'btn-confirm-atk', 'btn-confirm-def', 'btn-apply-dmg', 'btn-cancel-combat', 'btn-close-combat', 'btn-cover-toggle']; ids.forEach(id => document.getElementById(id).style.display = 'none'); }
     
@@ -1202,3 +1361,4 @@ function renderEditorSquad() {
 </script>
 </body>
 </html>
+
