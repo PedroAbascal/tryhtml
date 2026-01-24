@@ -171,6 +171,10 @@
                     <div class="forge-label">NOMBRE</div>
                     <input type="text" id="u-name" placeholder="Ej: Sargento Ray">
                 </div>
+                <div class="input-group">
+                <label>PEANA (BASE)</label>
+                <select id="u-base" onchange="calcForge()"></select>
+                </div>
                 <div>
                     <div class="forge-label">ESPECIE</div>
                     <select id="u-species" onchange="calcForge()"></select>
@@ -391,7 +395,15 @@
             regen: { name: "REGEN", cost: 6 },
             shield: { name: "ESCUDO", cost: 8 },
             stealth: { name: "SIGILO", cost: 4 }
-        }
+        },
+
+        bases: {
+        b25: { name: "25mm (Std)", cost: 0, hp: 0 },
+        b32: { name: "32mm (Elite)", cost: 1, hp: 1 },
+        b40: { name: "40mm (Hvy)", cost: 2, hp: 2 },
+        b50: { name: "50mm (Boss)", cost: 3, hp: 3 }
+    }
+    
     };
     
     // --- GAME CONSTANTS ---
@@ -450,6 +462,7 @@
                 el.appendChild(opt);
             }
         };
+        fill('u-base', FORGE_DB.bases);
         fill('u-species', FORGE_DB.species);
         fill('u-role', FORGE_DB.roles);
         fill('u-weapon', FORGE_DB.weapons);
@@ -458,44 +471,43 @@
     }
 
     function calcForge() {
-        // 1. Obtener claves seleccionadas
+        // 1. Obtener claves
         const sKey = document.getElementById('u-species').value;
         const rKey = document.getElementById('u-role').value;
         const wKey = document.getElementById('u-weapon').value;
         const gKey = document.getElementById('u-gear').value;
+        const bKey = document.getElementById('u-base').value; // <--- NUEVO
 
-        // 2. Cargar objetos de la DB (con fallback seguro)
+        // 2. Cargar objetos (con protección)
         const s = FORGE_DB.species[sKey] || { hp:1, cost:0, sv:"-", r_hit:"6+", m_hit:"6+" };
         const r = FORGE_DB.roles[rKey] || { modHP:0, cost:0, modA:0, modHit:0 };
         const w = FORGE_DB.weapons[wKey] || { cost:0, A:0, D:0, type:"Ranged" };
         const g = FORGE_DB.gear[gKey] || { cost:0 };
+        const b = FORGE_DB.bases[bKey] || { cost:0, hp:0 }; // <--- NUEVO
+
+        // 3. Cálculos
+        // HP = Base Especie + Mod Rol + Mod Peana
+        const totalHP = (s.hp || 0) + (r.modHP || 0) + (b.hp || 0);
         
-        // 3. Cálculos Nuevos
-        // HP = Base + Modificador Rol
-        const totalHP = (s.hp || 0) + (r.modHP || 0);
-        // Coste = Suma de todo
-        const totalCost = (s.cost||0) + (r.cost||0) + (w.cost||0) + (g.cost||0);
+        // Coste = Suma de todo (incluyendo peana)
+        const totalCost = (s.cost||0) + (r.cost||0) + (w.cost||0) + (g.cost||0) + (b.cost||0);
         
-        // Calculo de HIT (Ej: "4+" (4) - Mod (1) = "3+")
-        // Usamos base Ranged o Melee dependiendo del arma seleccionada
+        // ... (El resto de lógica de HIT/ATK se mantiene igual) ...
         const baseHitStr = w.type === 'Melee' ? s.m_hit : s.r_hit;
         const baseHitVal = parseInt(baseHitStr.replace('+','')) || 4;
-        // Restar el modificador (en 40k, -1 al hit es BUENO, así que aquí depende tu lógica)
-        // En tu DB tienes 'sniper modHit: -1'. Asumiré que -1 es MEJORA (4+ pasa a 3+).
         let finalHitVal = baseHitVal + (r.modHit || 0); 
-        if(finalHitVal < 2) finalHitVal = 2; // Cap en 2+
-        if(finalHitVal > 6) finalHitVal = 6; // Cap en 6+
-
-        // Ataques = Arma A + Rol modA
+        if(finalHitVal < 2) finalHitVal = 2;
+        if(finalHitVal > 6) finalHitVal = 6;
         const totalAtk = (w.A || 0) + (r.modA || 0);
 
         // 4. Actualizar UI
         const name = document.getElementById('u-name').value || "OPERATIVO";
-        document.getElementById('preview-text').innerText = `${name} [${w.type === 'Melee' ? 'MEL' : 'RNG'}]`;
-        document.getElementById('p-hp').innerText = totalHP;
+        document.getElementById('preview-text').innerText = `${name} [${b.name}]`; // Muestra la peana en el título
+        document.getElementById('p-hp').innerText = totalHP; // HP Actualizado
         document.getElementById('p-sv').innerText = s.sv;
-        
-        // Mostramos Stats según el arma elegida
+        document.getElementById('p-cost').innerText = totalCost; // Coste Actualizado
+
+        // Renderizar stats de ataque
         if(w.type === 'Ranged') {
             document.getElementById('p-ratk').innerText = totalAtk; 
             document.getElementById('p-rhit').innerText = finalHitVal + "+";
@@ -507,64 +519,62 @@
             document.getElementById('p-matk').innerText = totalAtk; 
             document.getElementById('p-mhit').innerText = finalHitVal + "+";
         }
-        
-        document.getElementById('p-cost').innerText = totalCost;
     }
 
-   function addUnitToSquad() {
+   unction addUnitToSquad() {
         const name = document.getElementById('u-name').value || "Soldado " + (editorSquad.length+1);
         const sKey = document.getElementById('u-species').value;
         const rKey = document.getElementById('u-role').value;
         const wKey = document.getElementById('u-weapon').value;
         const gKey = document.getElementById('u-gear').value;
-        
-        // Datos DB
+        const bKey = document.getElementById('u-base').value; // <--- NUEVO
+
         const s = FORGE_DB.species[sKey];
         const r = FORGE_DB.roles[rKey];
         const w = FORGE_DB.weapons[wKey];
         const g = FORGE_DB.gear[gKey];
+        const b = FORGE_DB.bases[bKey] || { cost:0, hp:0 }; // <--- NUEVO
 
-        // Calcular Coste Unitario
-        const unitCost = s.cost + r.cost + w.cost + g.cost;
+        // Coste Total
+        const unitCost = s.cost + r.cost + w.cost + g.cost + b.cost;
 
-        // Validar Límite 100 Puntos
+        // Validar Límite 100
         const currentTotal = editorSquad.reduce((sum, u) => sum + u.cost, 0);
         if (currentTotal + unitCost > 100) {
-            alert(`LIMITE DE PUNTOS: Tienes ${currentTotal}, esta unidad cuesta ${unitCost}. Máx 100.`);
+            alert(`Límite excedido. Coste unidad: ${unitCost}. Restante: ${100 - currentTotal}`);
             return;
         }
 
-        // Calcular Stats Finales para el juego
-        // NOTA: Convertimos todo a tu formato de juego (r_atk, r_hit, etc.)
+        // Stats Finales
         const hitBase = w.type === 'Melee' ? parseInt(s.m_hit) : parseInt(s.r_hit);
         let hitMod = hitBase + r.modHit; 
         if(hitMod < 2) hitMod = 2;
-        
+
         const finalStats = {
-            hp: s.hp + r.modHP,
+            hp: s.hp + r.modHP + b.hp, // <--- HP INCLUYE PEANA
             sv: s.sv,
-            // Si el arma es Ranged, llenamos r_atk. Si es Melee, llenamos m_atk.
             r_atk: w.type === 'Ranged' ? (w.A + r.modA) : 0,
             r_hit: w.type === 'Ranged' ? (hitMod + "+") : "-",
             r_dmg: w.type === 'Ranged' ? w.D : 0,
-            
             m_atk: w.type === 'Melee' ? (w.A + r.modA) : 0,
             m_hit: w.type === 'Melee' ? (hitMod + "+") : "-",
             m_dmg: w.type === 'Melee' ? w.D : 0
         };
 
-        const newUnit = {
+        editorSquad.push({
             id: Date.now(),
             name: name,
             cost: unitCost,
+            base: b.name, // Guardamos nombre de la peana por referencia
             gear: gKey === 'none' ? null : gKey,
             stats: finalStats
-        };
+        });
         
-        editorSquad.push(newUnit);
         renderEditorSquad();
         document.getElementById('u-name').value = "";
     }
+
+    
 function renderEditorSquad() {
         const c = document.getElementById('squad-list'); c.innerHTML = "";
         let totalCost = 0;
@@ -635,23 +645,20 @@ function renderEditorSquad() {
             return;
         }
 
-        // 2. Transferir datos al estado del juego
-        // Usamos JSON parse/stringify para romper la referencia y crear una copia limpia
-        myUnits = JSON.parse(JSON.stringify(editorSquad));
+        // 2. Preparar el JSON en el formato correcto
+        // Nota: Creamos un objeto { squad: ... } para que initSystem lo lea bien
+        const finalObj = { squad: editorSquad };
+        const jsonStr = JSON.stringify(finalObj, null, 2); // Formato legible
         
-        // 3. Resetear estado del juego para empezar limpio
-        myVP = 0;
-        currentRound = 0;
+        // 3. Pegar el JSON en la caja de texto del Lobby
+        document.getElementById('json-input').value = jsonStr;
         
-        // 4. Cambiar de pantalla (Del Creador al Lobby)
-        showScreen('lobby-screen');
+        // 4. Cambiar de pantalla MANUALMENTE (Solución al error showScreen)
+        document.getElementById('creator-screen').classList.add('hidden');
+        document.getElementById('lobby-screen').classList.remove('hidden');
         
-        // 5. Feedback visual
-        // Si tienes una función log(), la usamos, si no, ignoramos.
-        if(typeof log === 'function') log("ESCUADRA DESPLEGADA");
-        
-        // Renderizar el Lobby (para mostrar tus unidades listas)
-        renderLobby();
+        // Feedback opcional
+        console.log("Escuadra transferida al Lobby");
     }
 
     function startNetwork(code) {
@@ -1144,6 +1151,7 @@ function renderEditorSquad() {
 </script>
 </body>
 </html>
+
 
 
 
