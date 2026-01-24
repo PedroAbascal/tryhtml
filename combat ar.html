@@ -294,10 +294,6 @@
             <div id="planning-controls" style="text-align:center; margin-bottom:10px;">
                 <button type="button" class="btn" id="btn-ready" onclick="commitPlanning()" disabled><span>ESPERANDO RIVAL...</span></button>
             </div>
-               <button id="btn-end-move" class="btn" onclick="finishMovePhase()" 
-                    style="display:none; width:95%; margin: 0 auto 10px auto; background:var(--gold); color:#000; font-weight:bold; border:1px solid #fff; padding: 15px;">
-                    🏃 TERMINAR MOVIMIENTO (FASE 1)
-                </button>
             <div class="unit-selector">
                 <div class="card my" onclick="nextMyUnit()" id="my-card">
                     <div>
@@ -334,6 +330,10 @@
                     <div id="en-ready-mark" class="ready-marker">¡LISTO!</div>
                 </div>
             </div>
+             <button id="btn-end-move" class="btn" onclick="finishMovePhase()" 
+                    style="display:none; width:95%; margin: 0 auto 10px auto; background:var(--gold); color:#000; font-weight:bold; border:1px solid #fff; padding: 15px;">
+                    🏃 TERMINAR MOVIMIENTO (FASE 1)
+                </button>
             <div id="combat-actions">
                 <button type="button" class="btn" id="btn-combat-mode" style="width:40px; background:#333; color:#fff;" onclick="resetPassButtons(); switchMode()"><span>🔫</span></button>
                 <button type="button" class="btn" id="btn-pass-open" style="flex:1; background:#555; color:#fff;" onclick="tryPass('btn-pass-open')"><span>PASAR</span></button>
@@ -1400,6 +1400,7 @@ function renderEditorSquad() {
 </script>
 </body>
 </html>
+
 
 
 
