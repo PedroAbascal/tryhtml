@@ -942,8 +942,6 @@ window.endTurnFinal = function() {
         const me = myUnits[myIdx];
         if(me.activations >= 2) { log("UNIDAD AGOTADA"); return; }
         if(me.mode !== 'open') { log("ERROR: REQUIERE ORDEN DE ATAQUE", "danger"); return; }
-
-        currentPhase = 1;
         
         let diceCount = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
         combatTargetVal = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
@@ -1308,6 +1306,9 @@ window.endTurnFinal = function() {
     function canSelectUnit(index) { if (!myUnits[index]) return false; return canUnitAct(myUnits[index], myUnits, enemyUnits); }
     function autoSelectValidUnit() {
         if (canSelectUnit(myIdx)) return;
+
+        
+        
         const freshIdx = myUnits.findIndex(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
         if (freshIdx !== -1) { myIdx = freshIdx; return; }
         const tiredIdx = myUnits.findIndex((u, i) => canSelectUnit(i));
@@ -1362,7 +1363,7 @@ window.endTurnFinal = function() {
     
     // UI Helpers
     window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; updateHUD(); } }
-    window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); currentPhase = 1; updateHUD(); }
+    window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); currentPhase = 1; actionsPerformed = { move: false, action: false }; updateHUD(); }
     window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
     window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
     window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
@@ -1394,6 +1395,7 @@ window.endTurnFinal = function() {
 </script>
 </body>
 </html>
+
 
 
 
