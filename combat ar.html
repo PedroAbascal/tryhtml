@@ -273,6 +273,10 @@
             <div id="planning-controls" style="text-align:center; margin-bottom:10px;">
                 <button type="button" class="btn" id="btn-ready" onclick="commitPlanning()" disabled><span>ESPERANDO RIVAL...</span></button>
             </div>
+                <div id="phase-controls" style="width:100%; text-align:center; margin-bottom:5px;">
+                    <div id="phase-display" style="font-size:0.8rem; color:var(--c); font-weight:bold; margin-bottom:5px;">ESPERANDO...</div>
+                    <button id="btn-end-move" class="btn" style="background:var(--gold); color:#000; display:none;" onclick="endMovementPhase()">FIN MOVIMIENTO (IR A ACCIONES)</button>
+                </div>
             <div class="unit-selector">
                 <div class="card my" onclick="nextMyUnit()" id="my-card">
                     <div>
@@ -446,6 +450,9 @@
     let combatTargetVal = 4, currentWeaponDmg = 1;
     let pendingAtkStats = null, coverActive = false;
 
+    let turnPhase = 0; // 0: Espera, 1: Movimiento, 2: Acciones, 3: Resolución
+    const PHASE_NAMES = { 1: "FASE 1: MOVIMIENTO", 2: "FASE 2: ACCIONES", 3: "FASE 3: RESOLUCIÓN" };
+    
     // --- FORGE FUNCTIONS (LOGICA CREADOR) ---
     function openForge() {
         document.getElementById('lobby-screen').classList.add('hidden');
@@ -748,6 +755,40 @@ function renderEditorSquad() {
         else if(d.type === 'ROUND_OVER') resetRound();
     }
 
+    function startMyTurnPhases() {
+        gameState = 'MY_TURN';
+        turnPhase = 1; // Iniciar en Fase 1
+        log("=== TU TURNO: FASE DE MOVIMIENTO ===");
+        updatePhaseUI();
+    }
+
+    function resolvePhase(actionType) {
+        turnPhase = 3;
+        updatePhaseUI();
+        log("RESOLVIENDO: " + actionType + "...");
+        
+        // Pequeña pausa para que el jugador vea el resultado antes de pasar turno automáticamente
+        // O puedes mostrar un botón de "FIN DE TURNO" aquí si prefieres manual.
+        setTimeout(() => {
+            log("TURNO COMPLETADO.");
+            passTurn(0);
+        }, 1500);
+    }
+    
+    const originalInitiateCombat = window.initiateCombat;
+
+    window.initiateCombat = function() {
+        if(turnPhase !== 2) {
+            log("¡SOLO PUEDES ATACAR EN FASE DE ACCIONES!");
+            return;
+        }
+        // Entramos en Fase 3: Resolución (Combate)
+        turnPhase = 3;
+        updatePhaseUI();
+        
+        // Llamar a la lógica original que abre los dados
+        if(originalInitiateCombat) originalInitiateCombat();
+    };
     // --- COMBAT LOGIC ---
     function initiateCombat() {
         if(gameState !== 'MY_TURN') return;
@@ -1079,6 +1120,7 @@ function renderEditorSquad() {
             ind.className = "turn-badge my-turn"; ind.innerText = "TU TURNO";
             document.querySelector('.hud-bottom').style.pointerEvents = "auto";
             document.querySelector('.hud-bottom').style.opacity = "1";
+            startMyTurnPhases();
             autoSelectValidUnit(); 
         } else {
             ind.className = "turn-badge enemy-turn"; ind.innerText = "TURNO RIVAL";
@@ -1176,19 +1218,39 @@ function renderEditorSquad() {
     window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
     window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
     window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
+    
     window.performOp = function(op) {
-        if(gameState !== 'MY_TURN') return;
-        const me = myUnits[myIdx];
-        if(op === 'MISION') {
-            if(me.mode !== 'hidden') {
-                log("ERROR: REQUIERE ORDEN TÁCTICA", "danger");
-                document.getElementById('btn-mode-hidden').style.borderColor = "red"; setTimeout(()=>document.getElementById('btn-mode-hidden').style.borderColor = "#555", 500);
-                return;
-            }
-            myVP+=1; publish({type:'SCORE_UPDATE', vp:myVP}); log("MISION CUMPLIDA"); 
-        } else log(op);
-        publish({type:'OP_ACTION', opType: op}); passTurn(0);
+    if(gameState !== 'MY_TURN') return;
+    
+    // Bloqueo: Solo permitir en Fase 2 (o Fase 1 si es 'PASAR' turno completo sin mover)
+    if(turnPhase !== 2 && op !== 'PASAR') { 
+        log("¡DEBES TERMINAR EL MOVIMIENTO PRIMERO!"); 
+        return; 
     }
+
+    const me = myUnits[myIdx];
+
+    if(op === 'DASH') {
+        // Ejecutar Dash
+        log("DASH REALIZADO (MUEVE 3\")");
+        publish({type:'OP_ACTION', opType: 'DASH'});
+        resolvePhase("DASH"); // Ir a Fase 3
+        
+    } else if (op === 'MISION') {
+        // Ejecutar Misión
+        myVP++;
+        document.getElementById('my-score').innerText = myVP;
+        publish({type:'SYNC_SCORE', id:MY_ID, vp:myVP});
+        log("MISION CUMPLIDA (+1 VP)");
+        publish({type:'OP_ACTION', opType: 'MISION'});
+        resolvePhase("MISION"); // Ir a Fase 3
+        
+        } else if (op === 'PASAR') {
+            // Pasar turno cancela acciones restantes
+            passTurn(0);
+        }
+    };
+    
     window.useSpecialGear = function() { 
         if(gameState !== 'MY_TURN') return; 
         const me = myUnits[myIdx]; const item = me.mechanics.find(m => m.type === 'ACTIVE' && !me.gearUsed); 
@@ -1199,6 +1261,58 @@ function renderEditorSquad() {
     }
     window.tryPass = function(btnId) { const btn = document.getElementById(btnId); if (passConfirm === btnId) { performOp('PASAR'); resetPassButtons(); } else { resetPassButtons(); passConfirm = btnId; btn.innerText = "¿CONFIRMAR?"; btn.style.background = "var(--gold)"; btn.style.color = "#000"; } }
     window.resetPassButtons = function() { passConfirm = null; const b1 = document.getElementById('btn-pass-open'); b1.innerText = "PASAR"; b1.style.background = "#555"; b1.style.color = "#fff"; const b2 = document.getElementById('btn-op-pass'); b2.innerText = "PASAR"; b2.style.background = "#888"; b2.style.color = "#000"; }
+    
+    // Avanzar de Fase 1 (Movimiento) a Fase 2 (Acciones)
+    window.endMovementPhase = function() {
+        if (turnPhase !== 1) return;
+        turnPhase = 2;
+        log("=== FASE 2: ELIGE UNA ACCIÓN ===");
+        updatePhaseUI();
+    };
+    
+    // Función central para actualizar qué botones se ven según la fase
+    window.updatePhaseUI = function() {
+        const btnEndMove = document.getElementById('btn-end-move');
+        const phaseDisplay = document.getElementById('phase-display');
+        const actionPanel = document.getElementById('combat-actions');
+        const opsPanel = document.getElementById('ops-actions');
+        
+        // Actualizar texto de fase
+        if (gameState === 'MY_TURN') {
+            phaseDisplay.innerText = PHASE_NAMES[turnPhase];
+            phaseDisplay.style.color = (turnPhase === 3) ? "var(--r)" : "var(--c)";
+        } else {
+            phaseDisplay.innerText = "TURNO RIVAL";
+            phaseDisplay.style.color = "#555";
+        }
+    
+        // Ocultar todo por defecto
+        btnEndMove.style.display = 'none';
+        actionPanel.style.display = 'none';
+        opsPanel.style.display = 'none';
+    
+        if (gameState !== 'MY_TURN') return;
+    
+        // Lógica de visualización por fase
+        if (turnPhase === 1) {
+            // FASE 1: Solo mostrar botón de terminar movimiento
+            btnEndMove.style.display = 'block';
+            
+        } else if (turnPhase === 2) {
+            // FASE 2: Mostrar paneles de acción según el modo (Open/Hidden)
+            // Usamos la lógica existente de tu unidad
+            const me = myUnits[myIdx];
+            if (document.getElementById('btn-mode-hidden').classList.contains('selected')) {
+                 opsPanel.style.display = 'grid'; // Acciones tácticas (Dash, Misión)
+            } else {
+                 actionPanel.style.display = 'flex'; // Acciones de combate
+            }
+        }
+        // FASE 3: Generalmente la UI de combate (dados) o logs toman el control
+    };
+
+
 </script>
 </body>
 </html>
+
