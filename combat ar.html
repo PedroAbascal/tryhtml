@@ -202,6 +202,31 @@
         .modal-text { color: var(--gold); font-size: 0.9rem; margin-bottom: 20px; font-weight: bold; }
         .modal-btn-row { display: flex; gap: 10px; justify-content: center; }
         .btn-modal-yes { background: var(--gold); color: #000; padding: 10px 20px; border: none; font-weight: bold; cursor: pointer; }
+
+        //Tags y Badges
+        .badge {
+            font-size: 0.6rem;
+            padding: 1px 4px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            font-weight: bold;
+            border: 1px solid #444;
+        }
+        
+        .unit-tag {
+            background: #222;
+            color: var(--c); /* Cyan para unidad */
+            border-color: var(--c);
+        }
+        
+        .weapon-tag {
+            background: #300;
+            color: var(--r); /* Rojo para armas */
+            border-color: var(--r);
+        }
+
+
+        
     </style>
 </head>
 <body>
@@ -441,68 +466,52 @@
     // --- DATABASE (FORGE) ---
 
     const FORGE_DB = {
-        species: {
-            human: { name: "HUMANO", hp: 10, sv: "5+", r_atk: 3, r_hit: "4+", m_atk: 3, m_hit: "4+", cost: 5 },
-            astartes: { name: "TECHNO HUMANO", hp: 14, sv: "3+", r_atk: 3, r_hit: "3+", m_atk: 3, m_hit: "3+", cost: 15 },
-            eldar: { name: "ELFOS", hp: 8, sv: "4+", r_atk: 4, r_hit: "3+", m_atk: 3, m_hit: "4+", cost: 12 },
-            ork: { name: "OGROS", hp: 12, sv: "6+", r_atk: 2, r_hit: "5+", m_atk: 4, m_hit: "3+", cost: 8 },
-            necron: { name: "XENOS", hp: 12, sv: "3+", r_atk: 3, r_hit: "3+", m_atk: 2, m_hit: "4+", cost: 14 }
-        },
-        roles: {
-            trooper: { name: "Guerrero", cost: 0, modA: 0, modHit: 0, modHP: 0 },
-            assault: { name: "Asalto", cost: 2, modA: 1, modHit: 0, modHP: 1 }, 
-            hunter:  { name: "Cazador", cost: 2, modA: 1, modHit: -1, modHP: -2 },
-            sniper:  { name: "Francotirador", cost: 3, modA: 0, modHit: -1, modHP: -1 },
-            medic:   { name: "Médico", cost: 3, modA: -1, modHit: 0, modHP: 2 },
-            berserk: { name: "Frenético", cost: 3, modA: 2, modHit: 1, modHP: 0 },
-            heavy:   { name: "Artillero", cost: 4, modA: 1, modHit: -1, modHP: 2 },
-            leader:  { name: "Líder", cost: 5, modA: 1, modHit: -1, modHP: 3 },
-            tank:    { name: "Blindado", cost: 6, modA: 1, modHit: 1, modHP: 5 },
-            mech:    { name: "Mecha", cost: 8, modA: 3, modHit: 0, modHP: 4 }
-        },
-        weapons: {
-            pistol:     { name: "Pistola",       cost: 0, A: 3, D: 3, type: "Ranged" },
-            autogun:    { name: "Rifle Automático",   cost: 1, A: 5, D: 3, type: "Ranged" },
-            shotgun:    { name: "Escopeta",      cost: 2, A: 3, D: 5, type: "Ranged" },
-            lasgun:     { name: "Rifle Láser",   cost: 0, A: 4, D: 3, type: "Ranged" },
-            bolter:     { name: "Bólter",        cost: 2, A: 4, D: 4, type: "Ranged" },
-            flamer:     { name: "Lanzallamas",   cost: 3, A: 8, D: 2, type: "Ranged" },
-            grenade_l:  { name: "Lanzagranad.", cost: 3, A: 2, D: 5, type: "Ranged" },
-            sniper:     { name: "Rifle Prec.",   cost: 3, A: 3, D: 5, type: "Ranged" },
-            plasma:     { name: "Plasma",        cost: 4, A: 4, D: 6, type: "Ranged" },
-            minigun:    { name: "Cañón Rotatorio",    cost: 5, A: 6, D: 4, type: "Ranged" },
-            rocket:     { name: "Lanzamisiles", cost: 5, A: 1, D: 9, type: "Ranged" },
-            melta:      { name: "Fusil de Fusión", cost: 4, A: 2, D: 7, type: "Ranged" },
-            railgun:    { name: "Cañón Riel",    cost: 6, A: 2, D: 8, type: "Ranged" },
-            staff:      { name: "Bastón",        cost: 0, A: 3, D: 4, type: "Melee" },
-            knife:      { name: "Cuchillo",      cost: 0, A: 4, D: 3, type: "Melee" },
-            spear:      { name: "Lanza",         cost: 1, A: 4, D: 4, type: "Melee" },
-            axe:        { name: "Hacha",         cost: 2, A: 3, D: 5, type: "Melee" },
-            chainsword: { name: "Espada Sierra",cost: 2, A: 5, D: 4, type: "Melee" },
-            whip:       { name: "Látigo",     cost: 3, A: 5, D: 3, type: "Melee" },
-            claws:      { name: "Garras",        cost: 3, A: 6, D: 4, type: "Melee" },
-            powerw:     { name: "Arma de Energía", cost: 4, A: 4, D: 6, type: "Melee" },
-            fist:       { name: "Puño Combate", cost: 4, A: 3, D: 7, type: "Melee" },
-            hammer:     { name: "Martillo",      cost: 5, A: 2, D: 8, type: "Melee" }
-        },
-        gear: {
-            none: { name: "NINGUNO", cost: 0 },
-            grenade: { name: "GRANADA", cost: 3 },
-            medkit: { name: "MEDKIT", cost: 5 },
-            scope: { name: "MIRA", cost: 2 },
-            stim: { name: "ESTIM", cost: 4 },
-            regen: { name: "REGEN", cost: 6 },
-            shield: { name: "ESCUDO", cost: 8 },
-            stealth: { name: "SIGILO", cost: 4 }
-        },
-
-        bases: {
-        b25: { name: "25mm (Std)", cost: 0, hp: 0 },
-        b32: { name: "32mm (Elite)", cost: 1, hp: 1 },
-        b40: { name: "40mm (Hvy)", cost: 2, hp: 2 },
-        b50: { name: "50mm (Boss)", cost: 3, hp: 3 }
+        const FORGE_DB = {
+    species: {
+        human: { name:"Humano", cost:5, hp:8, sv:"5+", r_hit:"4+", m_hit:"4+", keywords: ["IMPERIUM", "ASTRA_MILITARUM"] },
+        ork:   { name:"Orko", cost:6, hp:10, sv:"6+", r_hit:"5+", m_hit:"3+", keywords: ["XENOS", "ORK"] }
+    },
+    roles: {
+        trooper: { name:"Trooper", cost:0, modHP:0, modA:0, modHit:0, keywords: [] },
+        leader:  { name:"Líder", cost:15, modHP:2, modA:1, modHit:-1, keywords: ["LEADER", "HERO"] },
+        scout:   { name:"Explorador", cost:5, modHP:0, modA:0, modHit:0, keywords: ["SCOUT", "LIGHT"] },
+        gunner:  { name:"Artillero", cost:10, modHP:1, modA:0, modHit:0, keywords: ["HEAVY_INFANTRY", "GRENADIER"] }
+    },
+    weapons: {
+        lasgun: { name:"Lasgun", type:"Ranged", cost:0, A:4, D:2, traits: [] },
+        sniper: { name:"Sniper", type:"Ranged", cost:5, A:4, D:3, traits: ["HEAVY", "SILENT", "MORTAL_1"] },
+        plasma: { name:"Plasma", type:"Ranged", cost:10, A:4, D:5, traits: ["HOT", "AP_1"] },
+        knife:  { name:"Cuchillo", type:"Melee", cost:0, A:3, D:3, traits: [] },
+        sword:  { name:"Espada Energía", type:"Melee", cost:5, A:4, D:5, traits: ["LETHAL_5", "RENDING"] }
+    },
+    gear: {
+        none: { name:"Nada", cost:0, keywords: [] },
+        nades: { name:"Granadas Frag", cost:2, keywords: ["GRENADIER"] },
+        medkit: { name:"Medkit", cost:3, keywords: ["MEDIC"] }
+    },
+    bases: { 
+        b25: { name:"25mm", cost:0, hp:0 }, 
+        b32: { name:"32mm", cost:4, hp:2 },
+        b40: { name:"40mm", cost:6, hp:6 }
     }
+};
+    // --- DICCIONARIO DE REGLAS Y TAGS ---
+    // 1. TAGS DE UNIDAD (Keywords)
+    const UNIT_TAGS = {
+        'LEADER': { desc: 'Genera 1 CP extra si está en el campo.', type: 'ROLE' },
+        'SCOUT': { desc: 'Movimiento gratuito al inicio de la partida.', type: 'PASSIVE' },
+        'HEAVY_INFANTRY': { desc: 'Armadura +1, Movimiento -1".', type: 'STAT' },
+        'FLY': { desc: 'Ignora terreno vertical al mover.', type: 'MOVE' },
+        'GRENADIER': { desc: 'Habilitado para usar acción de Granada.', type: 'ACTION' }
+    };
     
+    // 2. TAGS DE ARMA (Weapon Traits)
+    const WEAPON_TRAITS = {
+        'BALANCED': { desc: 'Repite 1 dado de ataque fallido.', func: 'reroll_1' },
+        'HEAVY': { desc: 'No puede disparar si movió en el mismo turno.', func: 'check_move' },
+        'LETHAL_5': { desc: 'Críticos con 5+ en lugar de 6.', func: 'crit_boost' },
+        'SILENT': { desc: 'Disparar no revela posición (si usas sigilo).', func: 'stealth' },
+        'RENDING': { desc: 'Si sacas crítico, el objetivo tiene -1 Def.', func: 'pierce' }
     };
     
     // --- GAME CONSTANTS ---
@@ -636,64 +645,133 @@
         document.getElementById('p-mhit').innerText = mhVal + "+";
     }
 
-   function addUnitToSquad() {
-        const name = document.getElementById('u-name').value || "Soldado " + (editorSquad.length+1);
+        window.addUnitToSquad = function() {
+        // 1. Obtener valores del DOM
+        const name = document.getElementById('u-name').value || "Operativo " + (editorSquad.length+1);
         const sKey = document.getElementById('u-species').value;
         const rKey = document.getElementById('u-role').value;
         const wrKey = document.getElementById('u-weapon-r').value;
         const wmKey = document.getElementById('u-weapon-m').value;
         const gKey = document.getElementById('u-gear').value;
         const bKey = document.getElementById('u-base').value;
-
-        // DB Data
+    
+        // 2. Cargar Objetos de la DB
         const s = FORGE_DB.species[sKey];
         const r = FORGE_DB.roles[rKey];
-        const wr = FORGE_DB.weapons[wrKey]; // Arma Rango
-        const wm = FORGE_DB.weapons[wmKey]; // Arma Melee
+        const wr = FORGE_DB.weapons[wrKey];
+        const wm = FORGE_DB.weapons[wmKey];
         const g = FORGE_DB.gear[gKey];
         const b = FORGE_DB.bases[bKey];
-
-        // Coste Total
+    
+        // 3. Validar Coste (Igual que antes)
         const unitCost = s.cost + r.cost + wr.cost + wm.cost + g.cost + b.cost;
-
-        // Validar 100pts
         const currentTotal = editorSquad.reduce((sum, u) => sum + u.cost, 0);
         if (currentTotal + unitCost > 100) {
-            alert(`Límite excedido. Coste: ${unitCost}. Restante: ${100 - currentTotal}`);
+            alert(`Límite excedido (${unitCost} pts).`);
             return;
         }
-
-        // Calcular Hits
-        let rhVal = parseInt(s.r_hit) + r.modHit; if(rhVal<2) rhVal=2;
-        let mhVal = parseInt(s.m_hit) + r.modHit; if(mhVal<2) mhVal=2;
-
-        const finalStats = {
-            hp: s.hp + r.modHP + b.hp,
-            sv: s.sv,
-            // Stats Rango
-            r_atk: wr.A + r.modA,
-            r_hit: rhVal + "+",
-            r_dmg: wr.D,
-            // Stats Melee
-            m_atk: wm.A + r.modA,
-            m_hit: mhVal + "+",
-            m_dmg: wm.D
-        };
-
-        editorSquad.push({
+    
+        // 4. --- LÓGICA DE TAGS (NUEVO) ---
+        // Combinamos arrays de keywords de Especie, Rol y Equipo
+        let combinedKeywords = [
+            ...(s.keywords || []), 
+            ...(r.keywords || []), 
+            ...(g.keywords || [])
+        ];
+        // Eliminar duplicados usando Set
+        combinedKeywords = [...new Set(combinedKeywords)];
+    
+        // 5. Calcular Hits (Igual que antes)
+        let rhVal = parseInt(s.r_hit) + r.modHit; if(rhVal<2) rhVal=2; if(rhVal>6) rhVal=6;
+        let mhVal = parseInt(s.m_hit) + r.modHit; if(mhVal<2) mhVal=2; if(mhVal>6) mhVal=6;
+    
+        // 6. Construir Objeto FINAL DE UNIDAD
+        // Nota: Ahora guardamos las armas como OBJETOS completos, no solo nombres.
+        const newUnit = {
             id: Date.now(),
             name: name,
             cost: unitCost,
             base: b.name,
-            gear: gKey === 'none' ? null : gKey,
-            stats: finalStats,
-            weapons: { r: wr.name, m: wm.name } // Opcional: guardar nombres para referencia
-        });
-        
+            keywords: combinedKeywords, // <--- AQUÍ ESTÁN TUS TAGS DE UNIDAD
+            stats: {
+                hp: s.hp + r.modHP + b.hp,
+                sv: s.sv,
+                // Guardamos Stats base calculados por conveniencia visual
+                r_hit_val: rhVal,
+                m_hit_val: mhVal
+            },
+            weapons: [
+                {
+                    name: wr.name,
+                    type: 'RANGED',
+                    atk: wr.A + r.modA,
+                    hit: rhVal,
+                    dmg: wr.D,
+                    traits: wr.traits || [] // <--- AQUÍ ESTÁN TUS TAGS DE ARMA
+                },
+                {
+                    name: wm.name,
+                    type: 'MELEE',
+                    atk: wm.A + r.modA,
+                    hit: mhVal,
+                    dmg: wm.D,
+                    traits: wm.traits || [] // <--- AQUÍ ESTÁN TUS TAGS DE ARMA
+                }
+            ],
+            gear: g.name
+        };
+    
+        editorSquad.push(newUnit);
         renderEditorSquad();
         document.getElementById('u-name').value = "";
-    }
+    };
+    
+window.renderEditorSquad = function() {
+    const c = document.getElementById('squad-list'); 
+    c.innerHTML = "";
+    let totalCost = 0;
 
+    editorSquad.forEach((u, i) => {
+        totalCost += u.cost;
+        
+        // Generar HTML de etiquetas (badges)
+        // Muestra Keywords de unidad y Traits de armas en pequeño
+        let badges = u.keywords.map(k => `<span class="badge unit-tag">${k}</span>`).join('');
+        
+        // Agregar Traits de armas principales si son importantes
+        u.weapons.forEach(w => {
+            if(w.traits && w.traits.length > 0) {
+                // Solo mostrar la primera letra o algo corto para no saturar
+                badges += w.traits.map(t => `<span class="badge weapon-tag" title="${w.name}">${t}</span>`).join('');
+            }
+        });
+
+        let div = document.createElement('div');
+        div.className = "unit-item";
+        div.innerHTML = `
+            <div class="unit-info">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:var(--c); font-weight:bold;">${u.name}</span>
+                    <span style="color:var(--gold)">[${u.cost} PTS]</span>
+                </div>
+                
+                <div style="font-size:0.7rem; color:#aaa; margin-top:2px;">
+                    HP:${u.stats.hp} SV:${u.stats.sv} | ${u.weapons[0].name} & ${u.weapons[1].name}
+                </div>
+                
+                <div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:3px;">
+                    ${badges}
+                </div>
+            </div>
+            <button class="btn btn-del" onclick="removeEditorUnit(${i})">X</button>
+        `;
+        c.appendChild(div);
+    });
+
+    const lbl = document.getElementById('total-pts');
+    lbl.innerText = totalCost;
+    lbl.style.color = (totalCost > 100) ? "var(--r)" : (totalCost === 100 ? "var(--gold)" : "#fff");
+};
     
 function renderEditorSquad() {
         const c = document.getElementById('squad-list'); c.innerHTML = "";
@@ -922,97 +1000,165 @@ function renderEditorSquad() {
             }
         };
 
-        // Función simplificada de Daño Flotante
-        window.showDamage = function(targetId, amount, isCrit) {
-            // Intentar buscar el elemento objetivo, si no existe, usar el centro de pantalla
-            const target = document.getElementById(targetId) || document.body;
-            const rect = target.getBoundingClientRect();
+            // Función simplificada de Daño Flotante
+            window.showDamage = function(targetId, amount, isCrit) {
+                // Intentar buscar el elemento objetivo, si no existe, usar el centro de pantalla
+                const target = document.getElementById(targetId) || document.body;
+                const rect = target.getBoundingClientRect();
+                
+                // Crear el número
+                const el = document.createElement('div');
+                el.classList.add('damage-number');
+                el.innerText = isCrit ? `CRIT ${amount}!` : amount;
+                
+                // Color según crítico
+                el.style.color = isCrit ? 'var(--gold)' : 'var(--r)';
+                
+                // Posicionar (Aleatoriedad pequeña para que no se encimen)
+                const randomX = (Math.random() * 40) - 20;
+                
+                // Si es body (fallback), centrar. Si es unidad, usar sus coordenadas.
+                if(target === document.body) {
+                    el.style.top = "50%"; el.style.left = "50%";
+                } else {
+                    el.style.top = (rect.top) + 'px';
+                    el.style.left = (rect.left + rect.width/2 + randomX) + 'px';
+                }
             
-            // Crear el número
-            const el = document.createElement('div');
-            el.classList.add('damage-number');
-            el.innerText = isCrit ? `CRIT ${amount}!` : amount;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 1000);
             
-            // Color según crítico
-            el.style.color = isCrit ? 'var(--gold)' : 'var(--r)';
-            
-            // Posicionar (Aleatoriedad pequeña para que no se encimen)
-            const randomX = (Math.random() * 40) - 20;
-            
-            // Si es body (fallback), centrar. Si es unidad, usar sus coordenadas.
-            if(target === document.body) {
-                el.style.top = "50%"; el.style.left = "50%";
-            } else {
-                el.style.top = (rect.top) + 'px';
-                el.style.left = (rect.left + rect.width/2 + randomX) + 'px';
-            }
-        
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 1000);
-        
-            // Efecto de sacudida si es crítico o daño alto (>5)
-            if (isCrit || amount >= 5) {
-                document.body.classList.add('shake-screen');
-                setTimeout(() => document.body.classList.remove('shake-screen'), 400);
-            }
-        };
-
-        // --- LÓGICA DE PLOYS ---
-        window.triggerPloy = function(type, cost) {
-            if (gameState !== 'MY_TURN' && type !== 'COVER') { 
-                // Nota: 'COVER' podría usarse en defensa (turno rival), pero simplifiquemos por ahora
-                alert("Solo en tu turno."); 
-                return; 
-            }
-            
-            if (myCP < cost) {
-                log("¡NO TIENES SUFICIENTES CP!");
-                return;
-            }
-        
-            // Gastar CP
-            myCP -= cost;
-            updateCPUI();
-            toggleCommandMenu(); // Cerrar menú
-        
-            // Ejecutar Efecto
-            switch(type) {
-                case 'REROLL':
-                    // Lógica abstracta: Marcar que tienes un reroll disponible
-                    activePloys['REROLL'] = true;
-                    log(">> COMANDO: REPETICIÓN TÁCTICA ACTIVADA");
-                    publish({type:'CHAT', msg: "Activa Repetición Táctica (CP)"});
-                    break;
-                    
-                case 'RUSH':
-                    activePloys['RUSH'] = true;
-                    log(">> COMANDO: AVANCE RÁPIDO (+2\" MOV)");
-                    publish({type:'CHAT', msg: "Activa Avance Rápido (CP)"});
-                    break;
-        
-                case 'COVER':
-                    // Podrías sumar vida temporal o flag de defensa
-                    activePloys['COVER'] = true;
-                    log(">> COMANDO: ¡CUBRIRSE! (BONO DEFENSA)");
-                    publish({type:'CHAT', msg: "Activa ¡Cubrirse! (CP)"});
-                    break;
-            }
-        };
-
+                // Efecto de sacudida si es crítico o daño alto (>5)
+                if (isCrit || amount >= 5) {
+                    document.body.classList.add('shake-screen');
+                    setTimeout(() => document.body.classList.remove('shake-screen'), 400);
+                }
+            };
     
-    const originalInitiateCombat = window.initiateCombat;
-
-    window.initiateCombat = function() {
-        if(turnPhase !== 2) {
-            log("¡SOLO PUEDES ATACAR EN FASE DE ACCIONES!");
-            return;
-        }
-        // Entramos en Fase 3: Resolución (Combate)
-        turnPhase = 3;
-        updatePhaseUI();
+            // --- LÓGICA DE PLOYS ---
+            window.triggerPloy = function(type, cost) {
+                if (gameState !== 'MY_TURN' && type !== 'COVER') { 
+                    // Nota: 'COVER' podría usarse en defensa (turno rival), pero simplifiquemos por ahora
+                    alert("Solo en tu turno."); 
+                    return; 
+                }
+                
+                if (myCP < cost) {
+                    log("¡NO TIENES SUFICIENTES CP!");
+                    return;
+                }
+            
+                // Gastar CP
+                myCP -= cost;
+                updateCPUI();
+                toggleCommandMenu(); // Cerrar menú
+            
+                // Ejecutar Efecto
+                switch(type) {
+                    case 'REROLL':
+                        // Lógica abstracta: Marcar que tienes un reroll disponible
+                        activePloys['REROLL'] = true;
+                        log(">> COMANDO: REPETICIÓN TÁCTICA ACTIVADA");
+                        publish({type:'CHAT', msg: "Activa Repetición Táctica (CP)"});
+                        break;
+                        
+                    case 'RUSH':
+                        activePloys['RUSH'] = true;
+                        log(">> COMANDO: AVANCE RÁPIDO (+2\" MOV)");
+                        publish({type:'CHAT', msg: "Activa Avance Rápido (CP)"});
+                        break;
+            
+                    case 'COVER':
+                        // Podrías sumar vida temporal o flag de defensa
+                        activePloys['COVER'] = true;
+                        log(">> COMANDO: ¡CUBRIRSE! (BONO DEFENSA)");
+                        publish({type:'CHAT', msg: "Activa ¡Cubrirse! (CP)"});
+                        break;
+                }
+            };
+    
+        // --- ESTADO DEL COMBATE ACTUAL -- Variable global para guardar las reglas del ataque en curso
+        let activeCombatStats = {
+            hitVal: 4,
+            critVal: 6,
+            dmg: 3,
+            traits: [] // Aquí guardaremos ['BALANCED', 'LETHAL_5', etc]
+        };
+    
+        // --- VALIDACIONES DE DISPARO ---
+        window.canShootWeapon = function(unit, weapon) {         
+         //1. Regla: HEAVY (Pesada)Si el arma es Heavy y la unidad se movió en la Fase 1
+            if (hasTrait(weapon, 'HEAVY') && unit.hasMoved) { log("❌ ARMA PESADA: No puedes disparar tras mover.", "DANGER"); return false; }
+    
+            // 2. Regla: Modo Oculto (Hidden) Asumimos que las armas RANGED requieren estar en modo OPEN, salvo que tengan 'SILENT'
+            if (weapon.type === 'RANGED' && unit.mode !== 'open' && !hasTrait(weapon, 'SILENT')) { log("❌ REQUIERE ORDEN 'ENGAGE' PARA DISPARAR", "DANGER"); return false; }
         
-        // Llamar a la lógica original que abre los dados
-        if(originalInitiateCombat) originalInitiateCombat();
+            // 3. Regla: Unidades Trabadas (Melee) Si estás en combate cuerpo a cuerpo (base con base), no puedes disparar armas Ranged (regla general KT)
+            // (Esta lógica depende de si tienes una flag 'inMelee'. Si no, ignora esto por ahora).
+            return true;
+        };
+        
+    window.initiateCombat = function(weaponIdx) {
+        if(gameState !== 'MY_TURN') return;
+        const me = myUnits[myIdx];
+        
+        // 1. Obtener el arma real (del objeto u array de armas)
+        // Si no se pasa índice, usamos la primera por defecto
+        const weapon = (typeof weaponIdx !== 'undefined') ? me.weapons[weaponIdx] : me.weapons[0];
+        
+        // Validaciones básicas
+        if(me.activations >= 2) { log("UNIDAD AGOTADA", "DANGER"); return; }
+        if(weapon.type === 'RANGED' && me.mode !== 'open' && !hasTrait(weapon, 'SILENT')) {
+            log("REQUIERE ORDEN 'ENGAGE'", "DANGER"); return; 
+        }
+    
+        // 2. Calcular Estadísticas Base
+        let diceCount = parseInt(weapon.atk);
+        let hitVal = parseInt(weapon.hit);
+        let critVal = 6; // Por defecto
+        let dmg = parseInt(weapon.dmg);
+        const traits = weapon.traits || [];
+    
+        // --- LÓGICA DE TAGS (Pre-Tirada) ---
+        
+        // FATIGA (-1 al Hit)
+        if(me.activations === 1) { 
+            hitVal++; 
+            log("FATIGA: Impactar es más difícil (+1)", "warning"); 
+        }
+    
+        // LETHAL X (Mejora el crítico)
+        const lethal = traits.find(t => t.startsWith('LETHAL_'));
+        if(lethal) {
+            critVal = parseInt(lethal.split('_')[1]); // "LETHAL_5" -> 5
+            log(`TRAIT: ${lethal} (Crit en ${critVal}+)`, "info");
+        }
+    
+        // Guardar en la variable global para usarla después
+        activeCombatStats = { hitVal, critVal, dmg, traits, weaponName: weapon.name };
+    
+        // 3. Preparar Interfaz
+        setupCombatUI('ATTACKER'); // Abre el modal
+        
+        // BALANCED / CEASELESS (Habilitar botón de Reroll)
+        // En Kill Team, Balanced permite repetir 1 dado. Ceaseless permite repetir los 1s.
+        // Aquí habilitamos el sistema de reroll genérico si tiene el trait.
+        if(traits.includes('BALANCED') || traits.includes('CEASELESS')) {
+            canReroll = true; // Variable global que permite seleccionar dados
+            document.getElementById('btn-reroll').style.display = 'inline-block';
+            log("TRAIT: RE-ROLL Habilitado (Selecciona dados)", "success");
+        } else {
+            canReroll = false;
+            document.getElementById('btn-reroll').style.display = 'none';
+        }
+    
+        // 4. Tirar Dados
+        atkRolls = []; 
+        for(let i=0; i<diceCount; i++) atkRolls.push(Math.ceil(Math.random()*6));
+        
+        renderDiceFaces(atkRolls, 'pool-atk', true);
+        syncVisuals('PRE_ATTACK', atkRolls);
+        logCombat(`${me.name} dispara ${weapon.name}...`);
     };
     
     // --- COMBAT LOGIC ---
@@ -1052,17 +1198,158 @@ function renderEditorSquad() {
         }
     }
 
-    function confirmAttack() {
+    window.confirmAttack = function() {
         hideAllCombatButtons();
         document.getElementById('btn-cancel-combat').style.display = 'inline-block';
+        
+        // Animación final de dados
         renderStars(atkRolls, 'pool-atk');
-        let hits = 0, crits = 0;
-        atkRolls.forEach(r => { if(r===6) crits++; else if(r>=combatTargetVal) hits++; });
-        let potDmg = (hits + crits) * currentWeaponDmg;
-        logCombat(`CONFIRMADO: ${hits} Hits, ${crits} Crits.`);
-        publish({ type: 'COMBAT_SYNC', stage: 'ATTACK_CONFIRMED', rolls: atkRolls, dmg: potDmg, hitsStruct: { normal: hits, crit: crits, dmgValue: currentWeaponDmg }, uName: myUnits[myIdx].name });
-    }
+    
+        let hits = 0;
+        let crits = 0;
+    
+        // --- CÁLCULO DE ÉXITOS USANDO LAS REGLAS GUARDADAS ---
+        atkRolls.forEach(r => {
+            if (r >= activeCombatStats.critVal) {
+                crits++; // Es crítico si supera el umbral (ej: 5+ con Lethal)
+            } else if (r >= activeCombatStats.hitVal) {
+                hits++; // Es hit normal
+            }
+        });
+    
+        // Trait: RENDING (Si hay critico, añade logica especial, aqui simplificada)
+        if (crits > 0 && activeCombatStats.traits.includes('RENDING')) {
+            log("TRAIT: RENDING ACTIVO (Efecto pendiente en defensa)", "gold");
+            // Aquí podrías enviar una flag 'isRending: true' al defensor
+        }
+    
+        let potDmg = (hits * activeCombatStats.dmg) + (crits * activeCombatStats.dmg); // Ajustar si critico hace más daño
+        
+        logCombat(`CONFIRMADO: ${hits} Hits, ${crits} Crits (Crit en ${activeCombatStats.critVal}+).`);
+    
+        // ENVIAR AL RIVAL
+        publish({ 
+            type: 'COMBAT_SYNC', 
+            stage: 'ATTACK_CONFIRMED', 
+            rolls: atkRolls, 
+            dmg: potDmg, 
+            hitsStruct: { 
+                normal: hits, 
+                crit: crits, 
+                dmgValue: activeCombatStats.dmg,
+                traits: activeCombatStats.traits // Enviamos traits para que el defensor sepa (ej: AP)
+            }, 
+            uName: myUnits[myIdx].name 
+        });
+    };
 
+    window.startDefenseSequence = function(incomingHits, enemyRolls) {
+        pendingAtkStats = incomingHits; // Guardamos lo que nos mandó el atacante
+        const traits = incomingHits.traits || []; // Traits del arma atacante
+    
+        setupCombatUI('DEFENDER');
+        document.getElementById('pool-atk').innerHTML = '';
+        renderStars(enemyRolls, 'pool-atk'); // Mostrar los éxitos del rival visualmente
+        
+        // --- LÓGICA DE TAGS EN DEFENSA ---
+        
+        let defDiceCount = 3; // Base de Kill Team (DF)
+        // Si tu unidad tiene stat DF diferente, úsalo: parseInt(me.stats.df)
+    
+        // APx (Armor Penetration): Quita dados de defensa
+        const apTrait = traits.find(t => t.startsWith('AP_'));
+        if(apTrait) {
+            const apVal = parseInt(apTrait.split('_')[1]); // "AP_1" -> 1
+            defDiceCount -= apVal;
+            if(defDiceCount < 0) defDiceCount = 0;
+            logCombat(`ENEMIGO TIENE ${apTrait}: -${apVal} Dados de Defensa`, "danger");
+        }
+    
+        // Tirar Dados de Defensa
+        defRolls = []; 
+        for(let i=0; i<defDiceCount; i++) defRolls.push(Math.ceil(Math.random()*6));
+        
+        renderDiceFaces(defRolls, 'pool-def', true);
+        logCombat(`Defendiendo con ${defDiceCount} dados...`);
+    };
+
+    window.confirmDefense = function() {
+        hideAllCombatButtons();
+        renderStars(defRolls, 'pool-def'); // Animación final defensa
+    
+        // 1. Calcular Éxitos de Defensa
+        let defHits = 0; // Salvas Normales
+        let defCrits = 0; // Salvas Críticas
+        let sv = parseInt(myUnits[myIdx].stats.sv.replace('+','')) || 5; 
+        
+        // Tag: INVULNERABLE? (Si lo implementas a futuro, aquí chequearías invuln save)
+    
+        defRolls.forEach(r => { 
+            if(r === 6) defCrits++; 
+            else if(r >= sv) defHits++; 
+        });
+    
+        if(coverActive) { 
+            defHits++; // Regla de Cobertura automática (simplificada)
+            logCombat("COBERTURA: +1 Bloqueo Normal"); 
+        }
+    
+        // 2. Traer datos del atacante
+        let atkCrit = pendingAtkStats.crit;
+        let atkNorm = pendingAtkStats.normal;
+        let dmg = pendingAtkStats.dmgValue;
+        const traits = pendingAtkStats.traits || [];
+    
+        // --- LÓGICA DE TAGS: RENDING ---
+        // Si el atacante sacó al menos 1 crítico y tiene RENDING, convierte 1 hit normal en crítico
+        if (traits.includes('RENDING') && atkCrit > 0 && atkNorm > 0) {
+            atkNorm--;
+            atkCrit++;
+            logCombat("TRAIT RENDING: 1 Hit convertido en Crítico", "danger");
+        }
+    
+        // 3. Mecánica de Cancelación (Parry/Save) - Estilo Disparo
+        // Críticos bloquean Críticos (o Normales)
+        // Normales bloquean Normales
+        
+        // Bloquear Críticos del atacante
+        let blockedCrits = Math.min(atkCrit, defCrits);
+        atkCrit -= blockedCrits;
+        defCrits -= blockedCrits;
+    
+        // Si sobran críticos de defensa, pueden bloquear normales (opcional, regla estándar: 1 crit def bloquea 1 normal? No en KT disparo, pero sí en melee. Asumimos Disparo estándar)
+        // En KT Disparo: SV Crit bloquea Crit. SV Normal bloquea Normal.
+        
+        // Bloquear Normales
+        let blockedNorm = Math.min(atkNorm, defHits);
+        atkNorm -= blockedNorm;
+        
+        // 4. Calcular Daño Final
+        // MW (Mortal Wounds) se aplican siempre? (Si quieres implementar MW)
+        const mwTrait = traits.find(t => t.startsWith('MW_'));
+        let mortalWounds = 0;
+        if(mwTrait && pendingAtkStats.crit > 0) { // MW suele activarse en críticos retenidos
+             mortalWounds = parseInt(mwTrait.split('_')[1]) * (pendingAtkStats.crit); // MW por cada crit original? Ojo con la regla exacta.
+        }
+    
+        let totalDmg = (atkCrit * dmg) + (atkNorm * dmg) + (atkCrit * 1); // +1 si crítico hace más daño base? O definelo en DB.
+        // Usualmente Crítico tiene su propio perfil de daño. Para simplificar, asumo Crítico = Daño Normal + 1 o x2?
+        // SUGERENCIA: Usa un daño fijo extra para críticos si no está en DB.
+        // Si tu DB tiene arma.critDmg, úsalo. Si no, (Hits + Crits) * DmgBase + (Crits * 1).
+        
+        // Simplificación basada en tu código anterior:
+        let finalDmg = (atkNorm * dmg) + (atkCrit * (dmg + 1)); // Críticos hacen +1 daño
+    
+        logCombat(`RESULTADO: ${atkCrit} Crits y ${atkNorm} Hits entran.`);
+        logCombat(`DAÑO TOTAL: ${finalDmg}`, "danger");
+    
+        // Preparar botón de aplicar
+        const btnApply = document.getElementById('btn-apply-dmg');
+        btnApply.style.display = 'inline-block';
+        btnApply.innerText = `RECIBIR ${finalDmg} DAÑO`;
+        btnApply.dataset.dmg = finalDmg;
+    };
+    
     function startDefenseSequence(stats, enemyRolls) {
         pendingAtkStats = stats;
         setupCombatUI('DEFENDER');
@@ -1557,9 +1844,33 @@ function renderEditorSquad() {
     };
 
 
+    // Verifica si la unidad tiene un keyword (Ej: hasKeyword(me, 'LEADER'))
+function hasKeyword(unit, tag) {
+    return unit.keywords && unit.keywords.includes(tag);
+}
+
+// Verifica si el arma actual tiene un trait (Ej: hasTrait(currentWeapon, 'BALANCED'))
+function hasTrait(weapon, trait) {
+    return weapon.traits && weapon.traits.includes(trait);
+}
+
+// --- INTEGRACIÓN CON FASES (Ejemplo HEAVY) ---
+// Usar en Fase 2 al intentar atacar
+function canShootWeapon(unit, weapon) {
+    if (hasTrait(weapon, 'HEAVY')) {
+        // Asumiendo que trackeas si movió en Fase 1 con una bandera 'hasMoved'
+        if (unit.hasMoved) {
+            log("¡ARMA PESADA! No puedes disparar tras mover.", "DANGER");
+            return false;
+        }
+    }
+    return true;
+}
+
 </script>
 </body>
 </html>
+
 
 
 
