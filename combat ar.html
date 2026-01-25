@@ -480,7 +480,7 @@
     let turnPhase = 0; // 0: Espera, 1: Movimiento, 2: Acciones, 3: Resolución
     const PHASE_NAMES = { 1: "FASE 1: MOVIMIENTO", 2: "FASE 2: ACCIONES", 3: "FASE 3: RESOLUCIÓN" };
 
-    let myCP = 3;
+    let myCP = 0;
     let isPlayerTwo = false; // Cambiar a true si eres el segundo jugador
     let activePloys = {}; // Para rastrear qué habilidades están activas este turno
     
@@ -1279,13 +1279,32 @@ function renderEditorSquad() {
         document.getElementById('planning-controls').style.display = 'none'; document.getElementById('my-ready-mark').classList.add('show'); 
         publish({type: 'READY', squad: myUnits, roll: myInitRoll}); checkStartRound(); 
     }
-    function checkStartRound() { 
-        if(iAmReady && enemyIsReady) { 
-            log(`INICIATIVA: YO ${myInitRoll} vs ${enemyInitRoll} RIV`); 
-            gameState = (myInitRoll >= enemyInitRoll) ? 'MY_TURN' : 'ENEMY_TURN'; 
-            document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show')); setTurn(gameState, 0); 
-        } 
-    }
+   
+
+        window.checkStartRound = function() { 
+            if(iAmReady && enemyIsReady) { 
+                log(`INICIATIVA: YO ${myInitRoll} vs ${enemyInitRoll} RIV`); 
+                
+                // Determinar si gané la iniciativa
+                const iWonInitiative = (myInitRoll >= enemyInitRoll);
+                
+                // Configurar estado del juego
+                gameState = iWonInitiative ? 'MY_TURN' : 'ENEMY_TURN'; 
+                
+                // Limpiar marcadores de listo
+                document.querySelectorAll('.ready-marker').forEach(e => e.classList.remove('show')); 
+                
+                // --- ASIGNAR CP ---
+                // Si gané iniciativa (iWonInitiative es true), NO voy segundo (false) -> 3 CP
+                // Si perdí iniciativa (iWonInitiative es false), SÍ voy segundo (true) -> 4 CP
+                startNewRound(!iWonInitiative);
+        
+                // Iniciar el turno
+                setTurn(gameState, 0); 
+            }
+        };
+
+    
     function getKillPoints(total) { return total <= 4 ? 4 : (total <= 7 ? 3 : 1); }
     function checkAutoMechanics() { 
         const me = myUnits[myIdx]; if(!me || globalHP[me.uid].c <= 0) return; 
@@ -1415,5 +1434,6 @@ function renderEditorSquad() {
 </script>
 </body>
 </html>
+
 
 
