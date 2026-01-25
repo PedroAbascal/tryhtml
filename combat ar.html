@@ -730,7 +730,7 @@ function startMyPhaseTurn() {
 
 // 2. GESTOR DE UI POR FASES
 function updatePhaseUI() {
-    // A. Actualizar indicador visual de arriba (los dots)
+    // --- A. Actualizar indicador visual de arriba (los dots) ---
     [1,2,3].forEach(i => {
         const el = document.getElementById(`phase-${i}`);
         if(el) el.className = 'phase-dot' + (currentPhase === i ? ' active' : (currentPhase > i ? ' done' : ''));
@@ -738,60 +738,67 @@ function updatePhaseUI() {
     
     if(document.getElementById('cp-display')) document.getElementById('cp-display').innerText = myCP;
 
-    // B. Referencias a los contenedores de hud-bottom
+    // --- B. Referencias a los elementos ---
     const btnMove = document.getElementById('btn-end-move');
     const combatActs = document.getElementById('combat-actions');
     const opsActs = document.getElementById('ops-actions');
     const ind = document.getElementById('turn-indicator');
+    
+    // Referencias específicas para la Fase 3
     const btnEnd = document.getElementById('btn-end-turn');
-    const opsButtons = document.querySelectorAll('.btn-op'); // Selecciona los botones normales (Dash, Mision, Pasar)
+    const opsButtons = document.querySelectorAll('.btn-op'); // Botones: Dash, Mision, Pasar
 
-    // C. LIMPIEZA: Ocultar todo primero para evitar conflictos
+    // --- C. LIMPIEZA GENERAL (Resetear estado base) ---
+    // 1. Ocultamos los contenedores principales por defecto
     if(btnMove) btnMove.style.display = 'none';
     if(combatActs) combatActs.style.display = 'none';
     if(opsActs) opsActs.style.display = 'none';
 
-    // D. LÓGICA DE FASES
+    // 2. RESTAURAR BOTONES INTERNOS (¡Vital para evitar errores!)
+    // Esto asegura que si volvemos de la Fase 3, los botones normales revivan.
+    if(btnEnd) btnEnd.style.display = 'none'; // Ocultar botón rojo por defecto
+    if(opsButtons) opsButtons.forEach(b => b.style.display = 'inline-block'); // Mostrar botones normales por defecto
+
+    // --- D. LÓGICA DE FASES ---
     if (currentPhase === 1) {
-        // --- FASE 1: MOVER ---
+        // === FASE 1: MOVER ===
         if(ind) ind.innerText = "FASE 1: MOVER";
-        // Solo mostramos el botón grande amarillo
         if(btnMove) btnMove.style.display = 'block';
     } 
     else if (currentPhase === 2) {
-        // --- FASE 2: ACCIONES ---
+        // === FASE 2: ACCIONES ===
         if(ind) ind.innerText = "FASE 2: ACCIÓN";
         
-        // Mostramos el panel de combate
         if(combatActs) combatActs.style.display = 'flex';
         
-        // OPCIONAL: Si quieres que DASH y MISIÓN estén disponibles en Fase 2,
-        // descomenta la siguiente línea. Si quieres que solo sea ATACAR, déjala oculta.
-        /* if(opsActs) opsActs.style.display = 'grid'; */
-        
-        // Inyectamos botón de Cubrirse si no existe
+        // Si quieres que las operaciones (Dash/Misión) se vean en fase 2, descomenta esto:
+        // if(opsActs) opsActs.style.display = 'grid';
+
+        // Inyectamos botón de Cubrirse (Solo si no existe ya)
         if(!document.getElementById('btn-cover-act')) {
              const btn = document.createElement('button');
-             btn.id = 'btn-cover-act'; btn.className = 'btn'; 
-             btn.innerHTML = '🛡️<br>CUBRIR'; // Salto de línea para ahorrar espacio
-             btn.style.background = '#445566'; btn.style.fontSize = '0.7rem';
+             btn.id = 'btn-cover-act'; 
+             btn.className = 'btn'; 
+             btn.innerHTML = '🛡️<br>CUBRIR';
+             btn.style.background = '#445566'; 
+             btn.style.fontSize = '0.7rem';
              btn.onclick = () => performCoverAction();
-             // Lo insertamos en combat-actions para que esté junto a atacar
              if(combatActs) combatActs.appendChild(btn);
         }
     } 
     else if (currentPhase === 3) {
-    // --- FASE 3: FIN ---
-    if(ind) ind.innerText = "FASE 3: FIN";
-    
-    // 1. Ocultar botones de operaciones normales
-    opsButtons.forEach(b => b.style.display = 'none');
-    
-    // 2. Mostrar botón de finalizar
-    if(btnEnd) btnEnd.style.display = 'block';
-    
-    // Asegurar que el contenedor sea visible
-    if(opsActs) opsActs.style.display = 'grid';
+        // === FASE 3: FIN / OPERACIONES ===
+        if(ind) ind.innerText = "FASE 3: FIN";
+        
+        // Mostramos el contenedor de operaciones
+        if(opsActs) opsActs.style.display = 'grid';
+
+        // AQUÍ ESTÁ EL TRUCO: Intercambio de botones
+        // 1. Ocultamos los botones de operaciones normales (Dash, Mision, Pasar)
+        if(opsButtons) opsButtons.forEach(b => b.style.display = 'none');
+        
+        // 2. Mostramos SOLO el botón de finalizar turno
+        if(btnEnd) btnEnd.style.display = 'block';
     }
 }
 
@@ -1400,6 +1407,7 @@ window.endTurnFinal = function() {
 </script>
 </body>
 </html>
+
 
 
 
