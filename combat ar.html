@@ -743,6 +743,8 @@ function updatePhaseUI() {
     const combatActs = document.getElementById('combat-actions');
     const opsActs = document.getElementById('ops-actions');
     const ind = document.getElementById('turn-indicator');
+    const btnEnd = document.getElementById('btn-end-turn');
+    const opsButtons = document.querySelectorAll('.btn-op'); // Selecciona los botones normales (Dash, Mision, Pasar)
 
     // C. LIMPIEZA: Ocultar todo primero para evitar conflictos
     if(btnMove) btnMove.style.display = 'none';
@@ -779,14 +781,17 @@ function updatePhaseUI() {
         }
     } 
     else if (currentPhase === 3) {
-        // --- FASE 3: RESOLUCIÓN / FIN ---
-        if(ind) ind.innerText = "FASE 3: FIN";
-        
-        // Usamos el panel de ops para mostrar el botón de terminar turno
-        if(opsActs) {
-            opsActs.style.display = 'grid'; // Grid para que ocupe todo
-            opsActs.innerHTML = `<button class="btn" onclick="endTurnFinal()" style="grid-column: 1 / -1; background:#ff4444; color:#fff; font-weight:bold; padding:15px;">🛑 FINALIZAR TURNO</button>`;
-        }
+    // --- FASE 3: FIN ---
+    if(ind) ind.innerText = "FASE 3: FIN";
+    
+    // 1. Ocultar botones de operaciones normales
+    opsButtons.forEach(b => b.style.display = 'none');
+    
+    // 2. Mostrar botón de finalizar
+    if(btnEnd) btnEnd.style.display = 'block';
+    
+    // Asegurar que el contenedor sea visible
+    if(opsActs) opsActs.style.display = 'grid';
     }
 }
 
@@ -1395,6 +1400,7 @@ window.endTurnFinal = function() {
 </script>
 </body>
 </html>
+
 
 
 
