@@ -475,6 +475,10 @@
     let combatTargetVal = 4, currentWeaponDmg = 1;
     let pendingAtkStats = null, coverActive = false;
 
+    let currentPhase = 0; // 0: Enemy, 1: Move, 2: Action, 3: Resolution
+    let myCP = 2; // Puntos de Mando iniciales (Command Points)
+    let actionsPerformed = { move: false, action: false };
+
     // --- FORGE FUNCTIONS (LOGICA CREADOR) ---
     function openForge() {
         document.getElementById('lobby-screen').classList.add('hidden');
@@ -710,12 +714,6 @@ function renderEditorSquad() {
         // Feedback opcional
         console.log("Escuadra transferida al Lobby");
     }
-
-
-// --- STATE VARIABLES (NUEVAS) ---
-let currentPhase = 0; // 0: Enemy, 1: Move, 2: Action, 3: Resolution
-let myCP = 2; // Puntos de Mando iniciales (Command Points)
-let actionsPerformed = { move: false, action: false };
 
 // 1. INICIAR TURNO (Sobrescribe o llama a esto cuando sea tu turno)
 function startMyPhaseTurn() {
@@ -1396,6 +1394,7 @@ window.endTurnFinal = function() {
 </script>
 </body>
 </html>
+
 
 
 
