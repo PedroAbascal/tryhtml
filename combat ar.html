@@ -476,7 +476,6 @@
     let pendingAtkStats = null, coverActive = false;
 
     let currentPhase = 0; // 0: Enemy, 1: Move, 2: Action, 3: Resolution
-    console.log("🏁 INICIO: currentPhase inicializada en 0");
     let myCP = 2; // Puntos de Mando iniciales (Command Points)
     let actionsPerformed = { move: false, action: false };
 
@@ -720,7 +719,6 @@ function renderEditorSquad() {
 function startMyPhaseTurn() {
     gameState = 'MY_TURN';
     currentPhase = 1; 
-    console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} -> 1`);
     actionsPerformed = { move: false, action: false };
     
     // Resetear estados visuales
@@ -736,7 +734,6 @@ function updatePhaseUI() {
     [1,2,3].forEach(i => {
         const el = document.getElementById(`phase-${i}`);
         if(el) el.className = 'phase-dot' + (currentPhase === i ? ' active' : (currentPhase > i ? ' done' : ''));
-        console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} `);
     });
     
     if(document.getElementById('cp-display')) document.getElementById('cp-display').innerText = myCP;
@@ -819,7 +816,6 @@ window.finishMovePhase = function() {
     // Aquí podrías desencadenar trampas o chequeos de terreno
     log("Movimiento completado.");
     currentPhase = 2;
-    console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} -> 2`);
     updatePhaseUI();
 }
 
@@ -834,7 +830,6 @@ window.performCoverAction = function() {
     // publish({type: 'STATE_UPDATE', uid: me.uid, state: 'COVER'}); 
     
     currentPhase = 3; // Pasa a resolución
-    console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} -> 3`);
     updatePhaseUI();
 }
 
@@ -855,7 +850,6 @@ window.initiateCombat = function() {
 // Callback para cuando termina el combate (llámalo desde endCombatTurn)
 window.finishCombatPhase = function() {
     currentPhase = 3;
-    console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} -> 3 window.finishCombatPhase = function()`);
     updatePhaseUI();
 }
 
@@ -876,7 +870,6 @@ window.performOp = function(op) {
     }
     
     currentPhase = 3; // Dash y Misión terminan la fase de acción
-    console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} window.performop = function(op)`);
     updatePhaseUI();
 }
 
@@ -887,7 +880,6 @@ window.endTurnFinal = function() {
     
     passTurn(0); // Llama a tu función original de pasar turno MQTT
     currentPhase = 0;
-    console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} window.endturnFinal = function()`);
     updatePhaseUI();
 }
 
@@ -1280,56 +1272,23 @@ window.endTurnFinal = function() {
     }
 
     function setTurn(state, passes) {
-    gameState = state;
-    const ind = document.getElementById('turn-indicator');
-    
-    if(gameState === 'MY_TURN') {
-        // Lógica automática
-        if(typeof checkAutoMechanics === 'function') checkAutoMechanics();
-        if(typeof checkRoundOver === 'function') {
-            if(checkRoundOver()) return;
+        gameState = state; 
+        const ind = document.getElementById('turn-indicator');
+        if(gameState === 'MY_TURN') {
+            checkAutoMechanics(); if(checkRoundOver()) return;
+            ind.className = "turn-badge my-turn"; ind.innerText = "TU TURNO";
+            document.querySelector('.hud-bottom').style.pointerEvents = "auto";
+            document.querySelector('.hud-bottom').style.opacity = "1";
+            currentPhase = 1;
+            autoSelectValidUnit(); 
+        } else {
+            ind.className = "turn-badge enemy-turn"; ind.innerText = "TURNO RIVAL";
+            document.querySelector('.hud-bottom').style.pointerEvents = "none";
+            document.querySelector('.hud-bottom').style.opacity = "0.7";
         }
-
-        // 1. Actualizar UI visual
-        if(ind) {
-            ind.className = "turn-badge my-turn";
-            ind.innerText = "TU TURNO";
-        }
-        const hudBottom = document.querySelector('.hud-bottom');
-        if(hudBottom) {
-            hudBottom.style.pointerEvents = "auto";
-            hudBottom.style.opacity = "1";
-        }
-        
-        // 2. LOG: Confirmamos que se ejecuta el reinicio
-        console.log(`♻️ setTurn: Reiniciando Fase (Antes era ${currentPhase}) -> AHORA ES 1`);
-        
-        // 3. REINICIO DE FASE (CRÍTICO)
-        // NOTA: No usamos 'let' ni 'var' aquí, usamos la variable global.
-        currentPhase = 1; 
-        
-        // 4. Reinicio de acciones
-        actionsPerformed = { move: false, action: false };
-
-        // 5. Seleccionar unidad inicial
-        if(typeof autoSelectValidUnit === 'function') autoSelectValidUnit();
-
-    } else {
-        // Turno del enemigo
-        if(ind) {
-            ind.className = "turn-badge enemy-turn";
-            ind.innerText = "TURNO RIVAL";
-        }
-        const hudBottom = document.querySelector('.hud-bottom');
-        if(hudBottom) {
-            hudBottom.style.pointerEvents = "none";
-            hudBottom.style.opacity = "0.7";
-        }
+        updateHUD();
     }
-    
-    // 6. Actualizar toda la interfaz
-    updateHUD();
-}
+
     function passTurn(passes) {
         const me = myUnits[myIdx];
         if (me.activations < 2) me.activations++;
@@ -1415,7 +1374,7 @@ window.endTurnFinal = function() {
     
     // UI Helpers
     window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; updateHUD(); } }
-    window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); currentPhase = 1; console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} nextMyUnit`); actionsPerformed = { move: false, action: false }; updateHUD(); }
+    window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); currentPhase = 1; actionsPerformed = { move: false, action: false }; updateHUD(); }
     window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
     window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
     window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
@@ -1447,10 +1406,6 @@ window.endTurnFinal = function() {
 </script>
 </body>
 </html>
-
-
-
-
 
 
 
