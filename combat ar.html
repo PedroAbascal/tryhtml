@@ -476,6 +476,7 @@
     let pendingAtkStats = null, coverActive = false;
 
     let currentPhase = 0; // 0: Enemy, 1: Move, 2: Action, 3: Resolution
+    console.log("🏁 INICIO: currentPhase inicializada en 0");
     let myCP = 2; // Puntos de Mando iniciales (Command Points)
     let actionsPerformed = { move: false, action: false };
 
@@ -719,6 +720,7 @@ function renderEditorSquad() {
 function startMyPhaseTurn() {
     gameState = 'MY_TURN';
     currentPhase = 1; 
+    console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} -> 1`);
     actionsPerformed = { move: false, action: false };
     
     // Resetear estados visuales
@@ -734,6 +736,7 @@ function updatePhaseUI() {
     [1,2,3].forEach(i => {
         const el = document.getElementById(`phase-${i}`);
         if(el) el.className = 'phase-dot' + (currentPhase === i ? ' active' : (currentPhase > i ? ' done' : ''));
+        console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} `);
     });
     
     if(document.getElementById('cp-display')) document.getElementById('cp-display').innerText = myCP;
@@ -816,6 +819,7 @@ window.finishMovePhase = function() {
     // Aquí podrías desencadenar trampas o chequeos de terreno
     log("Movimiento completado.");
     currentPhase = 2;
+    console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} -> 2`);
     updatePhaseUI();
 }
 
@@ -830,6 +834,7 @@ window.performCoverAction = function() {
     // publish({type: 'STATE_UPDATE', uid: me.uid, state: 'COVER'}); 
     
     currentPhase = 3; // Pasa a resolución
+    console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} -> 3`);
     updatePhaseUI();
 }
 
@@ -850,6 +855,7 @@ window.initiateCombat = function() {
 // Callback para cuando termina el combate (llámalo desde endCombatTurn)
 window.finishCombatPhase = function() {
     currentPhase = 3;
+    console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} -> 3 window.finishCombatPhase = function()`);
     updatePhaseUI();
 }
 
@@ -870,6 +876,7 @@ window.performOp = function(op) {
     }
     
     currentPhase = 3; // Dash y Misión terminan la fase de acción
+    console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} window.performop = function(op)`);
     updatePhaseUI();
 }
 
@@ -880,6 +887,7 @@ window.endTurnFinal = function() {
     
     passTurn(0); // Llama a tu función original de pasar turno MQTT
     currentPhase = 0;
+    console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} window.endturnFinal = function()`);
     updatePhaseUI();
 }
 
@@ -1281,6 +1289,7 @@ window.endTurnFinal = function() {
             document.querySelector('.hud-bottom').style.pointerEvents = "auto";
             document.querySelector('.hud-bottom').style.opacity = "1";
             currentPhase = 1;
+            console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} setTurn`);
             autoSelectValidUnit(); 
         } else {
             ind.className = "turn-badge enemy-turn"; ind.innerText = "TURNO RIVAL";
@@ -1375,7 +1384,7 @@ window.endTurnFinal = function() {
     
     // UI Helpers
     window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; updateHUD(); } }
-    window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); currentPhase = 1; actionsPerformed = { move: false, action: false }; updateHUD(); }
+    window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); currentPhase = 1; console.log(`🔄 setTurn: Forzando cambio de Fase ${currentPhase} nextMyUnit`); actionsPerformed = { move: false, action: false }; updateHUD(); }
     window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
     window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
     window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
@@ -1407,6 +1416,7 @@ window.endTurnFinal = function() {
 </script>
 </body>
 </html>
+
 
 
 
