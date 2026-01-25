@@ -1280,6 +1280,7 @@ window.endTurnFinal = function() {
             document.querySelector('.hud-bottom').style.pointerEvents = "auto";
             document.querySelector('.hud-bottom').style.opacity = "1";
             currentPhase = 1;
+            console.log(`♻️ setTurn: Reiniciando Fase (Antes era ${currentPhase}) -> AHORA ES 1`);
             autoSelectValidUnit(); 
         } else {
             ind.className = "turn-badge enemy-turn"; ind.innerText = "TURNO RIVAL";
@@ -1406,6 +1407,7 @@ window.endTurnFinal = function() {
 </script>
 </body>
 </html>
+
 
 
 
