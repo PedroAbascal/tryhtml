@@ -1726,16 +1726,16 @@ window.renderStars = function(rolls, containerId) {
        div.className = 'die-face';
        
        if(val >= critVal) {
-           div.innerText = "💥"; // Crítico
+           div.innerText = "★"; // Crítico
            div.style.textShadow = "0 0 10px var(--gold)";
            div.style.color = "var(--gold)";
            div.style.borderColor = "var(--gold)";
        } else if (val >= hitVal) {
-           div.innerText = "🎯"; // Hit
+           div.innerText = "★"; // Hit
            div.style.color = "#fff";
            div.style.borderColor = "#fff";
        } else {
-           div.innerText = "❌"; // Fallo
+           div.innerText = "✕"; // Fallo
            div.style.opacity = "0.5";
            div.style.borderColor = "#555";
        }
@@ -2079,6 +2079,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
