@@ -515,7 +515,7 @@
         gunner:  { name:"Artillero", cost:10, modHP:1, modA:0, modHit:0, keywords: ["HEAVY_INFANTRY", "GRENADIER"] }
     },
     weapons: {
-        lasgun: { name:"Lasgun", type:"Ranged", cost:0, A:4, D:2, traits: [] },
+        lasgun: { name:"Lasgun", type:"Ranged", cost:0, A:4, D:2, traits: ["BALANCED"] },
         sniper: { name:"Sniper", type:"Ranged", cost:5, A:4, D:3, traits: ["HEAVY", "SILENT", "MORTAL_1"] },
         plasma: { name:"Plasma", type:"Ranged", cost:10, A:4, D:5, traits: ["HOT", "AP_1"] },
         knife:  { name:"Cuchillo", type:"Melee", cost:0, A:3, D:3, traits: ["BALANCED"] },
@@ -2079,6 +2079,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
