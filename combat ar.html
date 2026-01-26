@@ -1643,6 +1643,101 @@ function renderEditorSquad() {
     }
 };
 
+// --- FUNCIONES VISUALES DE DADOS (HELPER FUNCTIONS) ---
+
+window.renderDiceFaces = function(rolls, containerId, interactive) {
+    const container = document.getElementById(containerId); 
+    if(!container) return;
+    
+    container.innerHTML = '';
+    const faces = ['?', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+    
+    rolls.forEach((val, index) => {
+        let div = document.createElement('div'); 
+        div.className = 'die-face'; 
+        div.innerText = faces[val] || '?';
+        
+        // Animación de entrada suave
+        div.style.animation = "popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+
+        // Lógica de interactividad (para Rerolls)
+        if (interactive && typeof canReroll !== 'undefined' && canReroll) {
+            div.style.cursor = 'pointer';
+            div.onclick = (e) => toggleDieSelection(index, e);
+            
+            // Si ya estaba seleccionado (al repintar), mantener la clase
+            if (typeof selectedIndices !== 'undefined' && selectedIndices.includes(index)) {
+                div.classList.add('selected');
+            }
+        } else {
+            div.classList.add('locked'); // Visualmente no clickeable
+        }
+        
+        container.appendChild(div);
+    });
+};
+
+// Función necesaria para seleccionar dados para Re-Roll
+window.toggleDieSelection = function(index, event) {
+    // Asegurarnos que la variable global existe
+    if (typeof selectedIndices === 'undefined') window.selectedIndices = [];
+    
+    if (!canReroll) return;
+
+    const arrIdx = selectedIndices.indexOf(index);
+    if (arrIdx > -1) {
+        // Deseleccionar
+        selectedIndices.splice(arrIdx, 1); 
+        event.target.classList.remove('selected');
+    } else {
+        // Seleccionar
+        selectedIndices.push(index); 
+        event.target.classList.add('selected');
+    }
+    
+    // Mostrar/Ocultar botón de confirmar reroll si hay dados seleccionados
+    // Intentamos buscar ambos botones (ataque o defensa)
+    const btnAtk = document.getElementById('btn-reroll');
+    const btnDef = document.getElementById('btn-reroll-def');
+    
+    if(btnAtk && btnAtk.style.display !== 'none') {
+        // Podrías cambiar el texto o color si hay seleccionados
+    }
+};
+
+// Función para mostrar resultados finales (Estrellas/Explosiones)
+// Úsala en confirmAttack / confirmDefense
+window.renderStars = function(rolls, containerId) {
+    const container = document.getElementById(containerId);
+    if(!container) return;
+    container.innerHTML = '';
+    
+    // Usamos los stats guardados o valores por defecto
+    const critVal = (typeof activeCombatStats !== 'undefined') ? activeCombatStats.critVal : 6;
+    const hitVal = (typeof activeCombatStats !== 'undefined') ? activeCombatStats.hitVal : 4;
+
+    rolls.forEach(val => {
+       let div = document.createElement('div');
+       div.className = 'die-face';
+       
+       if(val >= critVal) {
+           div.innerText = "💥"; // Crítico
+           div.style.textShadow = "0 0 10px var(--gold)";
+           div.style.color = "var(--gold)";
+           div.style.borderColor = "var(--gold)";
+       } else if (val >= hitVal) {
+           div.innerText = "🎯"; // Hit
+           div.style.color = "#fff";
+           div.style.borderColor = "#fff";
+       } else {
+           div.innerText = "❌"; // Fallo
+           div.style.opacity = "0.5";
+           div.style.borderColor = "#555";
+       }
+       container.appendChild(div);
+    });
+};
+    
     function toggleDieSelection(index, event) {
         if(!canReroll) return;
         const parentId = event.target.parentElement.id; 
@@ -1979,6 +2074,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
