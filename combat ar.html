@@ -115,6 +115,11 @@
         .die-face.selected { color: #000; background: var(--gold); border-color: #fff; transform: scale(1.1); box-shadow: 0 0 10px var(--gold); }
         .die-face.locked { pointer-events: none; opacity: 0.7; }
 
+        @keyframes popIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
         .d-icon { font-size: 1.8rem; animation: popIn 0.3s ease; display: inline-block; width: 40px; text-align: center; }
         .star-gold { color: #ffd700; text-shadow: 0 0 8px #ffd700; }
         .star-blue { color: #00ccff; text-shadow: 0 0 5px #00ccff; }
@@ -350,7 +355,45 @@
         <button class="btn" onclick="openForge()" style="background:#222; border:1px solid var(--gold); color:var(--gold); margin-bottom:15px;">🛠️ CREAR ESCUADRA</button>
 
         <div class="box">
-            <textarea id="json-input" placeholder='PEGAR JSON O USAR CREADOR'></textarea>
+            <textarea id="json-input" placeholder='{
+  "squad": [
+    {
+      "id": 1769387611157,
+      "name": "Operativo 1",
+      "cost": 5,
+      "base": "25mm",
+      "keywords": [
+        "IMPERIUM",
+        "ASTRA_MILITARUM"
+      ],
+      "stats": {
+        "hp": 8,
+        "sv": "5+",
+        "r_hit_val": 4,
+        "m_hit_val": 4
+      },
+      "weapons": [
+        {
+          "name": "Lasgun",
+          "type": "RANGED",
+          "atk": 4,
+          "hit": 4,
+          "dmg": 2,
+          "traits": []
+        },
+        {
+          "name": "Cuchillo",
+          "type": "MELEE",
+          "atk": 3,
+          "hit": 4,
+          "dmg": 3,
+          "traits": []
+        }
+      ],
+      "gear": "Nada"
+    }
+  ]
+}'></textarea>
         </div>
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem; color:#888;">CONFIGURACIÓN DE PARTIDA</div>
@@ -513,7 +556,7 @@
         lasgun: { name:"Lasgun", type:"Ranged", cost:0, A:4, D:2, traits: [] },
         sniper: { name:"Sniper", type:"Ranged", cost:5, A:4, D:3, traits: ["HEAVY", "SILENT", "MORTAL_1"] },
         plasma: { name:"Plasma", type:"Ranged", cost:10, A:4, D:5, traits: ["HOT", "AP_1"] },
-        knife:  { name:"Cuchillo", type:"Melee", cost:0, A:3, D:3, traits: [] },
+        knife:  { name:"Cuchillo", type:"Melee", cost:0, A:3, D:3, traits: ["BALANCED"] },
         sword:  { name:"Espada Energía", type:"Melee", cost:5, A:4, D:5, traits: ["LETHAL_5", "RENDING"] }
     },
     gear: {
@@ -2074,6 +2117,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
