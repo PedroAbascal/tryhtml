@@ -263,6 +263,119 @@
         }
 
 
+        /* --- HUD DE COMANDOS (BURBUJA) --- */
+        #cmd-hud {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%); /* Centrado vertical */
+            z-index: 900;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding-left: 5px;
+        }
+        
+        /* La Burbuja Principal */
+        .cmd-bubble {
+            width: 50px;
+            height: 50px;
+            background: #000;
+            border: 2px solid var(--gold);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px var(--gold);
+            cursor: pointer;
+            transition: 0.3s;
+            z-index: 902;
+        }
+        .cmd-bubble:active { transform: scale(0.9); }
+        .cmd-bubble span { font-weight: bold; color: var(--gold); font-size: 1.2rem; }
+        .cmd-bubble small { font-size: 0.5rem; color: #fff; }
+        
+        /* Barra de Iconos (Desplegable) */
+        #cmd-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(0, 10, 20, 0.9);
+            border: 1px solid #333;
+            padding: 8px;
+            border-radius: 8px;
+            backdrop-filter: blur(4px);
+            
+            /* Animación de entrada */
+            transform: translateX(-100px);
+            opacity: 0;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none; /* No clickeable cuando está oculto */
+            position: absolute;
+            left: 60px; /* Al lado de la burbuja */
+            top: 0;
+        }
+        
+        #cmd-bar.open {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        /* Iconos de Habilidades */
+        .ploy-icon {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #444;
+            background: #111;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            border-radius: 4px;
+            cursor: default;
+            transition: 0.2s;
+        }
+        
+        /* Estado: Disponible (Tienes CP) */
+        .ploy-icon.affordable {
+            border-color: var(--c);
+            color: var(--c);
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0, 242, 255, 0.2);
+        }
+        .ploy-icon.affordable:hover { background: rgba(0, 242, 255, 0.2); }
+        .ploy-icon.selected { background: var(--c); color: #000; box-shadow: 0 0 10px var(--c); }
+        
+        /* Estado: Caro (No tienes CP pero es válida) */
+        .ploy-icon.expensive {
+            border-color: var(--r);
+            color: var(--r);
+            opacity: 0.5;
+        }
+        
+        /* Panel de Detalles (Descripción) */
+        #cmd-details {
+            position: absolute;
+            left: 120px; /* A la derecha de la barra */
+            top: 0;
+            width: 200px;
+            background: #000;
+            border: 1px solid var(--c);
+            padding: 10px;
+            font-size: 0.75rem;
+            color: #fff;
+            display: none; /* Oculto por defecto */
+            border-radius: 4px;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+            z-index: 905;
+        }
+        .cmd-title { color: var(--gold); font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid #333; }
+        .cmd-desc { margin-bottom: 10px; color: #ccc; }
+        .cmd-cost { font-size: 0.7rem; color: #888; margin-bottom: 10px; }
+
         
     </style>
 </head>
@@ -469,8 +582,6 @@
                 <button id="btn-apply-dmg" class="btn" style="background:var(--r); color:#fff; display:none;" onclick="applyCombatResult()">APLICAR DAÑO</button>
                 <button id="btn-cancel-combat" class="btn" style="background:#444;" onclick="cancelCombat()">CANCELAR</button>
                 <button id="btn-close-combat" class="btn" style="display:none;" onclick="endCombatTurn()">TERMINAR</button>
-
-                <div id="command-modal" class="screen hidden" style="background:rgba(0,0,0,0.9); z-index:100; justify-content:center;">
                 <h2 style="color:var(--gold); text-align:center;">HABILIDADES DE MANDO</h2>
                 <div id="cp-modal-display" style="text-align:center; margin-bottom:20px; font-size:1.5rem;">CP DISPONIBLES: 0</div>
                 
@@ -493,10 +604,29 @@
                     <button class="btn" style="background:#333; margin-top:20px;" onclick="toggleCommandMenu()">CERRAR</button>
                 </div>
             </div>
-            
-            <button id="btn-cmd" class="btn" style="background:none; border:1px solid var(--gold); color:var(--gold); width:auto; margin:5px auto;" onclick="toggleCommandMenu()">USAR COMANDO</button>
             </div>
         </div>
+   
+        <div id="cmd-hud">
+        <div class="cmd-bubble" onclick="toggleCmdBar()">
+            <span id="bubble-cp-val">0</span>
+            <small>CP</small>
+        </div>
+    
+        <div id="cmd-bar">
+            </div>
+    
+        <div id="cmd-details">
+            <div id="cmd-det-title" class="cmd-title">NOMBRE</div>
+            <div id="cmd-det-cost" class="cmd-cost">COSTE: 1 CP</div>
+            <div id="cmd-det-desc" class="cmd-desc">Descripción...</div>
+            <div style="display:flex; gap:5px;">
+                <button class="btn btn-small" style="border-color:var(--g); color:var(--g);" onclick="confirmActivePloy()">ACTIVAR</button>
+                <button class="btn btn-small" style="border-color:var(--r); color:var(--r);" onclick="closeCmdDetails()">X</button>
+            </div>
+        </div>
+    </div>
+        
     </div>
 
 <script>
@@ -561,6 +691,40 @@
         "stealth": { name: "SIGILO",  icon: "👻", type: "PASSIVE" },
         "shield":  { name: "ESCUDO",  icon: "🔵", type: "PASSIVE" }
     };
+
+    // --- BASE DE DATOS DE HABILIDADES (PLOYS) ---
+    const PLOYS_DB = {
+        'RUSH': { 
+            name: "AVANCE RÁPIDO", 
+            cost: 1, 
+            icon: "🏃", 
+            desc: "Suma +2\" al movimiento de esta unidad.",
+            phase: 1 // Solo Fase Movimiento
+        },
+        'SHOOT_HARD': { 
+            name: "FUEGO CONCENTRADO", 
+            cost: 1, 
+            icon: "🔥", 
+            desc: "Tus armas obtienen el rasgo 'LETHAL 5+' este turno.",
+            phase: 2 // Solo Fase Acciones
+        },
+        'TAKE_COVER': { 
+            name: "¡A CUBIERTO!", 
+            cost: 1, 
+            icon: "🛡️", 
+            desc: "Si estás en cobertura, un éxito normal de defensa se vuelve crítico.",
+            phase: 3 // Resolución/Defensa
+        },
+        'REROLL': { 
+            name: "REPETICIÓN TÁCTICA", 
+            cost: 1, 
+            icon: "🎲", 
+            desc: "Repite un dado de ataque o defensa cualquiera.",
+            phase: 'ANY' // Especial, se gestiona en combate
+        }
+    };
+    
+    let selectedPloyId = null; // Cuál estás mirando
     
     const BROKER = "broker.hivemq.com"; const PORT = 8884; 
     const SECRET_POOL = ["ASESINATO", "INFILTRACION", "SEGURIDAD", "RECONOCIMIENTO"];
@@ -1786,6 +1950,162 @@ window.renderStars = function(rolls, containerId) {
         }
     }
 
+
+    // --- GESTIÓN DE LA INTERFAZ DE COMANDOS ---
+    
+    // 1. Abrir/Cerrar la barra
+    window.toggleCmdBar = function() {
+        const bar = document.getElementById('cmd-bar');
+        const details = document.getElementById('cmd-details');
+        
+        // Si ya está abierto, cerrar todo
+        if (bar.classList.contains('open')) {
+            bar.classList.remove('open');
+            details.style.display = 'none';
+            return;
+        }
+    
+        // Si abrimos, renderizamos los iconos disponibles AHORA
+        renderPloyIcons();
+        bar.classList.add('open');
+    };
+    
+    // 2. Dibujar iconos según el contexto
+    function renderPloyIcons() {
+        const container = document.getElementById('cmd-bar');
+        container.innerHTML = "";
+        
+        // Filtramos qué ploys mostrar
+        for (let key in PLOYS_DB) {
+            const ploy = PLOYS_DB[key];
+            
+            // FILTRO DE CONTEXTO: ¿Es válido en esta fase?
+            // Si es 'ANY' siempre sale (ej: Reroll).
+            // Si no, debe coincidir con turnPhase.
+            // Además, REROLL suele ser reactivo, tal vez quieras mostrarlo siempre en combate.
+            let isVisible = false;
+            
+            if (ploy.phase === 'ANY') isVisible = true;
+            else if (ploy.phase === turnPhase) isVisible = true;
+            
+            // Si no es mi turno, generalmente solo puedo usar defensivos o rerolls
+            if (gameState !== 'MY_TURN' && key !== 'TAKE_COVER' && key !== 'REROLL') isVisible = false;
+    
+            if (!isVisible) continue;
+    
+            // Crear elemento
+            const div = document.createElement('div');
+            div.className = "ploy-icon";
+            div.innerText = ploy.icon;
+            
+            // Estado: ¿Me alcanza el dinero?
+            if (myCP >= ploy.cost) {
+                div.classList.add('affordable');
+                div.onclick = () => selectPloy(key, div);
+            } else {
+                div.classList.add('expensive');
+                // Opcional: Permitir click para ver qué hace aunque no puedas pagarlo
+                 div.onclick = () => selectPloy(key, div);
+            }
+            
+            container.appendChild(div);
+        }
+        
+        // Mensaje si no hay nada disponible
+        if (container.children.length === 0) {
+            container.innerHTML = "<div style='font-size:0.5rem; color:#555; padding:2px;'>N/A</div>";
+        }
+    }
+    
+    // 3. Mostrar detalles al hacer clic en icono
+    window.selectPloy = function(id, element) {
+        // Quitar selección visual previa
+        document.querySelectorAll('.ploy-icon').forEach(e => e.classList.remove('selected'));
+        element.classList.add('selected');
+        
+        selectedPloyId = id;
+        const ploy = PLOYS_DB[id];
+        const details = document.getElementById('cmd-details');
+        
+        // Llenar datos
+        document.getElementById('cmd-det-title').innerText = ploy.name;
+        document.getElementById('cmd-det-cost').innerText = `COSTE: ${ploy.cost} CP`;
+        
+        // Validar color del coste en el detalle
+        const costLabel = document.getElementById('cmd-det-cost');
+        if(myCP >= ploy.cost) costLabel.style.color = "var(--g)";
+        else costLabel.style.color = "var(--r)";
+    
+        document.getElementById('cmd-det-desc').innerText = ploy.desc;
+        
+        // Mostrar panel
+        details.style.display = 'block';
+    };
+    
+    window.closeCmdDetails = function() {
+        document.getElementById('cmd-details').style.display = 'none';
+        document.querySelectorAll('.ploy-icon').forEach(e => e.classList.remove('selected'));
+        selectedPloyId = null;
+    };
+    
+    // 4. Activar la Habilidad
+    window.confirmActivePloy = function() {
+        if (!selectedPloyId) return;
+        const ploy = PLOYS_DB[selectedPloyId];
+    
+        if (myCP < ploy.cost) {
+            log("¡CP INSUFICIENTES!", "DANGER");
+            return;
+        }
+    
+        // A. Pagar
+        myCP -= ploy.cost;
+        updateCPUI(); // Refrescar burbuja
+        
+        // B. Activar Efecto Lógico
+        // Usamos el objeto global activePloys que creamos antes
+        if (typeof activePloys === 'undefined') window.activePloys = {};
+        activePloys[selectedPloyId] = true;
+    
+        // C. Feedback y Cierre
+        log(`>> COMANDO: ${ploy.name}`, "CMD");
+        publish({type:'CHAT', msg: `Activa Estratagema: ${ploy.name}`});
+        
+        // Efectos inmediatos si los hay (ej: animación o sonido)
+        toggleCmdBar(); // Cierra todo
+        
+        // IMPORTANTE: Si es Reroll, habilitar la UI de dados si estamos en combate
+        if (selectedPloyId === 'REROLL' && typeof canReroll !== 'undefined') {
+            window.canReroll = true;
+            // Intentar actualizar botones si existen
+            const btnAtk = document.getElementById('btn-reroll');
+            const btnDef = document.getElementById('btn-reroll-def');
+            if(btnAtk) { btnAtk.style.display = 'inline-block'; btnAtk.innerText = "USAR COMANDO"; }
+            if(btnDef) { btnDef.style.display = 'inline-block'; btnDef.innerText = "USAR COMANDO"; }
+        }
+    };
+    
+    // ACTUALIZAR INTERFAZ DE CP (Modificar la existente para apuntar a la burbuja)
+    window.updateCPUI = function() {
+        // Actualizar texto dentro de la burbuja
+        const bubbleVal = document.getElementById('bubble-cp-val');
+        if(bubbleVal) bubbleVal.innerText = myCP;
+        
+        // Cambiar color del borde según si tienes algo (Visual feedback)
+        const bubble = document.querySelector('.cmd-bubble');
+        if(bubble) {
+            if(myCP > 0) {
+                bubble.style.borderColor = "var(--gold)";
+                bubble.style.boxShadow = "0 0 10px var(--gold)";
+            } else {
+                bubble.style.borderColor = "#555";
+                bubble.style.boxShadow = "none";
+            }
+        }
+    };
+
+    
+
     function returnToLobby() {
         if(!isGameOver) return;
         if(client) { try{ client.disconnect(); } catch(e){} client=null; }
@@ -2079,6 +2399,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
