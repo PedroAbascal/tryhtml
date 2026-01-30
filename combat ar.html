@@ -379,6 +379,110 @@
         .cmd-desc { margin-bottom: 10px; color: #ccc; }
         .cmd-cost { font-size: 0.7rem; color: #888; margin-bottom: 10px; }
 
+
+        /* --- HUD DE ACCIONES (BURBUJA DERECHA) --- */
+        #act-hud {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 1500; /* Encima del juego, debajo de alertas */
+            display: flex;
+            flex-direction: column-reverse; /* Se despliega hacia arriba */
+            align-items: flex-end; /* Alineado a la derecha */
+            gap: 10px;
+        }
+        
+        /* Burbuja Principal (Trigger) */
+        .act-bubble {
+            width: 60px;
+            height: 60px;
+            background: rgba(0, 10, 20, 0.9);
+            border: 2px solid var(--c);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--c);
+            box-shadow: 0 0 10px var(--c);
+            cursor: pointer;
+            transition: 0.3s;
+            z-index: 1502;
+            backdrop-filter: blur(4px);
+        }
+        .act-bubble:active { transform: scale(0.9); }
+        .act-bubble.pulse { animation: pulseBorder 1.5s infinite; }
+        
+        @keyframes pulseBorder {
+            0% { box-shadow: 0 0 5px var(--c); }
+            50% { box-shadow: 0 0 20px var(--c); }
+            100% { box-shadow: 0 0 5px var(--c); }
+        }
+        
+        /* Barra de Botones (Desplegable) */
+        #act-bar {
+            display: flex;
+            flex-direction: column-reverse; /* Los botones suben */
+            gap: 8px;
+            padding-bottom: 10px;
+            
+            /* Animación */
+            transform: translateY(20px);
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        #act-bar.open {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        /* Botones de Acción Individuales */
+        .act-btn {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end; /* Texto a la izquierda del icono */
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .act-btn-icon {
+            width: 45px;
+            height: 45px;
+            background: #111;
+            border: 1px solid #555;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #fff;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+        }
+        
+        .act-btn-label {
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0; /* Oculto hasta hover */
+            transform: translateX(10px);
+            transition: 0.2s;
+        }
+        
+        .act-btn:hover .act-btn-label { opacity: 1; transform: translateX(0); }
+        .act-btn:hover .act-btn-icon { border-color: #fff; transform: scale(1.1); }
+        
+        /* Estilos específicos por tipo */
+        .act-btn.combat .act-btn-icon { border-color: var(--r); color: var(--r); }
+        .act-btn.move .act-btn-icon { border-color: var(--gold); color: var(--gold); }
+        .act-btn.mission .act-btn-icon { border-color: var(--g); color: var(--g); }
         
     </style>
 </head>
@@ -585,8 +689,6 @@
                 <button id="btn-apply-dmg" class="btn" style="background:var(--r); color:#fff; display:none;" onclick="applyCombatResult()">APLICAR DAÑO</button>
                 <button id="btn-cancel-combat" class="btn" style="background:#444;" onclick="cancelCombat()">CANCELAR</button>
                 <button id="btn-close-combat" class="btn" style="display:none;" onclick="endCombatTurn()">TERMINAR</button>
-            
-                    <button class="btn" style="background:#333; margin-top:20px;" onclick="toggleCommandMenu()">CERRAR</button>
                 </div>
             </div>
             </div>
@@ -610,7 +712,15 @@
                 <button class="btn btn-small" style="border-color:var(--r); color:var(--r);" onclick="closeCmdDetails()">X</button>
             </div>
         </div>
-    </div>
+    </div> 
+
+    <div id="act-hud" style="display:none;"> <div id="act-bar">
+                </div>
+        
+            <div class="act-bubble" id="main-act-bubble" onclick="toggleActionBar()">
+                <span id="act-bubble-icon">⚡</span>
+            </div>
+        </div>
         
     </div>
 
@@ -1012,6 +1122,109 @@ function renderEditorSquad() {
         const modal = document.getElementById('command-modal');
         modal.classList.toggle('hidden');
         updateCPUI();
+    }
+
+    // --- GESTIÓN DEL HUD DE ACCIONES ---
+
+    // 1. Mostrar/Ocultar la barra
+    window.toggleActionBar = function() {
+        const bar = document.getElementById('act-bar');
+        if(!bar) return;
+        bar.classList.toggle('open');
+    };
+    
+    // 2. Función Principal: Actualiza qué botones hay en la burbuja según la FASE
+    // Reemplaza o llama a esto dentro de tu 'updatePhaseUI' original
+    window.renderActionBubble = function() {
+        const hud = document.getElementById('act-hud');
+        const bar = document.getElementById('act-bar');
+        const bubbleIcon = document.getElementById('act-bubble-icon');
+        const bubble = document.getElementById('main-act-bubble');
+        
+        // Limpiar barra
+        bar.innerHTML = "";
+        
+        // Si no es mi turno, ocultar todo
+        if (gameState !== 'MY_TURN') {
+            hud.style.display = 'none';
+            return;
+        } else {
+            hud.style.display = 'flex';
+        }
+    
+        const me = myUnits[myIdx];
+    
+        // --- FASE 1: MOVIMIENTO ---
+        if (turnPhase === 1) {
+            bubbleIcon.innerText = "🦶"; // Icono de Pie/Mover
+            bubble.classList.add('pulse'); // Llamar la atención
+            
+            // Botón: FIN MOVIMIENTO (Confirmar)
+            createActionButton("FIN MOVIMIENTO", "✅", "move", () => {
+                endMovementPhase();
+                toggleActionBar(); // Cerrar al usar
+            });
+            
+            // Aquí podrías poner "CANCELAR MOVIMIENTO" si tuvieras esa lógica
+        } 
+        
+        // --- FASE 2: ACCIONES ---
+        else if (turnPhase === 2) {
+            bubbleIcon.innerText = "⚡"; // Rayo de Acción
+            bubble.classList.remove('pulse');
+    
+            // 1. ACCIÓN DE COMBATE (Depende de Modo Open/Hidden y Arma)
+            // Solo si NO ha gastado todas sus acciones
+            if (me.activations < 2) {
+                
+                // Lógica: Si está HIDDEN, no puede disparar, pero quizás pelear melee si le cargan (en tu turno, ofensivo, requiere OPEN normalmente para disparar)
+                if (me.mode === 'open') {
+                    if (combatMode === 'ranged') {
+                         createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); toggleActionBar(); });
+                    } else {
+                         createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); toggleActionBar(); });
+                    }
+                } else {
+                    // En modo Hidden, quizás solo melee o nada?
+                    // Si quieres permitir Melee en hidden (emboscada):
+                    createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); toggleActionBar(); });
+                    // Mensaje visual para Disparo:
+                    // createActionButton("REQ. ENGAGE", "🚫", "disabled", () => log("Necesitas orden ENGAGE para disparar", "warning"));
+                }
+    
+                // 2. DASH (Mover extra)
+                createActionButton("DASH (3\")", "💨", "move", () => { performOp('DASH'); toggleActionBar(); });
+    
+                // 3. MISIÓN / ACCIÓN TÁCTICA
+                createActionButton("MISIÓN / OBJ", "🚩", "mission", () => { performOp('MISION'); toggleActionBar(); });
+            }
+    
+            // 4. PASAR TURNO (Siempre disponible)
+            createActionButton("PASAR TURNO", "⏭️", "normal", () => { performOp('PASAR'); toggleActionBar(); });
+        } 
+        
+        // --- FASE 3: RESOLUCIÓN ---
+        else if (turnPhase === 3) {
+            bubbleIcon.innerText = "🎲"; 
+            // Generalmente aquí no hay botones de acción, se maneja con el Overlay de Dados
+            // Pero podrías poner un botón de "Cancelar" o "Status"
+        }
+    };
+    
+    // Helper para crear botones HTML
+    function createActionButton(label, icon, type, onClickFunc) {
+        const bar = document.getElementById('act-bar');
+        
+        const div = document.createElement('div');
+        div.className = `act-btn ${type}`;
+        div.onclick = onClickFunc;
+        
+        div.innerHTML = `
+            <span class="act-btn-label">${label}</span>
+            <div class="act-btn-icon">${icon}</div>
+        `;
+        
+        bar.appendChild(div);
     }
     
     // --- GAME INIT ---
@@ -2335,10 +2548,17 @@ window.renderStars = function(rolls, containerId) {
     
     // Función central para actualizar qué botones se ven según la fase
     window.updatePhaseUI = function() {
-        const btnEndMove = document.getElementById('btn-end-move');
-        const phaseDisplay = document.getElementById('phase-display');
-        const actionPanel = document.getElementById('combat-actions');
-        const opsPanel = document.getElementById('ops-actions');
+       const oldPanel1 = document.getElementById('combat-actions');
+        const oldPanel2 = document.getElementById('ops-actions');
+        const oldBtn = document.getElementById('btn-end-move');
+        
+        if(oldPanel1) oldPanel1.style.display = 'none';
+        if(oldPanel2) oldPanel2.style.display = 'none';
+        if(oldBtn) oldBtn.style.display = 'none';
+    
+    
+    // 4. Renderizar Burbuja de Ploys (para asegurar que se vea si la ocultamos en lobby)
+    if(typeof toggleCommandHUD === 'function') toggleCommandHUD(true);
         
         // Actualizar texto de fase
         if (gameState === 'MY_TURN') {
@@ -2355,7 +2575,8 @@ window.renderStars = function(rolls, containerId) {
         opsPanel.style.display = 'none';
     
         if (gameState !== 'MY_TURN') return;
-    
+         // 3. RENDERIZAR NUEVA BURBUJA DE ACCIONES
+        renderActionBubble();
         // Lógica de visualización por fase
         if (turnPhase === 1) {
             // FASE 1: Solo mostrar botón de terminar movimiento
@@ -2401,6 +2622,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
