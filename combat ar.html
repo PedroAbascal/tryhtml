@@ -855,6 +855,8 @@
         document.getElementById('lobby-screen').classList.add('hidden');
         document.getElementById('creator-screen').classList.remove('hidden');
         toggleCommandHUD(false);
+        toggleActionBar(false);
+        
         initForgeSelects();
         renderEditorSquad();
     }
@@ -2450,6 +2452,7 @@ window.renderStars = function(rolls, containerId) {
                 // Limpiar marcadores de listo
                 document.querySelectorAll('.ready-marker').forEach(e => e.classList.remove('show'));
                 toggleCommandHUD(true);
+                toggleActionBar(true);
                 
                 // --- ASIGNAR CP ---
                 // Si gané iniciativa (iWonInitiative es true), NO voy segundo (false) -> 3 CP
@@ -2548,52 +2551,38 @@ window.renderStars = function(rolls, containerId) {
     
     // Función central para actualizar qué botones se ven según la fase
     window.updatePhaseUI = function() {
-       const oldPanel1 = document.getElementById('combat-actions');
-        const oldPanel2 = document.getElementById('ops-actions');
-        const oldBtn = document.getElementById('btn-end-move');
-        
-        if(oldPanel1) oldPanel1.style.display = 'none';
-        if(oldPanel2) oldPanel2.style.display = 'none';
-        if(oldBtn) oldBtn.style.display = 'none';
-    
-    
-    // 4. Renderizar Burbuja de Ploys (para asegurar que se vea si la ocultamos en lobby)
-    if(typeof toggleCommandHUD === 'function') toggleCommandHUD(true);
-        
-        // Actualizar texto de fase
+    // 1. Actualizar el Texto de la Fase (Arriba)
+    const phaseDisplay = document.getElementById('phase-display');
+    if (phaseDisplay) {
         if (gameState === 'MY_TURN') {
-            phaseDisplay.innerText = PHASE_NAMES[turnPhase];
+            const names = { 1: "FASE 1: MOVIMIENTO", 2: "FASE 2: ACCIONES", 3: "FASE 3: RESOLUCIÓN" };
+            phaseDisplay.innerText = names[turnPhase] || "TU TURNO";
             phaseDisplay.style.color = (turnPhase === 3) ? "var(--r)" : "var(--c)";
         } else {
             phaseDisplay.innerText = "TURNO RIVAL";
             phaseDisplay.style.color = "#555";
         }
+    }
+
+    // 2. LIMPIEZA: Ocultar forzosamente los paneles viejos del HTML
+    // (Esto reemplaza el bloque if/else que me mostraste)
+    const oldBtnEnd = document.getElementById('btn-end-move');
+    const oldCombatPanel = document.getElementById('combat-actions');
+    const oldOpsPanel = document.getElementById('ops-actions');
+
+    if (oldBtnEnd) oldBtnEnd.style.display = 'none';
+    if (oldCombatPanel) oldCombatPanel.style.display = 'none';
+    if (oldOpsPanel) oldOpsPanel.style.display = 'none';
+
+    // 3. RENDERIZAR LA NUEVA BURBUJA
+    // Esta función ya tiene el "if (turnPhase === 1)... else if (turnPhase === 2)..." adentro.
+    renderActionBubble();
     
-        // Ocultar todo por defecto
-        btnEndMove.style.display = 'none';
-        actionPanel.style.display = 'none';
-        opsPanel.style.display = 'none';
-    
-        if (gameState !== 'MY_TURN') return;
-         // 3. RENDERIZAR NUEVA BURBUJA DE ACCIONES
-        renderActionBubble();
-        // Lógica de visualización por fase
-        if (turnPhase === 1) {
-            // FASE 1: Solo mostrar botón de terminar movimiento
-            btnEndMove.style.display = 'block';
-            
-        } else if (turnPhase === 2) {
-            // FASE 2: Mostrar paneles de acción según el modo (Open/Hidden)
-            // Usamos la lógica existente de tu unidad
-            const me = myUnits[myIdx];
-            if (document.getElementById('btn-mode-hidden').classList.contains('selected')) {
-                 opsPanel.style.display = 'grid'; // Acciones tácticas (Dash, Misión)
-            } else {
-                 actionPanel.style.display = 'flex'; // Acciones de combate
-            }
-        }
-        // FASE 3: Generalmente la UI de combate (dados) o logs toman el control
-    };
+    // 4. Asegurar que la burbuja de Comandos (CP) también se vea si es mi turno
+    if(typeof toggleCommandHUD === 'function') {
+        toggleCommandHUD(gameState === 'MY_TURN' || gameState === 'ENEMY_TURN'); 
+    }
+};
 
 
     // Verifica si la unidad tiene un keyword (Ej: hasKeyword(me, 'LEADER'))
@@ -2622,6 +2611,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
