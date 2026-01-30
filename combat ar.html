@@ -1854,180 +1854,190 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
     }
 
     // --- UTILS ---
-   window.updateHUD = function() {
-    if(!myUnits.length) return;
+ window.updateHUD = function() {
+    // 0. SEGURIDAD: Si no hay unidades, no hacemos nada
+    if(!myUnits || !myUnits.length || myIdx < 0) return;
     
-    // Auto-selección si la unidad actual está bloqueada
-    if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit();
+    // Auto-selección si la unidad actual está bloqueada (Opcional, según tu lógica de juego)
+    if (gameState === 'MY_TURN' && typeof canSelectUnit === 'function' && !canSelectUnit(myIdx)) {
+        if(typeof autoSelectValidUnit === 'function') autoSelectValidUnit();
+    }
     
     const me = myUnits[myIdx]; 
     const en = enemyUnits[enIdx];
     
-    // 1. CABECERA Y TARJETA
-    document.getElementById('my-name').innerText = me.name;
-    const card = document.getElementById('my-card'); card.className = "card my";
-    if(me.activations === 1) card.classList.add('fatigued');
-    if(me.activations >= 2) card.classList.add('exhausted');
-    if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) card.classList.add('locked');
+    // ==========================================================
+    // 1. ACTUALIZAR LA TARJETA DEL JUGADOR (VISUAL)
+    // ==========================================================
     
+    // Nombre y Estado
+    const nameEl = document.getElementById('my-name');
+    if(nameEl) nameEl.innerText = me.name;
+
+    const card = document.getElementById('my-card');
+    if(card) {
+        card.className = "card my"; // Reset
+        if(me.activations === 1) card.classList.add('fatigued');
+        if(me.activations >= 2) card.classList.add('exhausted');
+        if (gameState === 'MY_TURN' && typeof canSelectUnit === 'function' && !canSelectUnit(myIdx)) {
+            card.classList.add('locked');
+        }
+    }
+    
+    // Texto de estado
     let statusText = "LISTO"; 
     if(me.activations === 1) statusText = "FATIGADO"; 
     if(me.activations === 2) statusText = "AGOTADO";
-    document.getElementById('my-status-text').innerText = statusText;
+    const statusEl = document.getElementById('my-status-text');
+    if(statusEl) statusEl.innerText = statusText;
     
     // Barra de Vida
-    if(globalHP[me.uid]) document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
-    
-    // 2. MODOS DE JUEGO (Open/Hidden)
-    document.getElementById('btn-mode-open').className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
-    document.getElementById('btn-mode-hidden').className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
-    
-    const combatPanel = document.getElementById('combat-actions');
-    const opsPanel = document.getElementById('ops-actions');
-    
-    // Iconos de botones según modo de combate seleccionado
-    document.getElementById('btn-combat-mode').innerHTML = combatMode === 'ranged' ? "<span>🔫</span>" : "<span>⚔️</span>";
-    document.getElementById('btn-act').innerHTML = combatMode === 'ranged' ? "<span>DISPARAR</span>" : "<span>GOLPEAR</span>";
-
-    if(me.mode === 'hidden') { 
-        combatPanel.style.display = 'none'; opsPanel.style.display = 'grid'; 
-    } else { 
-        opsPanel.style.display = 'none'; combatPanel.style.display = 'flex'; 
+    if(globalHP[me.uid]) {
+        const hpBar = document.getElementById('my-hp');
+        if(hpBar) hpBar.style.width = (globalHP[me.uid].c / globalHP[me.uid].m * 100) + "%";
     }
+    
+    // Toggles de Modo (Engage/Conceal) - Asumimos que están en la tarjeta
+    const btnOpen = document.getElementById('btn-mode-open');
+    if(btnOpen) btnOpen.className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
+    
+    const btnHidden = document.getElementById('btn-mode-hidden');
+    if(btnHidden) btnHidden.className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
 
-    // 3. STATS LATERALES (Resumen)
-    // Buscamos el mejor valor de hit para mostrar en el resumen
+    // ==========================================================
+    // 2. STATS LATERALES (Resumen rápido)
+    // ==========================================================
     const rWep = me.weapons.find(w => w.type === 'RANGED');
     const mWep = me.weapons.find(w => w.type === 'MELEE');
     
-    document.getElementById('my-r').innerText = rWep ? rWep.hit + "+" : "-";
-    document.getElementById('my-m').innerText = mWep ? mWep.hit + "+" : "-";
-    document.getElementById('my-sv').innerText = me.stats.sv;
+    const rEl = document.getElementById('my-r');
+    if(rEl) rEl.innerText = rWep ? rWep.hit + "+" : "-";
+    
+    const mEl = document.getElementById('my-m');
+    if(mEl) mEl.innerText = mWep ? mWep.hit + "+" : "-";
+    
+    const svEl = document.getElementById('my-sv');
+    if(svEl) svEl.innerText = me.stats.sv + "+";
 
     // ==========================================================
-    // 4. VISUALIZACIÓN DE TAGS Y ARMAS (LÓGICA NUEVA)
+    // 3. VISUALIZACIÓN DE ARMAS Y TAGS (Interactiva)
     // ==========================================================
     const tagContainer = document.getElementById('my-tags'); 
-    tagContainer.innerHTML = '';
+    if(tagContainer) {
+        tagContainer.innerHTML = ''; // Limpiar
 
-    // A. KEYWORDS DE UNIDAD (Etiquetas Azules)
-    if (me.keywords && me.keywords.length > 0) {
-        let kHtml = '<div style="margin-bottom:4px; display:flex; gap:2px; flex-wrap:wrap;">';
-        me.keywords.forEach(k => {
-            // Estilo "chip" pequeño
-            kHtml += `<span style="background:rgba(0,242,255,0.1); color:var(--c); border:1px solid var(--c); font-size:0.55rem; padding:1px 3px; border-radius:2px;">${k}</span>`;
-        });
-        kHtml += '</div>';
-        tagContainer.innerHTML += kHtml;
-    }
+        // A. KEYWORDS (Etiquetas Cyan)
+        if (me.keywords && me.keywords.length > 0) {
+            let kHtml = '<div style="margin-bottom:4px; display:flex; gap:2px; flex-wrap:wrap;">';
+            me.keywords.forEach(k => {
+                kHtml += `<span class="hud-tag unit">${k}</span>`;
+            });
+            kHtml += '</div>';
+            tagContainer.innerHTML += kHtml;
+        }
 
-    // B. LISTA DE ARMAS
-    if (me.weapons && me.weapons.length > 0) {
-        me.weapons.forEach((w, idx) => {
-            // Determinar estilo (Activo vs Inactivo)
-            let isActive = false;
-            let themeColor = "#555"; // Gris por defecto
-            let icon = "🗡️";
+        // B. LISTA DE ARMAS (Clickeables para cambiar modo)
+        if (me.weapons && me.weapons.length > 0) {
+            me.weapons.forEach((w) => {
+                let isActive = false;
+                let themeColor = "#444"; 
+                let icon = "🗡️";
 
-            if (w.type === 'RANGED') {
-                icon = "🔫";
-                if (combatMode === 'ranged') {
-                    isActive = true;
-                    themeColor = "var(--c)"; // Cyan
+                // Detectar si esta es el arma activa actual
+                if (w.type === 'RANGED') {
+                    icon = "🔫";
+                    if (combatMode === 'ranged') { isActive = true; themeColor = "var(--c)"; }
+                } else if (w.type === 'MELEE') {
+                    icon = "⚔️";
+                    if (combatMode === 'melee') { isActive = true; themeColor = "var(--gold)"; }
                 }
-            } else if (w.type === 'MELEE') {
-                icon = "⚔️";
-                if (combatMode === 'melee') {
-                    isActive = true;
-                    themeColor = "var(--gold)"; // Dorado
+
+                // Estilos
+                const borderStyle = isActive 
+                    ? `border:1px solid ${themeColor}; background:rgba(20,20,20,0.8); box-shadow: inset 0 0 5px ${themeColor}; color:#fff;`
+                    : `border:1px solid #333; color:#666; opacity:0.8;`;
+
+                // Crear elemento
+                const div = document.createElement('div');
+                div.className = "tag"; 
+                div.style.cssText = `width:98%; display:block; margin-bottom:4px; cursor:pointer; padding:4px; ${borderStyle}`;
+                
+                // --- LOGICA IMPORTANTE ---
+                // Al hacer click en el arma de la tarjeta, cambiamos el modo y refrescamos la burbuja
+                div.onclick = function() { 
+                    combatMode = (w.type === 'RANGED') ? 'ranged' : 'melee';
+                    // Forzamos actualización visual
+                    updateHUD(); 
+                };
+
+                // Traits del arma
+                let traitsHtml = '';
+                if (w.traits && w.traits.length > 0) {
+                    traitsHtml = '<div style="margin-top:2px; display:flex; gap:2px;">';
+                    w.traits.forEach(t => {
+                        traitsHtml += `<span class="hud-tag weapon">${t}</span>`;
+                    });
+                    traitsHtml += '</div>';
                 }
-            }
 
-            // Estilos CSS dinámicos
-            const borderStyle = isActive 
-                ? `border:1px solid ${themeColor}; background:rgba(${w.type==='RANGED'?'0,242,255':'255,204,0'}, 0.15); box-shadow: 0 0 5px ${themeColor}; color:#fff;`
-                : `border:1px solid #333; color:#666;`;
-
-            // Renderizar Traits del arma (Etiquetas rojas pequeñas)
-            let traitsHtml = '';
-            if (w.traits && w.traits.length > 0) {
-                traitsHtml = '<div style="margin-top:2px; display:flex; gap:2px;">';
-                w.traits.forEach(t => {
-                    traitsHtml += `<span style="font-size:0.5rem; background:#300; color:var(--r); border:1px solid var(--r); padding:0 2px;">${t}</span>`;
-                });
-                traitsHtml += '</div>';
-            }
-
-            // HTML Final de la caja del arma
-            // Nota: Agregamos un onclick para cambiar el modo de combate al hacer click en el arma
-            const div = document.createElement('div');
-            div.className = "tag"; // Clase base que ya tenías
-            div.style.cssText = `width:98%; display:block; margin-bottom:4px; cursor:pointer; transition:0.2s; ${borderStyle}`;
-            div.onclick = function() { 
-                // Al hacer click, cambiamos el modo global y refrescamos
-                combatMode = (w.type === 'RANGED') ? 'ranged' : 'melee';
-                renderActionBuble();
-                updateHUD();
-            };
-
-            div.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-weight:bold;">${icon} ${w.name}</span>
-                    <span style="font-family:monospace; font-size:0.65rem;">A:${w.atk} H:${w.hit}+ D:${w.dmg}</span>
-                </div>
-                ${traitsHtml}
-            `;
-            
-            tagContainer.appendChild(div);
-        });
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:bold; font-size:0.65rem;">${icon} ${w.name}</span>
+                        <span style="font-family:monospace; font-size:0.6rem;">A:${w.atk} H:${w.hit}+ D:${w.dmg}</span>
+                    </div>
+                    ${traitsHtml}
+                `;
+                
+                tagContainer.appendChild(div);
+            });
+        }
     }
 
-    // 5. EQUIPO / ITEMS (Legacy support + Active items)
-    // Si todavía usas 'mechanics' para items activos, lo mantenemos:
-    let showGearBtn = false; 
-    let gearBtnText = "ITEM";
-    
-    if (me.mechanics) {
-        me.mechanics.forEach(m => {
-            let css = m.type === 'ACTIVE' ? "tag active-gear" : "tag passive";
-            if(m.oneUse && me.gearUsed) css += " used";
-            else if(m.type === 'ACTIVE' && !me.gearUsed && gameState === 'MY_TURN') { 
-                showGearBtn = true; 
-                gearBtnText = m.name; 
-            }
-            // Solo dibujamos si no es un keyword que ya dibujamos arriba (evitar duplicados)
-            if (!me.keywords.includes(m.name)) {
-                tagContainer.innerHTML += `<span class="${css}" style="font-size:0.6rem; margin-right:2px;">${m.icon||'⚙️'} ${m.name}</span>`;
-            }
-        });
-    }
-
-    const btnGear = document.getElementById('btn-gear');
-    if(showGearBtn) { 
-        btnGear.style.display='block'; 
-        btnGear.querySelector('span').innerText = gearBtnText; 
-    } else { 
-        btnGear.style.display='none'; 
-    }
-
-    // 6. DATOS DEL ENEMIGO
+    // ==========================================================
+    // 4. DATOS DEL ENEMIGO
+    // ==========================================================
     if(en && globalHP[en.uid]) {
-        document.getElementById('enemy-name').innerText = en.name;
-        document.getElementById('enemy-hp').style.width = (globalHP[en.uid].c/globalHP[en.uid].m*100)+"%";
+        const enName = document.getElementById('enemy-name');
+        if(enName) enName.innerText = en.name;
+        
+        const enHp = document.getElementById('enemy-hp');
+        if(enHp) enHp.style.width = (globalHP[en.uid].c / globalHP[en.uid].m * 100) + "%";
     }
     
-    // Puntos y Rondas
-    document.getElementById('my-score').innerText = myVP;
-    document.getElementById('enemy-score').innerText = enemyVP;
-    document.getElementById('round-display').innerText = `RND ${currentRound}/${maxRounds}`;
+    // ==========================================================
+    // 5. MARCADORES GLOBALES (Top HUD)
+    // ==========================================================
+    const myScoreEl = document.getElementById('my-score');
+    if(myScoreEl) myScoreEl.innerText = myVP;
 
-    // Misión Secreta
+    const enScoreEl = document.getElementById('enemy-score');
+    if(enScoreEl) enScoreEl.innerText = enemyVP;
+
+    const rndEl = document.getElementById('round-display');
+    if(rndEl) rndEl.innerText = `RND ${currentRound}/${maxRounds}`;
+
+    // CP Display
+    const cpEl = document.getElementById('cp-display');
+    if(cpEl) cpEl.innerText = `CP: ${myCP}`;
+
+    // ==========================================================
+    // 6. SINCRONIZACIÓN FINAL
+    // ==========================================================
+    
+    // Misión Secreta (Botón superior)
     const btnSecret = document.getElementById('btn-claim-secret');
-    if (typeof secondaryActive !== 'undefined' && secondaryActive && !secretClaimed && gameState !== 'PLANNING') {
-        btnSecret.style.display = 'block';
-        btnSecret.innerText = `RECLAMAR: ${secretMission} (+2 PV)`;
-    } else if (btnSecret) { 
-        btnSecret.style.display = 'none'; 
+    if(btnSecret) {
+        if (typeof secondaryActive !== 'undefined' && secondaryActive && !secretClaimed && gameState !== 'PLANNING') {
+            btnSecret.style.display = 'block';
+            btnSecret.innerText = `RECLAMAR: ${secretMission} (+2 PV)`;
+        } else { 
+            btnSecret.style.display = 'none'; 
+        }
+    }
+
+    // ★ IMPORTANTE: Refrescar la Burbuja de Acciones para que coincida con la selección
+    if(typeof renderActionBubble === 'function') {
+        renderActionBubble();
     }
 };
 
@@ -2570,13 +2580,6 @@ window.renderStars = function(rolls, containerId) {
 
     // 2. LIMPIEZA: Ocultar forzosamente los paneles viejos del HTML
     // (Esto reemplaza el bloque if/else que me mostraste)
-    const oldBtnEnd = document.getElementById('btn-end-move');
-    const oldCombatPanel = document.getElementById('combat-actions');
-    const oldOpsPanel = document.getElementById('ops-actions');
-
-    if (oldBtnEnd) oldBtnEnd.style.display = 'none';
-    if (oldCombatPanel) oldCombatPanel.style.display = 'none';
-    if (oldOpsPanel) oldOpsPanel.style.display = 'none';
 
     // 3. RENDERIZAR LA NUEVA BURBUJA
     // Esta función ya tiene el "if (turnPhase === 1)... else if (turnPhase === 2)..." adentro.
@@ -2615,6 +2618,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
