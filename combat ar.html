@@ -485,6 +485,7 @@
 
         /* Contenedor general para posicionar */
         #gear-hud {
+            display: none;
             position: fixed;
             top: 70px; /* Ajústalo: Esto es cuán abajo está desde el techo */
             left: 10px;
@@ -1178,6 +1179,30 @@ function renderEditorSquad() {
         log(`=== NUEVA RONDA: ${myCP} CP GENERADOS ===`);
     };
 
+        // Función maestra para mostrar/ocultar la interfaz de combate
+    function toggleCombatHUD(show) {
+        const displayStyle = show ? 'flex' : 'none'; // Flex para que mantengan su alineación
+        
+        // 1. Burbuja de Comandos (CP/Ploys)
+        const cmdHud = document.getElementById('cmd-hud');
+        if (cmdHud) cmdHud.style.display = displayStyle;
+    
+        // 2. Burbuja de Acciones (Rayo)
+        const actHud = document.getElementById('act-hud');
+        if (actHud) actHud.style.display = displayStyle;
+    
+        // 3. NUEVA: Burbuja de Equipo (Mochila)
+        const gearHud = document.getElementById('gear-hud');
+        if (gearHud) gearHud.style.display = displayStyle;
+
+        if (typeof gearOpen !== 'undefined' && gearOpen) {
+        if (typeof renderGearBubble === 'function') {
+            renderGearBubble();
+        }
+    }
+};
+    }
+
     // --- GESTIÓN DE UI DE CP ---
     function updateCPUI() {
         document.getElementById('cp-display').innerText = "CP: " + myCP;
@@ -1426,7 +1451,8 @@ window.toggleGearHUD = function() {
             
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
-            assignSecretMission(); updateMissionDisplay(); updateHUD(); 
+            assignSecretMission(); updateMissionDisplay(); toggleCombatHUD(true); updateHUD(); 
+            
             navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>console.log("No AR"));
             startNetwork(code);
         } catch(e) { alert("ERROR DE DATOS: " + e.message); }
@@ -2522,7 +2548,7 @@ window.renderStars = function(rolls, containerId) {
         myVP = 0; enemyVP = 0; currentRound = 1;
         iAmReady = false; enemyIsReady = false;
         coverActive = false;
-        toggleCommandHUD(false)
+        toggleCombatHUD(false);
     }
 
     function triggerGameOver(resultText, colorStr, subText) {
@@ -2671,6 +2697,7 @@ window.renderStars = function(rolls, containerId) {
         document.getElementById('planning-controls').style.display='block'; 
         document.getElementById('turn-indicator').innerText='PLANIFICACIÓN'; 
         document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show')); 
+        
         updateHUD(); log(`INICIO RONDA ${currentRound}`); 
     }
     function cancelCombat() { publish({type:'COMBAT_SYNC', stage:'CANCEL'}); closeCombatOverlay(); }
@@ -2792,6 +2819,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
