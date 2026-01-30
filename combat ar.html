@@ -582,25 +582,7 @@
                 <button id="btn-apply-dmg" class="btn" style="background:var(--r); color:#fff; display:none;" onclick="applyCombatResult()">APLICAR DAÑO</button>
                 <button id="btn-cancel-combat" class="btn" style="background:#444;" onclick="cancelCombat()">CANCELAR</button>
                 <button id="btn-close-combat" class="btn" style="display:none;" onclick="endCombatTurn()">TERMINAR</button>
-                <h2 style="color:var(--gold); text-align:center;">HABILIDADES DE MANDO</h2>
-                <div id="cp-modal-display" style="text-align:center; margin-bottom:20px; font-size:1.5rem;">CP DISPONIBLES: 0</div>
-                
-                <div style="display:grid; gap:15px; width:100%; max-width:400px;">
-                    <button class="btn" style="border-color:var(--c);" onclick="triggerPloy('REROLL', 1)">
-                        <b style="color:var(--c);">REPETICIÓN TÁCTICA (1 CP)</b><br>
-                        <span style="font-size:0.7rem; color:#ccc;">Repite 1 dado de ataque o defensa.</span>
-                    </button>
             
-                    <button class="btn" style="border-color:var(--g);" onclick="triggerPloy('RUSH', 1)">
-                        <b style="color:var(--g);">AVANCE RÁPIDO (1 CP)</b><br>
-                        <span style="font-size:0.7rem; color:#ccc;">Suma +2" a tu primer movimiento.</span>
-                    </button>
-            
-                    <button class="btn" style="border-color:var(--r);" onclick="triggerPloy('COVER', 1)">
-                        <b style="color:var(--r);">¡CUBRIRSE! (1 CP)</b><br>
-                        <span style="font-size:0.7rem; color:#ccc;">Convierte 1 fallo en defensa en éxito normal.</span>
-                    </button>
-                    
                     <button class="btn" style="background:#333; margin-top:20px;" onclick="toggleCommandMenu()">CERRAR</button>
                 </div>
             </div>
@@ -2399,6 +2381,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
