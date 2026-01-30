@@ -2346,7 +2346,7 @@ window.renderStars = function(rolls, containerId) {
         isGameOver = false; myUnits = []; enemyUnits = []; globalHP = {};
         myVP = 0; enemyVP = 0; currentRound = 1;
         iAmReady = false; enemyIsReady = false;
-        resetPassButtons(); coverActive = false;
+        coverActive = false;
         toggleCommandHUD(false)
     }
 
@@ -2493,7 +2493,7 @@ window.renderStars = function(rolls, containerId) {
         if(currentRound>=maxRounds) { checkWinCondition(); return; } 
         currentRound++; gameState='PLANNING'; iAmReady=false; enemyIsReady=false; 
         myUnits.forEach(u=>{u.activations=0;u.gearUsed=false;}); 
-        resetPassButtons(); document.getElementById('planning-controls').style.display='block'; 
+        document.getElementById('planning-controls').style.display='block'; 
         document.getElementById('turn-indicator').innerText='PLANIFICACIÓN'; 
         document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show')); 
         updateHUD(); log(`INICIO RONDA ${currentRound}`); 
@@ -2552,9 +2552,8 @@ window.renderStars = function(rolls, containerId) {
         else if(item.func === 'USE_MEDKIT') { globalHP[me.uid].c = Math.min(globalHP[me.uid].m, globalHP[me.uid].c + 3); publish({type: 'SYNC_HP', state: globalHP}); log("MEDKIT USADO"); updateHUD(); passTurn(0); } 
         if(item.oneUse) { me.gearUsed = true; updateHUD(); } 
     }
-    window.tryPass = function(btnId) { const btn = document.getElementById(btnId); if (passConfirm === btnId) { performOp('PASAR'); resetPassButtons(); } else { resetPassButtons(); passConfirm = btnId; btn.innerText = "¿CONFIRMAR?"; btn.style.background = "var(--gold)"; btn.style.color = "#000"; } }
-    window.resetPassButtons = function() { passConfirm = null; const b1 = document.getElementById('btn-pass-open'); b1.innerText = "PASAR"; b1.style.background = "#555"; b1.style.color = "#fff"; const b2 = document.getElementById('btn-op-pass'); b2.innerText = "PASAR"; b2.style.background = "#888"; b2.style.color = "#000"; }
-    
+    window.tryPass = function(btnId) { const btn = document.getElementById(btnId); if (passConfirm === btnId) { performOp('PASAR'); } else { passConfirm = btnId; btn.innerText = "¿CONFIRMAR?"; btn.style.background = "var(--gold)"; btn.style.color = "#000"; } }
+   
     // Avanzar de Fase 1 (Movimiento) a Fase 2 (Acciones)
     window.endMovementPhase = function() {
         if (turnPhase !== 1) return;
@@ -2618,6 +2617,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
