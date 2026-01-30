@@ -383,103 +383,107 @@
         /* --- HUD DE ACCIONES (BURBUJA DERECHA) --- */
         #act-hud {
             position: fixed;
-            right: 20px;
-            bottom: 20px;
-            z-index: 1500; /* Encima del juego, debajo de alertas */
-            display: flex;
-            flex-direction: column-reverse; /* Se despliega hacia arriba */
-            align-items: flex-end; /* Alineado a la derecha */
+            left: 0;
+            /* La otra burbuja está al 50%, esta la ponemos 60px más abajo */
+            top: calc(50% + 65px); 
+            transform: translateY(-50%);
+            
+            z-index: 1500;
+            display: flex; /* Contenedor principal */
+            align-items: flex-start; /* Alinear arriba */
             gap: 10px;
+            padding-left: 5px;
         }
         
-        /* Burbuja Principal (Trigger) */
+        /* Burbuja Principal */
         .act-bubble {
-            width: 60px;
-            height: 60px;
+            width: 50px; /* Tamaño igual a la de Ploys */
+            height: 50px;
             background: rgba(0, 10, 20, 0.9);
             border: 2px solid var(--c);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             color: var(--c);
             box-shadow: 0 0 10px var(--c);
             cursor: pointer;
             transition: 0.3s;
             z-index: 1502;
             backdrop-filter: blur(4px);
+            order: 1; /* La burbuja va primero (izquierda) */
         }
         .act-bubble:active { transform: scale(0.9); }
         .act-bubble.pulse { animation: pulseBorder 1.5s infinite; }
         
-        @keyframes pulseBorder {
-            0% { box-shadow: 0 0 5px var(--c); }
-            50% { box-shadow: 0 0 20px var(--c); }
-            100% { box-shadow: 0 0 5px var(--c); }
-        }
-        
-        /* Barra de Botones (Desplegable) */
+        /* Barra de Botones (Desplegable a la derecha) */
         #act-bar {
-            display: flex;
-            flex-direction: column-reverse; /* Los botones suben */
-            gap: 8px;
-            padding-bottom: 10px;
+            position: absolute;
+            left: 60px; /* A la derecha de la burbuja */
+            top: 0;
             
-            /* Animación */
-            transform: translateY(20px);
+            display: flex;
+            flex-direction: column; /* Lista vertical */
+            gap: 8px;
+            background: rgba(0, 10, 20, 0.9);
+            border: 1px solid #333;
+            padding: 8px;
+            border-radius: 8px;
+            backdrop-filter: blur(4px);
+            
+            /* Animación de entrada lateral */
+            transform: translateX(-20px);
             opacity: 0;
             pointer-events: none;
             transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1501;
         }
         
         #act-bar.open {
-            transform: translateY(0);
+            transform: translateX(0);
             opacity: 1;
             pointer-events: all;
         }
         
-        /* Botones de Acción Individuales */
+        /* Botones Individuales */
         .act-btn {
             display: flex;
             align-items: center;
-            justify-content: flex-end; /* Texto a la izquierda del icono */
+            justify-content: flex-start; /* Icono izquierda, texto derecha */
             gap: 10px;
             cursor: pointer;
             transition: 0.2s;
         }
         
         .act-btn-icon {
-            width: 45px;
-            height: 45px;
+            width: 35px; /* Un poco más pequeños para que encaje mejor */
+            height: 35px;
             background: #111;
             border: 1px solid #555;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+            font-size: 1rem;
             color: #fff;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            flex-shrink: 0;
         }
         
         .act-btn-label {
-            background: rgba(0,0,0,0.8);
-            color: #fff;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.7rem;
+            background: none;
+            color: #ccc;
+            font-size: 0.75rem;
             font-weight: bold;
-            pointer-events: none;
-            opacity: 0; /* Oculto hasta hover */
-            transform: translateX(10px);
+            white-space: nowrap; /* Que no se rompa el texto */
+            opacity: 0.8;
             transition: 0.2s;
         }
         
-        .act-btn:hover .act-btn-label { opacity: 1; transform: translateX(0); }
+        .act-btn:hover .act-btn-label { color: #fff; opacity: 1; text-shadow: 0 0 5px var(--c); }
         .act-btn:hover .act-btn-icon { border-color: #fff; transform: scale(1.1); }
         
-        /* Estilos específicos por tipo */
+        /* Colores por tipo */
         .act-btn.combat .act-btn-icon { border-color: var(--r); color: var(--r); }
         .act-btn.move .act-btn-icon { border-color: var(--gold); color: var(--gold); }
         .act-btn.mission .act-btn-icon { border-color: var(--g); color: var(--g); }
@@ -1137,97 +1141,113 @@ function renderEditorSquad() {
     
     // 2. Función Principal: Actualiza qué botones hay en la burbuja según la FASE
     // Reemplaza o llama a esto dentro de tu 'updatePhaseUI' original
-    window.renderActionBubble = function() {
-        const hud = document.getElementById('act-hud');
-        const bar = document.getElementById('act-bar');
-        const bubbleIcon = document.getElementById('act-bubble-icon');
-        const bubble = document.getElementById('main-act-bubble');
-        
-        // Limpiar barra
-        bar.innerHTML = "";
-        
-        // Si no es mi turno, ocultar todo
-        if (gameState !== 'MY_TURN') {
-            hud.style.display = 'none';
-            return;
-        } else {
-            hud.style.display = 'flex';
-        }
+   window.renderActionBubble = function() {
+    const hud = document.getElementById('act-hud');
+    const bar = document.getElementById('act-bar');
+    const bubbleIcon = document.getElementById('act-bubble-icon');
+    const bubble = document.getElementById('main-act-bubble');
     
-        const me = myUnits[myIdx];
+    // Limpiar barra anterior
+    bar.innerHTML = "";
     
-        // --- FASE 1: MOVIMIENTO ---
-        if (turnPhase === 1) {
-            bubbleIcon.innerText = "🦶"; // Icono de Pie/Mover
-            bubble.classList.add('pulse'); // Llamar la atención
+    // Si no es mi turno, ocultar
+    if (gameState !== 'MY_TURN') {
+        hud.style.display = 'none';
+        return;
+    } else {
+        hud.style.display = 'flex';
+    }
+
+    const me = myUnits[myIdx];
+
+    // ==========================================
+    // FASE 1: MOVIMIENTO
+    // ==========================================
+    if (turnPhase === 1) {
+        bubbleIcon.innerText = "🦶"; 
+        bubble.classList.add('pulse'); 
+
+        // OPCIÓN A: CONFIRMAR MOVIMIENTO
+        // Úsalo después de haber arrastrado la miniatura
+        createActionButton("TERMINAR MOVER", "✅", "move", () => {
+            // Asumimos que si das clic aquí, la unidad "se movió"
+            // (La lógica de movimiento real ya habrá puesto hasMoved=true al soltar la mini)
+            endMovementPhase();
+            toggleActionBar();
+        });
+        
+        // OPCIÓN B: NO MOVER (NUEVO)
+        // Úsalo para activar reglas de "Estacionario" (Heavy, etc)
+        createActionButton("MANTENER POSICIÓN", "⚓", "combat", () => {
+            // Forzamos la bandera a falso explícitamente
+            me.hasMoved = false; 
             
-            // Botón: FIN MOVIMIENTO (Confirmar)
-            createActionButton("FIN MOVIMIENTO", "✅", "move", () => {
-                endMovementPhase();
-                toggleActionBar(); // Cerrar al usar
-            });
+            // Feedback visual
+            log(`${me.name} mantiene posición (Preparado para Heavy)`, "info");
             
-            // Aquí podrías poner "CANCELAR MOVIMIENTO" si tuvieras esa lógica
-        } 
-        
-        // --- FASE 2: ACCIONES ---
-        else if (turnPhase === 2) {
-            bubbleIcon.innerText = "⚡"; // Rayo de Acción
-            bubble.classList.remove('pulse');
+            // Pasamos directo a la fase de acción
+            endMovementPhase();
+            toggleActionBar();
+        });
+    } 
     
-            // 1. ACCIÓN DE COMBATE (Depende de Modo Open/Hidden y Arma)
-            // Solo si NO ha gastado todas sus acciones
-            if (me.activations < 2) {
-                
-                // Lógica: Si está HIDDEN, no puede disparar, pero quizás pelear melee si le cargan (en tu turno, ofensivo, requiere OPEN normalmente para disparar)
-                if (me.mode === 'open') {
-                    if (combatMode === 'ranged') {
-                         createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); toggleActionBar(); });
-                    } else {
-                         createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); toggleActionBar(); });
-                    }
+    // ==========================================
+    // FASE 2: ACCIONES
+    // ==========================================
+    else if (turnPhase === 2) {
+        bubbleIcon.innerText = "⚡"; 
+        bubble.classList.remove('pulse');
+
+        if (me.activations < 2) {
+            // 1. COMBATE (Ranged / Melee)
+            if (me.mode === 'open') {
+                if (combatMode === 'ranged') {
+                     createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); toggleActionBar(); });
                 } else {
-                    // En modo Hidden, quizás solo melee o nada?
-                    // Si quieres permitir Melee en hidden (emboscada):
-                    createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); toggleActionBar(); });
-                    // Mensaje visual para Disparo:
-                    // createActionButton("REQ. ENGAGE", "🚫", "disabled", () => log("Necesitas orden ENGAGE para disparar", "warning"));
+                     createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); toggleActionBar(); });
                 }
-    
-                // 2. DASH (Mover extra)
-                createActionButton("DASH (3\")", "💨", "move", () => { performOp('DASH'); toggleActionBar(); });
-    
-                // 3. MISIÓN / ACCIÓN TÁCTICA
-                createActionButton("MISIÓN / OBJ", "🚩", "mission", () => { performOp('MISION'); toggleActionBar(); });
+            } else {
+                // Si está en Hidden, permitimos Melee (emboscada) pero no disparo
+                createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); toggleActionBar(); });
             }
-    
-            // 4. PASAR TURNO (Siempre disponible)
-            createActionButton("PASAR TURNO", "⏭️", "normal", () => { performOp('PASAR'); toggleActionBar(); });
-        } 
-        
-        // --- FASE 3: RESOLUCIÓN ---
-        else if (turnPhase === 3) {
-            bubbleIcon.innerText = "🎲"; 
-            // Generalmente aquí no hay botones de acción, se maneja con el Overlay de Dados
-            // Pero podrías poner un botón de "Cancelar" o "Status"
+
+            // 2. DASH (Mover extra)
+            // Dash cuenta como movimiento, ojo con Heavy si disparas después
+            createActionButton("DASH (3\")", "💨", "move", () => { 
+                performOp('DASH'); 
+                toggleActionBar(); 
+            });
+
+            // 3. MISIÓN
+            createActionButton("MISIÓN / OBJ", "🚩", "mission", () => { performOp('MISION'); toggleActionBar(); });
         }
-    };
+
+        // 4. PASAR TURNO
+        createActionButton("PASAR TURNO", "⏭️", "normal", () => { performOp('PASAR'); toggleActionBar(); });
+    } 
+    
+    // FASE 3
+    else if (turnPhase === 3) {
+        bubbleIcon.innerText = "🎲"; 
+    }
+};
     
     // Helper para crear botones HTML
     function createActionButton(label, icon, type, onClickFunc) {
-        const bar = document.getElementById('act-bar');
-        
-        const div = document.createElement('div');
-        div.className = `act-btn ${type}`;
-        div.onclick = onClickFunc;
-        
-        div.innerHTML = `
-            <span class="act-btn-label">${label}</span>
-            <div class="act-btn-icon">${icon}</div>
-        `;
-        
-        bar.appendChild(div);
-    }
+    const bar = document.getElementById('act-bar');
+    
+    const div = document.createElement('div');
+    div.className = `act-btn ${type}`;
+    div.onclick = onClickFunc;
+    
+    // CAMBIO: El Icono va primero, luego el Label
+    div.innerHTML = `
+        <div class="act-btn-icon">${icon}</div>
+        <span class="act-btn-label">${label}</span>
+    `;
+    
+    bar.appendChild(div);
+}
     
     // --- GAME INIT ---
     window.initSystem = function() {
@@ -2611,6 +2631,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
