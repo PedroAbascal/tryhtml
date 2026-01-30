@@ -1322,6 +1322,8 @@ function renderEditorSquad() {
     
         // 3. Preparar Interfaz
         setupCombatUI('ATTACKER'); // Abre el modal
+
+        if(activePloys['SHOOT_HARD']) activeCombatStats.traits.push('LETHAL_5');
         
         // BALANCED / CEASELESS (Habilitar botón de Reroll)
         // En Kill Team, Balanced permite repetir 1 dado. Ceaseless permite repetir los 1s.
@@ -1476,7 +1478,13 @@ function renderEditorSquad() {
             defHits++; // Regla de Cobertura automática (simplificada)
             logCombat("COBERTURA: +1 Bloqueo Normal"); 
         }
-    
+
+if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
+            defHits--;
+            defCrits++;
+            logCombat("COMANDO ¡A CUBIERTO!: 1 dEF convertido en Crítico", "danger");
+}
+        
         // 2. Traer datos del atacante
         let atkCrit = pendingAtkStats.crit;
         let atkNorm = pendingAtkStats.normal;
@@ -2381,6 +2389,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
