@@ -813,6 +813,18 @@
         b40: { name:"40mm", cost:6, hp:6 }
     }
 };
+
+    const GEAR_DB = {
+    none:   { name:"Nada", cost:0, keywords: [] },
+    
+    // AQUI ESTA LA VINCULACIÓN: agregamos mechanicRef: "grenade"
+    nades:  { name:"Granadas Frag", cost:2, keywords: ["GRENADIER"], mechanicRef: "grenade" }, 
+    
+    // AQUI TAMBIÉN: vinculamos con "medkit"
+    medkit: { name:"Medkit", cost:3, keywords: ["MEDIC"], mechanicRef: "medkit" },
+    
+    stim:   { name:"Estimulante", cost:1, keywords: [], mechanicRef: "stim" }
+};
     // --- DICCIONARIO DE REGLAS Y TAGS ---
     // 1. TAGS DE UNIDAD (Keywords)
     const UNIT_TAGS = {
@@ -2780,6 +2792,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
