@@ -482,6 +482,68 @@
         .act-btn.combat .act-btn-icon { border-color: var(--r); color: var(--r); }
         .act-btn.move .act-btn-icon { border-color: var(--gold); color: var(--gold); }
         .act-btn.mission .act-btn-icon { border-color: var(--g); color: var(--g); }
+
+        /* Contenedor general para posicionar */
+        #gear-hud {
+            position: fixed;
+            top: 70px; /* Ajústalo: Esto es cuán abajo está desde el techo */
+            left: 10px;
+            z-index: 1000;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        /* Estilo específico para la bola de Gear */
+        .gear-theme {
+            background: radial-gradient(circle at 30% 30%, #444, #111);
+            border: 2px solid #888;
+            color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .gear-theme:active { transform: scale(0.95); }
+        
+        /* Lista desplegable de items */
+        #gear-bar {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #666;
+            border-radius: 8px;
+            padding: 8px;
+            min-width: 150px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .hidden { display: none !important; }
+        
+        /* Estilo de cada Item en la lista */
+        .gear-item {
+            background: #222;
+            border: 1px solid #444;
+            padding: 8px;
+            color: #eee;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-radius: 4px;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .gear-item:hover { background: #333; border-color: #888; }
+        .gear-item.used { opacity: 0.5; pointer-events: none; text-decoration: line-through; }
         
     </style>
 </head>
@@ -710,6 +772,13 @@
         </div>
         
     </div>
+
+    <div id="gear-hud" class="hud-bubble-container">
+    <div class="cmd-bubble gear-theme" onclick="toggleGearHUD()">
+        <span>🎒</span><small>ITEM</small>
+    </div>
+    <div id="gear-bar" class="hud-bar hidden"></div> 
+</div>
 
 <script>
     // --- DATABASE (FORGE) ---
@@ -1212,6 +1281,75 @@ function renderEditorSquad() {
     // FASE 3
     else if (turnPhase === 3) {
         bubbleIcon.innerText = "🎲"; 
+    }
+};
+
+    let gearOpen = false;
+
+window.toggleGearHUD = function() {
+    gearOpen = !gearOpen;
+    const bar = document.getElementById('gear-bar');
+    if (gearOpen) {
+        bar.classList.remove('hidden');
+        renderGearBubble(); // Refrescamos al abrir
+    } else {
+        bar.classList.add('hidden');
+    }
+};
+
+window.renderGearBubble = function() {
+    const container = document.getElementById('gear-bar');
+    if (!container) return;
+    
+    container.innerHTML = ''; // Limpiar lista
+    const me = myUnits[myIdx];
+
+    // Buscar items activos en la unidad
+    // Asumimos que "mechanics" guarda tus items
+    if (!me.mechanics || me.mechanics.length === 0) {
+        container.innerHTML = '<div style="color:#777; font-size:0.7rem; padding:4px;">Sin Equipamiento</div>';
+        return;
+    }
+
+    let itemsFound = false;
+
+    me.mechanics.forEach((m, index) => {
+        // Solo mostramos items ACTIVOS (que se pueden usar)
+        // O pasivos importantes si quieres
+        if (m.type === 'ACTIVE') {
+            itemsFound = true;
+            
+            const div = document.createElement('div');
+            // Si ya se usó (gearUsed) y es de un solo uso (oneUse), lo marcamos como usado
+            const isUsed = (m.oneUse && me.gearUsed);
+            
+            div.className = isUsed ? "gear-item used" : "gear-item";
+            
+            div.innerHTML = `
+                <span>${m.icon || '⚙️'} ${m.name}</span>
+                ${isUsed ? '<small>❌</small>' : '<small>USAR</small>'}
+            `;
+
+            // Acción al hacer click
+            if (!isUsed) {
+                div.onclick = function() {
+                    // AQUÍ VA TU LÓGICA DE USAR ITEM
+                    console.log("Usando item:", m.name);
+                    
+                    // Ejemplo genérico: marcar como usado y cerrar
+                    // Si tienes una función específica para items, llámala aquí
+                    // useItem(m.name); 
+                    
+                    // Cerramos la burbuja tras usar
+                    toggleGearHUD();
+                };
+            }
+            container.appendChild(div);
+        }
+    });
+
+    if (!itemsFound) {
+        container.innerHTML = '<div style="color:#777; font-size:0.7rem; padding:4px;">Solo Pasivos</div>';
     }
 };
     
@@ -2035,6 +2173,9 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
         }
     }
 
+     if(gearOpen) renderGearBubble(); // Solo renderizar si está abierta para ahorrar recursos
+};
+
     // ★ IMPORTANTE: Refrescar la Burbuja de Acciones para que coincida con la selección
     if(typeof renderActionBubble === 'function') {
         renderActionBubble();
@@ -2617,6 +2758,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
