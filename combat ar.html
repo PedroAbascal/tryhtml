@@ -655,17 +655,6 @@
                     <div id="en-ready-mark" class="ready-marker">¡LISTO!</div>
                 </div>
             </div>
-            <div id="combat-actions">
-                <button type="button" class="btn" id="btn-combat-mode" style="width:40px; background:#333; color:#fff;" onclick="resetPassButtons(); switchMode()"><span>🔫</span></button>
-                <button type="button" class="btn" id="btn-pass-open" style="flex:1; background:#555; color:#fff;" onclick="tryPass('btn-pass-open')"><span>PASAR</span></button>
-                <button type="button" class="btn" id="btn-act" style="flex:2; background:var(--r); color:#fff;" onclick="resetPassButtons(); initiateCombat()"><span>DISPARAR</span></button>
-                <button type="button" class="btn btn-gear" id="btn-gear" style="flex:2; display:none;" onclick="useSpecialGear()"><span>ITEM</span></button>
-            </div>
-            <div id="ops-actions" class="ops-grid">
-                <button type="button" class="btn btn-op op-dash" onclick="resetPassButtons(); performOp('DASH')"><span>DASH</span></button>
-                <button type="button" class="btn btn-op op-mission" onclick="resetPassButtons(); performOp('MISION')"><span>MISIÓN (+1PV)</span></button>
-                <button type="button" id="btn-op-pass" class="btn btn-op op-pass" onclick="tryPass('btn-op-pass')"><span>PASAR</span></button>
-            </div>
         </div>
     </div>
 
@@ -2626,6 +2615,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
