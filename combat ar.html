@@ -804,8 +804,8 @@
     },
     gear: {
         none: { name:"Nada", cost:0, keywords: [] },
-        nades: { name:"Granadas Frag", cost:2, keywords: ["GRENADIER"] },
-        medkit: { name:"Medkit", cost:3, keywords: ["MEDIC"] }
+        nades: { name:"Granadas Frag", cost:2, keywords: ["GRENADIER"] , mechanicRef: "grenade" },
+        medkit: { name:"Medkit", cost:3, keywords: ["MEDIC"], mechanicRef: "medkit" }
     },
     bases: { 
         b25: { name:"25mm", cost:0, hp:0 }, 
@@ -1297,61 +1297,84 @@ window.toggleGearHUD = function() {
     }
 };
 
-window.renderGearBubble = function() {
-    const container = document.getElementById('gear-bar');
-    if (!container) return;
+    window.renderGearBubble = function() {
+        const container = document.getElementById('gear-bar');
+        if (!container) return;
+        container.innerHTML = ''; 
     
-    container.innerHTML = ''; // Limpiar lista
-    const me = myUnits[myIdx];
-
-    // Buscar items activos en la unidad
-    // Asumimos que "mechanics" guarda tus items
-    if (!me.mechanics || me.mechanics.length === 0) {
-        container.innerHTML = '<div style="color:#777; font-size:0.7rem; padding:4px;">Sin Equipamiento</div>';
-        return;
-    }
-
-    let itemsFound = false;
-
-    me.mechanics.forEach((m, index) => {
-        // Solo mostramos items ACTIVOS (que se pueden usar)
-        // O pasivos importantes si quieres
-        if (m.type === 'ACTIVE') {
-            itemsFound = true;
+        const me = myUnits[myIdx];
+        
+        // Validar si la unidad tiene equipo asignado
+        if (!me.gear || me.gear === "Nada") {
+            container.innerHTML = '<div style="color:#777; font-size:0.7rem; padding:4px;">Sin Equipo</div>';
+            return;
+        }
+    
+        // 1. BUSCAR EL EQUIPO EN LA DB POR NOMBRE
+        // Recorremos GEAR_DB buscando qué objeto tiene name === me.gear
+        // Nota: Object.values convierte el objeto en un array para poder buscar
+        const gearDef = Object.values(GEAR_DB).find(item => item.name === me.gear);
+    
+        // Si no encontramos la definición o no tiene mecánica vinculada, salimos
+        if (!gearDef || !gearDef.mechanicRef) {
+            console.log("Equipo encontrado pero sin mecánica vinculada:", me.gear);
+            return;
+        }
+    
+        // 2. OBTENER LA MECÁNICA REAL
+        const mechanicId = gearDef.mechanicRef; // ej: "grenade"
+        const mech = MECHANICS_DB[mechanicId];  // Obtenemos los datos finales
+    
+        if (mech && mech.type === 'ACTIVE') {
             
             const div = document.createElement('div');
-            // Si ya se usó (gearUsed) y es de un solo uso (oneUse), lo marcamos como usado
-            const isUsed = (m.oneUse && me.gearUsed);
             
+            // Verificamos si ya se usó (usando la variable gearUsed de la unidad)
+            const isUsed = (mech.oneUse && me.gearUsed);
+    
             div.className = isUsed ? "gear-item used" : "gear-item";
             
             div.innerHTML = `
-                <span>${m.icon || '⚙️'} ${m.name}</span>
-                ${isUsed ? '<small>❌</small>' : '<small>USAR</small>'}
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1.2rem;">${mech.icon || '📦'}</span>
+                    <div style="display:flex; flex-direction:column;">
+                        <span style="font-weight:bold; color:white;">${mech.name}</span>
+                        <span style="font-size:0.6rem; color:#aaa;">${gearDef.name}</span>
+                    </div>
+                </div>
+                ${isUsed ? '<small>❌</small>' : '<small style="color:var(--c)">USAR</small>'}
             `;
-
-            // Acción al hacer click
+    
             if (!isUsed) {
                 div.onclick = function() {
-                    // AQUÍ VA TU LÓGICA DE USAR ITEM
-                    console.log("Usando item:", m.name);
+                    console.log(`Activando mecánica: ${mech.func}`);
                     
-                    // Ejemplo genérico: marcar como usado y cerrar
-                    // Si tienes una función específica para items, llámala aquí
-                    // useItem(m.name); 
+                    // --- AQUÍ EJECUTAS LA LÓGICA ---
+                    // Dependiendo de cómo tengas tus funciones, podría ser:
+                    // window[mech.func](me); 
+                    // O un switch simple:
                     
-                    // Cerramos la burbuja tras usar
+                    if(mech.func === 'THROW_GRENADE') {
+                         // Lógica de granada...
+                         alert("¡BUM! Granada lanzada");
+                    } else if (mech.func === 'USE_MEDKIT') {
+                         // Lógica de medkit...
+                         alert("Curando...");
+                    }
+    
+                    // Marcar como usado si es de un solo uso
+                    if(mech.oneUse) {
+                        me.gearUsed = true;
+                    }
+    
                     toggleGearHUD();
+                    updateHUD();
                 };
             }
+            
             container.appendChild(div);
         }
-    });
-
-    if (!itemsFound) {
-        container.innerHTML = '<div style="color:#777; font-size:0.7rem; padding:4px;">Solo Pasivos</div>';
-    }
-};
+    };
     
     // Helper para crear botones HTML
     function createActionButton(label, icon, type, onClickFunc) {
@@ -2757,6 +2780,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
