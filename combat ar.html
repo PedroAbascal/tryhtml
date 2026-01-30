@@ -486,10 +486,10 @@
         /* Contenedor general para posicionar */
         #gear-hud {
             display: none;
-            position: fixed;
-            top: 70px; /* Ajústalo: Esto es cuán abajo está desde el techo */
+            top: calc(50% - 65px); 
+            transform: translateY(-50%); /* Ajústalo: Esto es cuán abajo está desde el techo */
             left: 10px;
-            z-index: 1000;
+            z-index: 2000;
             display: flex;
             align-items: flex-start;
             gap: 10px;
@@ -2818,6 +2818,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
