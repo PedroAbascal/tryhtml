@@ -268,9 +268,12 @@
             position: fixed;
             left: 0;
             top: 50%;
-            transform: translateY(-50%); /* Centrado vertical */
-            z-index: 900;
-            display: flex;
+            transform: translateY(-50%);
+            /* Z-INDEX MUY ALTO: Para estar encima del dice-overlay (que suele ser 1000) */
+            z-index: 2000; 
+            
+            display: none; /* <--- IMPORTANTE: Oculto por defecto (Lobby/Creador) */
+            
             align-items: flex-start;
             gap: 10px;
             padding-left: 5px;
@@ -370,7 +373,7 @@
             display: none; /* Oculto por defecto */
             border-radius: 4px;
             box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
-            z-index: 905;
+            z-index: 2005; /* Mayor que el HUD */
         }
         .cmd-title { color: var(--gold); font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid #333; }
         .cmd-desc { margin-bottom: 10px; color: #ccc; }
@@ -741,6 +744,7 @@
     function openForge() {
         document.getElementById('lobby-screen').classList.add('hidden');
         document.getElementById('creator-screen').classList.remove('hidden');
+        toggleCommandHUD(false);
         initForgeSelects();
         renderEditorSquad();
     }
@@ -1219,6 +1223,12 @@ function renderEditorSquad() {
             };
     
             // --- LÓGICA DE PLOYS ---
+
+            window.toggleCommandHUD = function(show) {
+            const hud = document.getElementById('cmd-hud');
+            if (hud) hud.style.display = show ? 'flex' : 'none';
+        };
+    
             window.triggerPloy = function(type, cost) {
                 if (gameState !== 'MY_TURN' && type !== 'COVER') { 
                     // Nota: 'COVER' podría usarse en defensa (turno rival), pero simplifiquemos por ahora
@@ -2108,6 +2118,7 @@ window.renderStars = function(rolls, containerId) {
         myVP = 0; enemyVP = 0; currentRound = 1;
         iAmReady = false; enemyIsReady = false;
         resetPassButtons(); coverActive = false;
+        toggleCommandHUD(false)
     }
 
     function triggerGameOver(resultText, colorStr, subText) {
@@ -2224,7 +2235,8 @@ window.renderStars = function(rolls, containerId) {
                 gameState = iWonInitiative ? 'MY_TURN' : 'ENEMY_TURN'; 
                 
                 // Limpiar marcadores de listo
-                document.querySelectorAll('.ready-marker').forEach(e => e.classList.remove('show')); 
+                document.querySelectorAll('.ready-marker').forEach(e => e.classList.remove('show'));
+                toggleCommandHUD(true);
                 
                 // --- ASIGNAR CP ---
                 // Si gané iniciativa (iWonInitiative es true), NO voy segundo (false) -> 3 CP
@@ -2389,6 +2401,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
