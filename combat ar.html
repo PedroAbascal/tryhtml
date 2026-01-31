@@ -258,297 +258,77 @@
         }
 
 
-        /* --- HUD DE COMANDOS (BURBUJA) --- */
-        #cmd-hud {
+              /* Contenedor Flotante */
+        .hud-container {
             position: fixed;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            /* Z-INDEX MUY ALTO: Para estar encima del dice-overlay (que suele ser 1000) */
-            z-index: 2000; 
-            
-            display: none; /* <--- IMPORTANTE: Oculto por defecto (Lobby/Creador) */
-            
-            align-items: flex-start;
+            z-index: 1000;
+            display: flex;
+            align-items: flex-start; /* Alinea menú a la derecha de la burbuja */
             gap: 10px;
-            padding-left: 5px;
+            transition: opacity 0.3s;
         }
         
-        /* La Burbuja Principal */
-        .cmd-bubble {
-            width: 50px;
-            height: 50px;
-            background: #000;
-            border: 2px solid var(--gold);
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 10px var(--gold);
-            cursor: pointer;
-            transition: 0.3s;
-            z-index: 902;
-        }
-        .cmd-bubble:active { transform: scale(0.9); }
-        .cmd-bubble span { font-weight: bold; color: var(--gold); font-size: 1.2rem; }
-        .cmd-bubble small { font-size: 0.5rem; color: #fff; }
-        
-        /* Barra de Iconos (Desplegable) */
-        #cmd-bar {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            background: rgba(0, 10, 20, 0.9);
-            border: 1px solid #333;
-            padding: 8px;
-            border-radius: 8px;
-            backdrop-filter: blur(4px);
-            
-            /* Animación de entrada */
-            transform: translateX(-100px);
-            opacity: 0;
-            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: none; /* No clickeable cuando está oculto */
-            position: absolute;
-            left: 60px; /* Al lado de la burbuja */
-            top: 0;
-        }
-        
-        #cmd-bar.open {
-            transform: translateX(0);
-            opacity: 1;
-            pointer-events: all;
-        }
-        
-        /* Iconos de Habilidades */
-        .ploy-icon {
-            width: 40px;
-            height: 40px;
-            border: 1px solid #444;
-            background: #111;
-            color: #666;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            border-radius: 4px;
-            cursor: default;
-            transition: 0.2s;
-        }
-        
-        /* Estado: Disponible (Tienes CP) */
-        .ploy-icon.affordable {
-            border-color: var(--c);
-            color: var(--c);
-            cursor: pointer;
-            box-shadow: 0 0 5px rgba(0, 242, 255, 0.2);
-        }
-        .ploy-icon.affordable:hover { background: rgba(0, 242, 255, 0.2); }
-        .ploy-icon.selected { background: var(--c); color: #000; box-shadow: 0 0 10px var(--c); }
-        
-        /* Estado: Caro (No tienes CP pero es válida) */
-        .ploy-icon.expensive {
-            border-color: var(--r);
-            color: var(--r);
-            opacity: 0.5;
-        }
-        
-        /* Panel de Detalles (Descripción) */
-        #cmd-details {
-            position: absolute;
-            left: 120px; /* A la derecha de la barra */
-            top: 0;
-            width: 200px;
-            background: #000;
-            border: 1px solid var(--c);
-            padding: 10px;
-            font-size: 0.75rem;
-            color: #fff;
-            display: none; /* Oculto por defecto */
-            border-radius: 4px;
-            box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
-            z-index: 2005; /* Mayor que el HUD */
-        }
-        .cmd-title { color: var(--gold); font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid #333; }
-        .cmd-desc { margin-bottom: 10px; color: #ccc; }
-        .cmd-cost { font-size: 0.7rem; color: #888; margin-bottom: 10px; }
-
-
-        /* --- HUD DE ACCIONES (BURBUJA DERECHA) --- */
-        #act-hud {
-            position: fixed;
-            left: 0;
-            /* La otra burbuja está al 50%, esta la ponemos 60px más abajo */
-            top: calc(50% + 65px); 
-            transform: translateY(-50%);
-            
-            z-index: 1500;
-            display: flex; /* Contenedor principal */
-            align-items: flex-start; /* Alinear arriba */
-            gap: 10px;
-            padding-left: 5px;
-        }
-        
-        /* Burbuja Principal */
-        .act-bubble {
-            width: 50px; /* Tamaño igual a la de Ploys */
-            height: 50px;
-            background: rgba(0, 10, 20, 0.9);
-            border: 2px solid var(--c);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            color: var(--c);
-            box-shadow: 0 0 10px var(--c);
-            cursor: pointer;
-            transition: 0.3s;
-            z-index: 1502;
-            backdrop-filter: blur(4px);
-            order: 1; /* La burbuja va primero (izquierda) */
-        }
-        .act-bubble:active { transform: scale(0.9); }
-        .act-bubble.pulse { animation: pulseBorder 1.5s infinite; }
-        
-        /* Barra de Botones (Desplegable a la derecha) */
-        #act-bar {
-            position: absolute;
-            left: 60px; /* A la derecha de la burbuja */
-            top: 0;
-            
-            display: flex;
-            flex-direction: column; /* Lista vertical */
-            gap: 8px;
-            background: rgba(0, 10, 20, 0.9);
-            border: 1px solid #333;
-            padding: 8px;
-            border-radius: 8px;
-            backdrop-filter: blur(4px);
-            
-            /* Animación de entrada lateral */
-            transform: translateX(-20px);
-            opacity: 0;
-            pointer-events: none;
-            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 1501;
-        }
-        
-        #act-bar.open {
-            transform: translateX(0);
-            opacity: 1;
-            pointer-events: all;
-        }
-        
-        /* Botones Individuales */
-        .act-btn {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start; /* Icono izquierda, texto derecha */
-            gap: 10px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        
-        .act-btn-icon {
-            width: 35px; /* Un poco más pequeños para que encaje mejor */
-            height: 35px;
-            background: #111;
-            border: 1px solid #555;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            color: #fff;
-            flex-shrink: 0;
-        }
-        
-        .act-btn-label {
-            background: none;
-            color: #ccc;
-            font-size: 0.75rem;
-            font-weight: bold;
-            white-space: nowrap; /* Que no se rompa el texto */
-            opacity: 0.8;
-            transition: 0.2s;
-        }
-        
-        .act-btn:hover .act-btn-label { color: #fff; opacity: 1; text-shadow: 0 0 5px var(--c); }
-        .act-btn:hover .act-btn-icon { border-color: #fff; transform: scale(1.1); }
-        
-        /* Colores por tipo */
-        .act-btn.combat .act-btn-icon { border-color: var(--r); color: var(--r); }
-        .act-btn.move .act-btn-icon { border-color: var(--gold); color: var(--gold); }
-        .act-btn.mission .act-btn-icon { border-color: var(--g); color: var(--g); }
-
-        /* Contenedor general para posicionar */
-        #gear-hud {
-            display: none;
-            position: fixed;
-            left: 0;
-            /* La otra burbuja está al 50%, esta la ponemos 60px más abajo */
-            top: calc(50% - 65px); 
-            transform: translateY(-50%);
-            
-            z-index: 1500;
-            display: flex; /* Contenedor principal */
-            align-items: flex-start; /* Alinear arriba */
-            gap: 10px;
-            padding-left: 5px;
-        }
-        
-        /* Estilo específico para la bola de Gear */
-        .gear-theme {
-            background: radial-gradient(circle at 30% 30%, #444, #111);
-            border: 2px solid #888;
-            color: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        /* LA BURBUJA (Botón Redondo) */
+        .hud-bubble {
             width: 60px;
             height: 60px;
+            background: radial-gradient(circle at 30% 30%, #444, #111);
+            border: 2px solid #666;
             border-radius: 50%;
+            color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.2s ease;
+            user-select: none;
         }
         
-        .gear-theme:active { transform: scale(0.95); }
+        .hud-bubble:active { transform: scale(0.95); border-color: #fff; }
+        .hud-bubble.active { border-color: var(--c, #0ff); box-shadow: 0 0 15px var(--c, #0ff); }
         
-        /* Lista desplegable de items */
-        #gear-bar {
-            background: rgba(0, 0, 0, 0.9);
-            border: 1px solid #666;
+        .bubble-icon { font-size: 1.4rem; font-weight: bold; }
+        .bubble-label { font-size: 0.6rem; color: #aaa; text-transform: uppercase; }
+        
+        /* EL MENÚ DESPLEGABLE (Lista) */
+        .hud-menu {
+            background: rgba(10, 10, 10, 0.95);
+            border: 1px solid #444;
             border-radius: 8px;
             padding: 8px;
-            min-width: 150px;
+            min-width: 160px;
             display: flex;
             flex-direction: column;
             gap: 6px;
+            backdrop-filter: blur(4px);
+            
+            /* Animación de entrada */
+            animation: fadeIn 0.2s ease-out;
         }
         
-        .hidden { display: none !important; }
+        .hud-menu.hidden { display: none !important; }
         
-        /* Estilo de cada Item en la lista */
-        .gear-item {
+        /* Items dentro del menú */
+        .menu-item {
             background: #222;
-            border: 1px solid #444;
-            padding: 8px;
+            border: 1px solid #333;
+            padding: 8px 10px;
+            border-radius: 4px;
             color: #eee;
             font-size: 0.8rem;
             cursor: pointer;
-            border-radius: 4px;
-            text-align: left;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: background 0.2s;
         }
         
-        .gear-item:hover { background: #333; border-color: #888; }
-        .gear-item.used { opacity: 0.5; pointer-events: none; text-decoration: line-through; }
+        .menu-item:hover { background: #333; border-color: #777; }
+        .menu-item.disabled { opacity: 0.5; pointer-events: none; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
         
     </style>
 </head>
@@ -746,43 +526,30 @@
                 </div>
             </div>
             </div>
-        </div>
-   
-        <div id="cmd-hud">
-        <div class="cmd-bubble" onclick="toggleCmdBar()">
-            <span id="bubble-cp-val">0</span>
-            <small>CP</small>
-        </div>
-    
-        <div id="cmd-bar">
-            </div>
-    
-        <div id="cmd-details">
-            <div id="cmd-det-title" class="cmd-title">NOMBRE</div>
-            <div id="cmd-det-cost" class="cmd-cost">COSTE: 1 CP</div>
-            <div id="cmd-det-desc" class="cmd-desc">Descripción...</div>
-            <div style="display:flex; gap:5px;">
-                <button class="btn btn-small" style="border-color:var(--g); color:var(--g);" onclick="confirmActivePloy()">ACTIVAR</button>
-                <button class="btn btn-small" style="border-color:var(--r); color:var(--r);" onclick="closeCmdDetails()">X</button>
-            </div>
-        </div>
-    </div> 
-
-    <div id="act-hud" style="display:none;"> <div id="act-bar">
+                <div id="hud-cmd" class="hud-container" style="top: 80px; left: 10px;">
+                    <div class="hud-bubble" onclick="toggleBubble('cmd')">
+                        <span class="bubble-icon">CP</span>
+                        <small class="bubble-label">PLOYS</small>
+                    </div>
+                    <div id="menu-cmd" class="hud-menu hidden"></div> </div>
+                
+                <div id="hud-gear" class="hud-container" style="top: 150px; left: 10px;">
+                    <div class="hud-bubble" onclick="toggleBubble('gear')">
+                        <span class="bubble-icon">🎒</span>
+                        <small class="bubble-label">ITEM</small>
+                    </div>
+                    <div id="menu-gear" class="hud-menu hidden"></div>
                 </div>
-        
-            <div class="act-bubble" id="main-act-bubble" onclick="toggleActionBar()">
-                <span id="act-bubble-icon">⚡</span>
-            </div>
+                
+                <div id="hud-act" class="hud-container" style="bottom: 20px; left: 10px;">
+                    <div class="hud-bubble" onclick="toggleBubble('act')">
+                        <span id="act-icon-display" class="bubble-icon">⚡</span>
+                        <small class="bubble-label">ACT</small>
+                    </div>
+                    <div id="menu-act" class="hud-menu hidden"></div>
+                </div>
+    
         </div>
-        
-    </div>
-
-    <div id="gear-hud" class="hud-bubble-container">
-    <div class="cmd-bubble gear-theme" onclick="toggleGearHUD()">
-        <span>🎒</span><small>ITEM</small>
-    </div>
-    <div id="gear-bar" class="hud-bar hidden"></div> 
 </div>
 
 <script>
@@ -1098,340 +865,254 @@
         document.getElementById('u-name').value = "";
     };
     
-window.renderEditorSquad = function() {
-    const c = document.getElementById('squad-list'); 
-    c.innerHTML = "";
-    let totalCost = 0;
-
-    editorSquad.forEach((u, i) => {
-        totalCost += u.cost;
+        window.renderEditorSquad = function() {
+            const c = document.getElementById('squad-list'); 
+            c.innerHTML = "";
+            let totalCost = 0;
         
-        // Generar HTML de etiquetas (badges)
-        // Muestra Keywords de unidad y Traits de armas en pequeño
-        let badges = u.keywords.map(k => `<span class="badge unit-tag">${k}</span>`).join('');
-        
-        // Agregar Traits de armas principales si son importantes
-        u.weapons.forEach(w => {
-            if(w.traits && w.traits.length > 0) {
-                // Solo mostrar la primera letra o algo corto para no saturar
-                badges += w.traits.map(t => `<span class="badge weapon-tag" title="${w.name}">${t}</span>`).join('');
-            }
-        });
-
-        let div = document.createElement('div');
-        div.className = "unit-item";
-        div.innerHTML = `
-            <div class="unit-info">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="color:var(--c); font-weight:bold;">${u.name}</span>
-                    <span style="color:var(--gold)">[${u.cost} PTS]</span>
-                </div>
+            editorSquad.forEach((u, i) => {
+                totalCost += u.cost;
                 
-                <div style="font-size:0.7rem; color:#aaa; margin-top:2px;">
-                    HP:${u.stats.hp} SV:${u.stats.sv} | ${u.weapons[0].name} & ${u.weapons[1].name}
-                </div>
+                // Generar HTML de etiquetas (badges)
+                // Muestra Keywords de unidad y Traits de armas en pequeño
+                let badges = u.keywords.map(k => `<span class="badge unit-tag">${k}</span>`).join('');
                 
-                <div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:3px;">
-                    ${badges}
-                </div>
-            </div>
-            <button class="btn btn-del" onclick="removeEditorUnit(${i})">X</button>
-        `;
-        c.appendChild(div);
-    });
-
-    const lbl = document.getElementById('total-pts');
-    lbl.innerText = totalCost;
-    lbl.style.color = (totalCost > 100) ? "var(--r)" : (totalCost === 100 ? "var(--gold)" : "#fff");
-};
-    
-function renderEditorSquad() {
-        const c = document.getElementById('squad-list'); c.innerHTML = "";
-        let totalCost = 0;
-
-        editorSquad.forEach((u, i) => {
-            totalCost += u.cost;
-            let div = document.createElement('div');
-            div.className = "unit-item";
-            // Mostramos iconos de arma según sea Rango o Melee para identificar rápido
-            const wIcon = u.stats.r_atk > 0 ? "🔫" : "⚔️";
-            
-            div.innerHTML = `
-                <div class="unit-info">
-                    <div style="color:var(--c); font-weight:bold;">${u.name} <span style="color:var(--gold)">[${u.cost} PTS]</span></div>
-                    <div style="color:#666;">${wIcon} HP:${u.stats.hp} SV:${u.stats.sv} | ${u.gear ? u.gear : 'NO GEAR'}</div>
-                </div>
-                <button class="btn btn-del" onclick="removeEditorUnit(${i})">X</button>
-            `;
-            c.appendChild(div);
-        });
-
-        // Actualizar el HTML del contador
-        const lbl = document.getElementById('total-pts');
-        lbl.innerText = totalCost;
+                // Agregar Traits de armas principales si son importantes
+                u.weapons.forEach(w => {
+                    if(w.traits && w.traits.length > 0) {
+                        // Solo mostrar la primera letra o algo corto para no saturar
+                        badges += w.traits.map(t => `<span class="badge weapon-tag" title="${w.name}">${t}</span>`).join('');
+                    }
+                });
         
-        if(totalCost >= 100) lbl.style.color = "var(--gold)";
-        else lbl.style.color = "#fff";
-    }
-
-    
-    window.startNewRound = function(amISecond) {
-        isPlayerTwo = amISecond; // True si vas segundo
-        myCP = isPlayerTwo ? 4 : 3; // 3 CP para el primero, 4 para el segundo
-        activePloys = {}; // Limpiar efectos
-        updateCPUI();
-        log(`=== NUEVA RONDA: ${myCP} CP GENERADOS ===`);
-    };
-
-        // Función maestra para mostrar/ocultar la interfaz de combate
-    function toggleCombatHUD(show) {
-        const displayStyle = show ? 'flex' : 'none'; // Flex para que mantengan su alineación
-        
-        // 1. Burbuja de Comandos (CP/Ploys)
-        const cmdHud = document.getElementById('cmd-hud');
-        if (cmdHud) cmdHud.style.display = displayStyle;
-    
-        // 2. Burbuja de Acciones (Rayo)
-        const actHud = document.getElementById('act-hud');
-        if (actHud) actHud.style.display = displayStyle;
-    
-        // 3. NUEVA: Burbuja de Equipo (Mochila)
-        const gearHud = document.getElementById('gear-hud');
-        if (gearHud) gearHud.style.display = displayStyle;
-
-        if (typeof gearOpen !== 'undefined' && gearOpen) {
-        if (typeof renderGearBubble === 'function') {
-            renderGearBubble();
-        }
-    }
-};
-
-    // --- GESTIÓN DE UI DE CP ---
-    function updateCPUI() {
-        document.getElementById('cp-display').innerText = "CP: " + myCP;
-        document.getElementById('cp-modal-display').innerText = "CP DISPONIBLES: " + myCP;
-        
-        // Ocultar botón de comando si no es mi turno (opcional)
-        const btnCmd = document.getElementById('btn-cmd');
-        if(btnCmd) btnCmd.style.display = (gameState === 'MY_TURN') ? 'block' : 'none';
-    }
-    
-    function toggleCommandMenu() {
-        const modal = document.getElementById('command-modal');
-        modal.classList.toggle('hidden');
-        updateCPUI();
-    }
-
-    // --- GESTIÓN DEL HUD DE ACCIONES ---
-
-    // 1. Mostrar/Ocultar la barra
-    window.toggleActionBar = function() {
-        const bar = document.getElementById('act-bar');
-        if(!bar) return;
-        bar.classList.toggle('open');
-    };
-    
-    // 2. Función Principal: Actualiza qué botones hay en la burbuja según la FASE
-    // Reemplaza o llama a esto dentro de tu 'updatePhaseUI' original
-   window.renderActionBubble = function() {
-    const hud = document.getElementById('act-hud');
-    const bar = document.getElementById('act-bar');
-    const bubbleIcon = document.getElementById('act-bubble-icon');
-    const bubble = document.getElementById('main-act-bubble');
-    
-    // Limpiar barra anterior
-    bar.innerHTML = "";
-    
-    // Si no es mi turno, ocultar
-    if (gameState !== 'MY_TURN') {
-        hud.style.display = 'none';
-        return;
-    } else {
-        hud.style.display = 'flex';
-    }
-
-    const me = myUnits[myIdx];
-
-    // ==========================================
-    // FASE 1: MOVIMIENTO
-    // ==========================================
-    if (turnPhase === 1) {
-        bubbleIcon.innerText = "🦶"; 
-        bubble.classList.add('pulse'); 
-
-        // OPCIÓN A: CONFIRMAR MOVIMIENTO
-        // Úsalo después de haber arrastrado la miniatura
-        createActionButton("TERMINAR MOVER", "✅", "move", () => {
-            // Asumimos que si das clic aquí, la unidad "se movió"
-            // (La lógica de movimiento real ya habrá puesto hasMoved=true al soltar la mini)
-            endMovementPhase();
-            toggleActionBar();
-        });
-        
-        // OPCIÓN B: NO MOVER (NUEVO)
-        // Úsalo para activar reglas de "Estacionario" (Heavy, etc)
-        createActionButton("MANTENER POSICIÓN", "⚓", "combat", () => {
-            // Forzamos la bandera a falso explícitamente
-            me.hasMoved = false; 
-            
-            // Feedback visual
-            log(`${me.name} mantiene posición (Preparado para Heavy)`, "info");
-            
-            // Pasamos directo a la fase de acción
-            endMovementPhase();
-            toggleActionBar();
-        });
-    } 
-    
-    // ==========================================
-    // FASE 2: ACCIONES
-    // ==========================================
-    else if (turnPhase === 2) {
-        bubbleIcon.innerText = "⚡"; 
-        bubble.classList.remove('pulse');
-
-        if (me.activations < 2) {
-            // 1. COMBATE (Ranged / Melee)
-            if (me.mode === 'open') {
-                if (combatMode === 'ranged') {
-                     createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); toggleActionBar(); });
-                } else {
-                     createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); toggleActionBar(); });
-                }
-            } else {
-                // Si está en Hidden, permitimos Melee (emboscada) pero no disparo
-                createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); toggleActionBar(); });
-            }
-
-            // 2. DASH (Mover extra)
-            // Dash cuenta como movimiento, ojo con Heavy si disparas después
-            createActionButton("DASH (3\")", "💨", "move", () => { 
-                performOp('DASH'); 
-                toggleActionBar(); 
-            });
-
-            // 3. MISIÓN
-            createActionButton("MISIÓN / OBJ", "🚩", "mission", () => { performOp('MISION'); toggleActionBar(); });
-        }
-
-        // 4. PASAR TURNO
-        createActionButton("PASAR TURNO", "⏭️", "normal", () => { performOp('PASAR'); toggleActionBar(); });
-    } 
-    
-    // FASE 3
-    else if (turnPhase === 3) {
-        bubbleIcon.innerText = "🎲"; 
-    }
-};
-
-    let gearOpen = false;
-
-window.toggleGearHUD = function() {
-    gearOpen = !gearOpen;
-    const bar = document.getElementById('gear-bar');
-    if (gearOpen) {
-        bar.classList.remove('hidden');
-        renderGearBubble(); // Refrescamos al abrir
-    } else {
-        bar.classList.add('hidden');
-    }
-};
-
-    window.renderGearBubble = function() {
-        const container = document.getElementById('gear-bar');
-        if (!container) return;
-        container.innerHTML = ''; 
-    
-        const me = myUnits[myIdx];
-        
-        // Validar si la unidad tiene equipo asignado
-        if (!me.gear || me.gear === "Nada") {
-            container.innerHTML = '<div style="color:#777; font-size:0.7rem; padding:4px;">Sin Equipo</div>';
-            return;
-        }
-    
-        // 1. BUSCAR EL EQUIPO EN LA DB POR NOMBRE
-        // Recorremos GEAR_DB buscando qué objeto tiene name === me.gear
-        // Nota: Object.values convierte el objeto en un array para poder buscar
-        const gearDef = Object.values(GEAR_DB).find(item => item.name === me.gear);
-    
-        // Si no encontramos la definición o no tiene mecánica vinculada, salimos
-        if (!gearDef || !gearDef.mechanicRef) {
-            console.log("Equipo encontrado pero sin mecánica vinculada:", me.gear);
-            return;
-        }
-    
-        // 2. OBTENER LA MECÁNICA REAL
-        const mechanicId = gearDef.mechanicRef; // ej: "grenade"
-        const mech = MECHANICS_DB[mechanicId];  // Obtenemos los datos finales
-    
-        if (mech && mech.type === 'ACTIVE') {
-            
-            const div = document.createElement('div');
-            
-            // Verificamos si ya se usó (usando la variable gearUsed de la unidad)
-            const isUsed = (mech.oneUse && me.gearUsed);
-    
-            div.className = isUsed ? "gear-item used" : "gear-item";
-            
-            div.innerHTML = `
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:1.2rem;">${mech.icon || '📦'}</span>
-                    <div style="display:flex; flex-direction:column;">
-                        <span style="font-weight:bold; color:white;">${mech.name}</span>
-                        <span style="font-size:0.6rem; color:#aaa;">${gearDef.name}</span>
+                let div = document.createElement('div');
+                div.className = "unit-item";
+                div.innerHTML = `
+                    <div class="unit-info">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color:var(--c); font-weight:bold;">${u.name}</span>
+                            <span style="color:var(--gold)">[${u.cost} PTS]</span>
+                        </div>
+                        
+                        <div style="font-size:0.7rem; color:#aaa; margin-top:2px;">
+                            HP:${u.stats.hp} SV:${u.stats.sv} | ${u.weapons[0].name} & ${u.weapons[1].name}
+                        </div>
+                        
+                        <div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:3px;">
+                            ${badges}
+                        </div>
                     </div>
-                </div>
-                ${isUsed ? '<small>❌</small>' : '<small style="color:var(--c)">USAR</small>'}
+                    <button class="btn btn-del" onclick="removeEditorUnit(${i})">X</button>
+                `;
+                c.appendChild(div);
+            });
+        
+            const lbl = document.getElementById('total-pts');
+            lbl.innerText = totalCost;
+            lbl.style.color = (totalCost > 100) ? "var(--r)" : (totalCost === 100 ? "var(--gold)" : "#fff");
+        };
+            
+        function renderEditorSquad() {
+                const c = document.getElementById('squad-list'); c.innerHTML = "";
+                let totalCost = 0;
+        
+                editorSquad.forEach((u, i) => {
+                    totalCost += u.cost;
+                    let div = document.createElement('div');
+                    div.className = "unit-item";
+                    // Mostramos iconos de arma según sea Rango o Melee para identificar rápido
+                    const wIcon = u.stats.r_atk > 0 ? "🔫" : "⚔️";
+                    
+                    div.innerHTML = `
+                        <div class="unit-info">
+                            <div style="color:var(--c); font-weight:bold;">${u.name} <span style="color:var(--gold)">[${u.cost} PTS]</span></div>
+                            <div style="color:#666;">${wIcon} HP:${u.stats.hp} SV:${u.stats.sv} | ${u.gear ? u.gear : 'NO GEAR'}</div>
+                        </div>
+                        <button class="btn btn-del" onclick="removeEditorUnit(${i})">X</button>
+                    `;
+                    c.appendChild(div);
+                });
+        
+                // Actualizar el HTML del contador
+                const lbl = document.getElementById('total-pts');
+                lbl.innerText = totalCost;
+                
+                if(totalCost >= 100) lbl.style.color = "var(--gold)";
+                else lbl.style.color = "#fff";
+            }
+        
+            
+            window.startNewRound = function(amISecond) {
+                isPlayerTwo = amISecond; // True si vas segundo
+                myCP = isPlayerTwo ? 4 : 3; // 3 CP para el primero, 4 para el segundo
+                activePloys = {}; // Limpiar efectos
+                updateCPUI();
+                log(`=== NUEVA RONDA: ${myCP} CP GENERADOS ===`);
+            };
+        
+                // Función maestra para mostrar/ocultar la interfaz de combate
+            function toggleCombatHUD(show) {
+                const displayStyle = show ? 'flex' : 'none'; // Flex para que mantengan su alineación
+                
+                // 1. Burbuja de Comandos (CP/Ploys)
+                const cmdHud = document.getElementById('cmd-hud');
+                if (cmdHud) cmdHud.style.display = displayStyle;
+            
+                // 2. Burbuja de Acciones (Rayo)
+                const actHud = document.getElementById('act-hud');
+                if (actHud) actHud.style.display = displayStyle;
+            
+                // 3. NUEVA: Burbuja de Equipo (Mochila)
+                const gearHud = document.getElementById('gear-hud');
+                if (gearHud) gearHud.style.display = displayStyle;
+        
+                if (typeof gearOpen !== 'undefined' && gearOpen) {
+                if (typeof renderGearBubble === 'function') {
+                    renderGearBubble();
+                }
+            }
+        };
+        
+            // --- GESTIÓN DE UI DE CP ---
+            function updateCPUI() {
+                document.getElementById('cp-display').innerText = "CP: " + myCP;
+                document.getElementById('cp-modal-display').innerText = "CP DISPONIBLES: " + myCP;
+                
+                // Ocultar botón de comando si no es mi turno (opcional)
+                const btnCmd = document.getElementById('btn-cmd');
+                if(btnCmd) btnCmd.style.display = (gameState === 'MY_TURN') ? 'block' : 'none';
+            }
+            
+            function toggleCommandMenu() {
+                const modal = document.getElementById('command-modal');
+                modal.classList.toggle('hidden');
+                updateCPUI();
+            }
+        
+           // Variable de estado: 'cmd', 'gear', 'act' o null (cerrado)
+        let currentBubble = null;
+        
+        // === 1. FUNCIÓN MAESTRA DE APERTURA ===
+        window.toggleBubble = function(bubbleType) {
+            // A. Si hacemos click en la que ya está abierta, la cerramos
+            if (currentBubble === bubbleType) {
+                closeAllBubbles();
+                return;
+            }
+        
+            // B. Si es una nueva, cerramos todo primero y abrimos la nueva
+            closeAllBubbles();
+            
+            currentBubble = bubbleType;
+            
+            // UI: Marcar la burbuja como activa (Borde brillante)
+            const bubbleEl = document.querySelector(`#hud-${bubbleType} .hud-bubble`);
+            if(bubbleEl) bubbleEl.classList.add('active');
+        
+            // UI: Mostrar el menú correspondiente
+            const menuEl = document.getElementById(`menu-${bubbleType}`);
+            if(menuEl) menuEl.classList.remove('hidden');
+        
+            // LÓGICA: Renderizar el contenido
+            refreshActiveMenu();
+        };
+        
+        // === 2. FUNCIÓN DE LIMPIEZA ===
+        function closeAllBubbles() {
+            currentBubble = null;
+            
+            // Quitar clase .active de todas las bolas
+            document.querySelectorAll('.hud-bubble').forEach(el => el.classList.remove('active'));
+            
+            // Ocultar todos los menús
+            document.querySelectorAll('.hud-menu').forEach(el => el.classList.add('hidden'));
+        }
+        
+        // === 3. RENDERIZADOR CENTRAL (Despachador) ===
+        function refreshActiveMenu() {
+            if (!currentBubble) return;
+        
+            if (currentBubble === 'gear') renderGearMenu();
+            else if (currentBubble === 'cmd') renderCmdMenu(); // Tu lógica de Ploys
+            else if (currentBubble === 'act') renderActMenu(); // Tu lógica de Acciones
+        }
+            
+          // --- RENDERIZAR EQUIPO (GEAR) ---
+        window.renderGearMenu = function() {
+            const container = document.getElementById('menu-gear');
+            if (!container) return;
+            container.innerHTML = '';
+        
+            // Validaciones de seguridad (copiadas de tu versión anterior)
+            if (!myUnits || myIdx < 0 || !myUnits[myIdx]) return;
+            const me = myUnits[myIdx];
+            
+            if (!me.gear || me.gear === "Nada") {
+                container.innerHTML = '<div style="padding:5px; color:#777; font-size:0.7rem;">Vacío</div>';
+                return;
+            }
+        
+            // Buscar en DB (Lógica de vinculación)
+            const gearDef = Object.values(window.GEAR_DB).find(item => item.name === me.gear);
+            if (!gearDef || !gearDef.mechanicRef) {
+                container.innerHTML = `<div class="menu-item disabled">${me.gear} (Pasivo)</div>`;
+                return;
+            }
+            
+            const mech = window.MECHANICS_DB[gearDef.mechanicRef];
+            const isUsed = (mech.oneUse && me.gearUsed);
+        
+            const div = document.createElement('div');
+            div.className = isUsed ? "menu-item disabled" : "menu-item";
+            div.innerHTML = `
+                <span>${mech.icon} ${mech.name}</span>
+                <small>${isUsed ? 'USADO' : 'USAR'}</small>
             `;
-    
-            if (!isUsed) {
+            
+            if(!isUsed) {
                 div.onclick = function() {
-                    console.log(`Activando mecánica: ${mech.func}`);
-                    
-                    // --- AQUÍ EJECUTAS LA LÓGICA ---
-                    // Dependiendo de cómo tengas tus funciones, podría ser:
-                    // window[mech.func](me); 
-                    // O un switch simple:
-                    
-                    if(mech.func === 'THROW_GRENADE') {
-                         // Lógica de granada...
-                         alert("¡BUM! Granada lanzada");
-                    } else if (mech.func === 'USE_MEDKIT') {
-                         // Lógica de medkit...
-                         alert("Curando...");
-                    }
-    
-                    // Marcar como usado si es de un solo uso
-                    if(mech.oneUse) {
-                        me.gearUsed = true;
-                    }
-    
-                    toggleGearHUD();
-                    updateHUD();
+                    // Lógica de uso
+                    console.log("Usando:", mech.name);
+                    if(mech.oneUse) me.gearUsed = true;
+                    toggleBubble(null); // Cerrar menú al usar
+                    updateHUD();        // Refrescar todo
                 };
             }
-            
             container.appendChild(div);
-        }
-    };
-    
-    // Helper para crear botones HTML
-    function createActionButton(label, icon, type, onClickFunc) {
-    const bar = document.getElementById('act-bar');
-    
-    const div = document.createElement('div');
-    div.className = `act-btn ${type}`;
-    div.onclick = onClickFunc;
-    
-    // CAMBIO: El Icono va primero, luego el Label
-    div.innerHTML = `
-        <div class="act-btn-icon">${icon}</div>
-        <span class="act-btn-label">${label}</span>
-    `;
-    
-    bar.appendChild(div);
-}
+        };
+        
+        // --- RENDERIZAR ACCIONES (ACT) ---
+        window.renderActMenu = function() {
+            const container = document.getElementById('menu-act');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            // Aquí irían tus botones de ataque:
+            // Ejemplo rápido:
+            const acts = [
+                { name: "ATACAR", icon: "💥", func: "performAttack" }, // Tu función de ataque
+                { name: "PASAR", icon: "⏭️", func: "passTurn" }       // Tu función de pasar
+            ];
+        
+            acts.forEach(act => {
+                const div = document.createElement('div');
+                div.className = "menu-item";
+                div.innerHTML = `<span>${act.icon} ${act.name}</span>`;
+                div.onclick = function() {
+                    console.log("Acción:", act.name);
+                    // window[act.func]();  <-- Llamar a tu función real
+                    toggleBubble(null);
+                };
+                container.appendChild(div);
+            });
+        };
+        
+        // --- RENDERIZAR COMANDOS (CMD) ---
+        window.renderCmdMenu = function() {
+            // Similar a los anteriores, renderiza tus Ploys aquí
+            const container = document.getElementById('menu-cmd');
+            container.innerHTML = '<div style="padding:5px; color:#aaa;">Ploys...</div>';
+        };
     
     // --- GAME INIT ---
     window.initSystem = function() {
@@ -2826,6 +2507,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
