@@ -2421,21 +2421,16 @@ window.renderStars = function(rolls, containerId) {
     }
 
 
-   function updateCmdContent() {
-        const container = document.getElementById('cmd-bar');
-        const details = document.getElementById('cmd-details');
-        
-        // Si ya está abierto, cerrar todo
-        if (bar.classList.contains('open')) {
-            bar.classList.remove('open');
-            details.style.display = 'none';
-            return;
-        }
-    
-        // Si abrimos, renderizamos los iconos disponibles AHORA
+   window.updateCmdContent = function() {
+    // 1. Ocultar detalles previos para evitar que se queden flotando
+    const details = document.getElementById('cmd-details');
+    if (details) details.style.display = 'none';
+
+    // 2. Llamar a la función que dibuja los iconos (Ploys)
+    if (typeof renderPloyIcons === 'function') {
         renderPloyIcons();
-        bar.classList.add('open');
-    };
+    }
+};
     
     // 2. Dibujar iconos según el contexto
     function renderPloyIcons() {
@@ -2860,5 +2855,6 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
