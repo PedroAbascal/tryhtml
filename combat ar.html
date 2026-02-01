@@ -694,8 +694,8 @@
     function openForge() {
         document.getElementById('lobby-screen').classList.add('hidden');
         document.getElementById('creator-screen').classList.remove('hidden');
-        toggleCommandHUD(false);
-        toggleActionBar(false);
+        
+        toggleCombatHUD(false);
         
         initForgeSelects();
         renderEditorSquad();
@@ -952,26 +952,28 @@
         
                 // Función maestra para mostrar/ocultar la interfaz de combate
             function toggleCombatHUD(show) {
-                const displayStyle = show ? 'flex' : 'none'; // Flex para que mantengan su alineación
-                
-                // 1. Burbuja de Comandos (CP/Ploys)
-                const cmdHud = document.getElementById('cmd-hud');
-                if (cmdHud) cmdHud.style.display = displayStyle;
+            const displayStyle = show ? 'flex' : 'none';
             
-                // 2. Burbuja de Acciones (Rayo)
-                const actHud = document.getElementById('act-hud');
-                if (actHud) actHud.style.display = displayStyle;
+            // Lista de los nuevos IDs unificados
+            const bubbles = ['hud-cmd', 'hud-gear', 'hud-act'];
             
-                // 3. NUEVA: Burbuja de Equipo (Mochila)
-                const gearHud = document.getElementById('gear-hud');
-                if (gearHud) gearHud.style.display = displayStyle;
-        
-                if (typeof gearOpen !== 'undefined' && gearOpen) {
-                if (typeof renderGearBubble === 'function') {
-                    renderGearBubble();
+            bubbles.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.style.display = displayStyle;
+                    
+                    // Si estamos OCULTANDO, también cerramos los menús internos por seguridad
+                    if (!show) {
+                        // Aseguramos que la variable global de estado se resetee
+                        if(typeof currentBubble !== 'undefined') currentBubble = null;
+                        
+                        // Quitamos clases activas visuales
+                        el.querySelector('.hud-bubble')?.classList.remove('active');
+                        el.querySelector('.hud-menu')?.classList.add('hidden');
+                    }
                 }
-            }
-        };
+            });
+        }
         
             // --- GESTIÓN DE UI DE CP ---
             function updateCPUI() {
@@ -2507,6 +2509,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
