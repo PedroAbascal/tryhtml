@@ -1334,19 +1334,19 @@ function renderEditorSquad() {
             // 1. COMBATE (Ranged / Melee)
             if (me.mode === 'open') {
                 if (combatMode === 'ranged') {
-                     createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+                     createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.style.display = 'none'; // Forzar oculto
                 });  });
                 } else {
-                     createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+                     createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); [ 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.style.display = 'none'; // Forzar oculto
                 });  });
                 }
             } else {
                 // Si está en Hidden, permitimos Melee (emboscada) pero no disparo
-                createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+                createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); [ 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.style.display = 'none'; // Forzar oculto
                 });  });
@@ -1356,21 +1356,21 @@ function renderEditorSquad() {
             // Dash cuenta como movimiento, ojo con Heavy si disparas después
             createActionButton("DASH (3\")", "💨", "move", () => { 
                 performOp('DASH'); 
-               'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+                ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.style.display = 'none'; // Forzar oculto
                 }); 
             });
 
             // 3. MISIÓN
-            createActionButton("MISIÓN / OBJ", "🚩", "mission", () => { performOp('MISION');  'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+            createActionButton("MISIÓN / OBJ", "🚩", "mission", () => { performOp('MISION');  [ 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.style.display = 'none'; // Forzar oculto
                 });  });
         }
 
         // 4. PASAR TURNO
-        createActionButton("PASAR TURNO", "⏭️", "normal", () => { performOp('PASAR'); 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+        createActionButton("PASAR TURNO", "⏭️", "normal", () => { performOp('PASAR'); [ 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.style.display = 'none'; // Forzar oculto
                 });  });
@@ -2623,6 +2623,7 @@ window.renderStars = function(rolls, containerId) {
         score.innerHTML = `<div style="font-size:0.8rem; color:#888; margin-bottom:10px;">${subText}</div>YO: ${myVP} - RIV: ${enemyVP}`;
         if(client) try{ client.disconnect(); } catch(e){}
     }
+    
     const checkWinCondition = () => triggerGameOver(null, null, null);
 
     function checkAliveStatus() {
@@ -2884,6 +2885,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
