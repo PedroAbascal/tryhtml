@@ -1303,7 +1303,7 @@ function renderEditorSquad() {
             endMovementPhase();
             ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                 const el = document.getElementById(id);
-                if(el) el.style.display = 'none'; // Forzar oculto
+                if(el) el.style.display = ''; // Forzar oculto
             });
         });
         
@@ -1320,7 +1320,7 @@ function renderEditorSquad() {
             endMovementPhase();
             ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                 const el = document.getElementById(id);
-                if(el) el.style.display = 'none'; // Forzar oculto
+                if(el) el.style.display = ''; // Forzar oculto
             });
         });
     } 
@@ -1338,19 +1338,19 @@ function renderEditorSquad() {
                 if (combatMode === 'ranged') {
                      createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                     const el = document.getElementById(id);
-                    if(el) el.style.display = 'none'; // Forzar oculto
+                    if(el) el.style.display = ''; // Forzar oculto
                 });  });
                 } else {
                      createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); [ 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                     const el = document.getElementById(id);
-                    if(el) el.style.display = 'none'; // Forzar oculto
+                    if(el) el.style.display = ''; // Forzar oculto
                 });  });
                 }
             } else {
                 // Si está en Hidden, permitimos Melee (emboscada) pero no disparo
                 createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); [ 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                     const el = document.getElementById(id);
-                    if(el) el.style.display = 'none'; // Forzar oculto
+                    if(el) el.style.display = ''; // Forzar oculto
                 });  });
             }
 
@@ -1360,21 +1360,21 @@ function renderEditorSquad() {
                 performOp('DASH'); 
                 ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                     const el = document.getElementById(id);
-                    if(el) el.style.display = 'none'; // Forzar oculto
+                    if(el) el.style.display = ''; // Forzar oculto
                 }); 
             });
 
             // 3. MISIÓN
             createActionButton("MISIÓN / OBJ", "🚩", "mission", () => { performOp('MISION');  [ 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                     const el = document.getElementById(id);
-                    if(el) el.style.display = 'none'; // Forzar oculto
+                    if(el) el.style.display = ''; // Forzar oculto
                 });  });
         }
 
         // 4. PASAR TURNO
         createActionButton("PASAR TURNO", "⏭️", "normal", () => { performOp('PASAR'); [ 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                     const el = document.getElementById(id);
-                    if(el) el.style.display = 'none'; // Forzar oculto
+                    if(el) el.style.display = ''; // Forzar oculto
                 });  });
     } 
     
@@ -2887,6 +2887,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
