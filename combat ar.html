@@ -1299,7 +1299,10 @@ function renderEditorSquad() {
             // Asumimos que si das clic aquí, la unidad "se movió"
             // (La lógica de movimiento real ya habrá puesto hasMoved=true al soltar la mini)
             endMovementPhase();
-            toggleActionBar();
+            ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.style.display = 'none'; // Forzar oculto
+            });
         });
         
         // OPCIÓN B: NO MOVER (NUEVO)
@@ -1313,7 +1316,10 @@ function renderEditorSquad() {
             
             // Pasamos directo a la fase de acción
             endMovementPhase();
-            toggleActionBar();
+            ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.style.display = 'none'; // Forzar oculto
+            });
         });
     } 
     
@@ -1328,28 +1334,46 @@ function renderEditorSquad() {
             // 1. COMBATE (Ranged / Melee)
             if (me.mode === 'open') {
                 if (combatMode === 'ranged') {
-                     createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); toggleActionBar(); });
+                     createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.style.display = 'none'; // Forzar oculto
+                });  });
                 } else {
-                     createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); toggleActionBar(); });
+                     createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.style.display = 'none'; // Forzar oculto
+                });  });
                 }
             } else {
                 // Si está en Hidden, permitimos Melee (emboscada) pero no disparo
-                createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); toggleActionBar(); });
+                createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.style.display = 'none'; // Forzar oculto
+                });  });
             }
 
             // 2. DASH (Mover extra)
             // Dash cuenta como movimiento, ojo con Heavy si disparas después
             createActionButton("DASH (3\")", "💨", "move", () => { 
                 performOp('DASH'); 
-                toggleActionBar(); 
+               'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.style.display = 'none'; // Forzar oculto
+                }); 
             });
 
             // 3. MISIÓN
-            createActionButton("MISIÓN / OBJ", "🚩", "mission", () => { performOp('MISION'); toggleActionBar(); });
+            createActionButton("MISIÓN / OBJ", "🚩", "mission", () => { performOp('MISION');  'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.style.display = 'none'; // Forzar oculto
+                });  });
         }
 
         // 4. PASAR TURNO
-        createActionButton("PASAR TURNO", "⏭️", "normal", () => { performOp('PASAR'); toggleActionBar(); });
+        createActionButton("PASAR TURNO", "⏭️", "normal", () => { performOp('PASAR'); 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.style.display = 'none'; // Forzar oculto
+                });  });
     } 
     
     // FASE 3
@@ -2698,9 +2722,14 @@ window.renderStars = function(rolls, containerId) {
                 
                 // Limpiar marcadores de listo
                 document.querySelectorAll('.ready-marker').forEach(e => e.classList.remove('show'));
-                toggleCommandHUD(true);
-                toggleActionBar(true);
                 
+                ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.style.display = ''; // Quitar 'none' para que se vea
+                });
+                
+                // Forzar actualización visual inmediata
+                updateHUD();
                 // --- ASIGNAR CP ---
                 // Si gané iniciativa (iWonInitiative es true), NO voy segundo (false) -> 3 CP
                 // Si perdí iniciativa (iWonInitiative es false), SÍ voy segundo (true) -> 4 CP
@@ -2855,6 +2884,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
