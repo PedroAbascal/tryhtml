@@ -1041,18 +1041,55 @@
             
           // --- RENDERIZAR EQUIPO (GEAR) ---
         window.renderGearMenu = function() {
-            const container = document.getElementById('menu-gear');
-            if (!container) return;
-            container.innerHTML = '';
+        const container = document.getElementById('menu-gear');
+        if (!container) return;
+        container.innerHTML = '';
+    
+        if (!myUnits || myIdx < 0 || !myUnits[myIdx]) return;
+        const me = myUnits[myIdx];
+    
+        // Validar si tiene equipo y buscarlo en la DB
+        const gearDef = Object.values(window.GEAR_DB).find(item => item.name === me.gear);
         
-            // Validaciones de seguridad (copiadas de tu versión anterior)
-            if (!myUnits || myIdx < 0 || !myUnits[myIdx]) return;
-            const me = myUnits[myIdx];
-            
-            if (!me.gear || me.gear === "Nada") {
-                container.innerHTML = '<div style="padding:5px; color:#777; font-size:0.7rem;">Vacío</div>';
-                return;
-            }
+        // Si no tiene equipo válido o mecánica
+        if (!gearDef || !gearDef.mechanicRef) {
+            container.innerHTML = '<div style="padding:8px; color:#777; font-size:0.8rem; text-align:center;">Sin equipo activo</div>';
+            return;
+        }
+    
+        const mech = window.MECHANICS_DB[gearDef.mechanicRef];
+        const isUsed = (mech.oneUse && me.gearUsed);
+    
+        const div = document.createElement('div');
+        div.className = isUsed ? "menu-item disabled" : "menu-item";
+        
+        div.innerHTML = `
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:1.2rem;">${mech.icon}</span>
+                <div style="display:flex; flex-direction:column;">
+                    <span style="font-weight:bold;">${mech.name}</span>
+                    <span style="font-size:0.6rem; color:#aaa;">${gearDef.name}</span>
+                </div>
+            </div>
+            <small style="color:${isUsed ? '#f55' : 'var(--c)'}">${isUsed ? 'AGOTADO' : 'USAR'}</small>
+        `;
+    
+        if (!isUsed) {
+            div.onclick = function() {
+                // Ejecutar la mecánica
+                if (mech.func === "THROW_GRENADE") window.startAttack("grenade"); // Ejemplo especial
+                else if (mech.func === "USE_MEDKIT") window.healUnit(me);
+                else console.log("Efecto genérico:", mech.name);
+    
+                // Marcar usado
+                if (mech.oneUse) me.gearUsed = true;
+                
+                toggleBubble(null);
+                updateHUD();
+            };
+        }
+        container.appendChild(div);
+    };
         
             // Buscar en DB (Lógica de vinculación)
             const gearDef = Object.values(window.GEAR_DB).find(item => item.name === me.gear);
@@ -1085,36 +1122,116 @@
         
         // --- RENDERIZAR ACCIONES (ACT) ---
         window.renderActMenu = function() {
-            const container = document.getElementById('menu-act');
-            if (!container) return;
-            container.innerHTML = '';
+        const container = document.getElementById('menu-act');
+        if (!container) return;
+        container.innerHTML = '';
+    
+        const me = myUnits[myIdx];
+        const ap = me.ap || 0; // Action Points actuales
+    
+        // Definimos las acciones disponibles
+        const actions = [
+            {
+                name: "MOVER",
+                icon: "🏃",
+                cost: 1,
+                // Deshabilitar si: No hay AP, ya movió, o está trabado en combate
+                disabled: ap < 1 || me.hasMoved || me.isEngaged,
+                func: "startMove" 
+            },
+            {
+                name: "DISPARAR",
+                icon: "🔫",
+                cost: 1,
+                // Deshabilitar si: No hay AP, ya disparó, o está en melee
+                disabled: ap < 1 || me.hasShot || me.isEngaged, 
+                func: "startShooting"
+            },
+            {
+                name: "COMBATE (MELEE)",
+                icon: "⚔️",
+                cost: 1,
+                // Deshabilitar si: No hay AP, ya peleó, o NO está cerca de nadie
+                disabled: ap < 1 || me.hasFought, 
+                func: "startMelee"
+            },
+            {
+                name: "PASAR TURNO",
+                icon: "⏭️",
+                cost: 0,
+                disabled: false, // Siempre se puede pasar
+                func: "passTurn"
+            }
+        ];
+    
+        actions.forEach(act => {
+            const div = document.createElement('div');
+            div.className = act.disabled ? "menu-item disabled" : "menu-item";
             
-            // Aquí irían tus botones de ataque:
-            // Ejemplo rápido:
-            const acts = [
-                { name: "ATACAR", icon: "💥", func: "performAttack" }, // Tu función de ataque
-                { name: "PASAR", icon: "⏭️", func: "passTurn" }       // Tu función de pasar
-            ];
-        
-            acts.forEach(act => {
-                const div = document.createElement('div');
-                div.className = "menu-item";
-                div.innerHTML = `<span>${act.icon} ${act.name}</span>`;
+            div.innerHTML = `
+                <span>${act.icon} ${act.name}</span>
+                ${act.cost > 0 ? `<small style="color:#aaa">${act.cost} AP</small>` : ''}
+            `;
+    
+            if (!act.disabled) {
                 div.onclick = function() {
-                    console.log("Acción:", act.name);
-                    // window[act.func]();  <-- Llamar a tu función real
-                    toggleBubble(null);
+                    toggleBubble(null); // Cerrar menú
+                    
+                    // Ejecutar la función real
+                    if (typeof window[act.func] === 'function') {
+                        window[act.func](); 
+                    } else {
+                        console.error("Función no encontrada:", act.func);
+                    }
                 };
-                container.appendChild(div);
-            });
-        };
+            }
+            container.appendChild(div);
+        });
+    };
         
         // --- RENDERIZAR COMANDOS (CMD) ---
-        window.renderCmdMenu = function() {
-            // Similar a los anteriores, renderiza tus Ploys aquí
-            const container = document.getElementById('menu-cmd');
-            container.innerHTML = '<div style="padding:5px; color:#aaa;">Ploys...</div>';
-        };
+       window.renderCmdMenu = function() {
+        const container = document.getElementById('menu-cmd');
+        if (!container) return;
+        container.innerHTML = '';
+    
+        // Header con tus CP actuales
+        const header = document.createElement('div');
+        header.style.cssText = "padding:4px; font-size:0.7rem; color:var(--gold); border-bottom:1px solid #333; margin-bottom:4px;";
+        header.innerText = `COMANDOS (CP: ${window.myCP || 0})`;
+        container.appendChild(header);
+    
+        window.PLOYS_DB.forEach(ploy => {
+            const canAfford = window.myCP >= ploy.cost;
+            
+            const div = document.createElement('div');
+            div.className = canAfford ? "menu-item" : "menu-item disabled";
+            
+            div.innerHTML = `
+                <div style="display:flex; flex-direction:column;">
+                    <span style="font-weight:bold;">${ploy.name}</span>
+                    <span style="font-size:0.6rem; color:#888;">${ploy.desc}</span>
+                </div>
+                <span style="color:${canAfford ? 'var(--gold)' : '#555'}; font-weight:bold;">${ploy.cost} CP</span>
+            `;
+    
+            if (canAfford) {
+                div.onclick = function() {
+                    // Ejecutar función
+                    if (typeof window[ploy.func] === 'function') {
+                        window[ploy.func]();
+                        // Restar CP aquí o dentro de la función específica
+                        window.myCP -= ploy.cost; 
+                    } else {
+                        console.log("Función de Ploy no definida:", ploy.func);
+                    }
+                    toggleBubble(null); // Cerrar menú
+                    updateHUD();        // Actualizar UI
+                };
+            }
+            container.appendChild(div);
+        });
+    };
     
     // --- GAME INIT ---
     window.initSystem = function() {
@@ -2507,6 +2624,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
