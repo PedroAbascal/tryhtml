@@ -1041,55 +1041,18 @@
             
           // --- RENDERIZAR EQUIPO (GEAR) ---
         window.renderGearMenu = function() {
-        const container = document.getElementById('menu-gear');
-        if (!container) return;
-        container.innerHTML = '';
-    
-        if (!myUnits || myIdx < 0 || !myUnits[myIdx]) return;
-        const me = myUnits[myIdx];
-    
-        // Validar si tiene equipo y buscarlo en la DB
-        const gearDef = Object.values(window.GEAR_DB).find(item => item.name === me.gear);
+            const container = document.getElementById('menu-gear');
+            if (!container) return;
+            container.innerHTML = '';
         
-        // Si no tiene equipo válido o mecánica
-        if (!gearDef || !gearDef.mechanicRef) {
-            container.innerHTML = '<div style="padding:8px; color:#777; font-size:0.8rem; text-align:center;">Sin equipo activo</div>';
-            return;
-        }
-    
-        const mech = window.MECHANICS_DB[gearDef.mechanicRef];
-        const isUsed = (mech.oneUse && me.gearUsed);
-    
-        const div = document.createElement('div');
-        div.className = isUsed ? "menu-item disabled" : "menu-item";
-        
-        div.innerHTML = `
-            <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:1.2rem;">${mech.icon}</span>
-                <div style="display:flex; flex-direction:column;">
-                    <span style="font-weight:bold;">${mech.name}</span>
-                    <span style="font-size:0.6rem; color:#aaa;">${gearDef.name}</span>
-                </div>
-            </div>
-            <small style="color:${isUsed ? '#f55' : 'var(--c)'}">${isUsed ? 'AGOTADO' : 'USAR'}</small>
-        `;
-    
-        if (!isUsed) {
-            div.onclick = function() {
-                // Ejecutar la mecánica
-                if (mech.func === "THROW_GRENADE") window.startAttack("grenade"); // Ejemplo especial
-                else if (mech.func === "USE_MEDKIT") window.healUnit(me);
-                else console.log("Efecto genérico:", mech.name);
-    
-                // Marcar usado
-                if (mech.oneUse) me.gearUsed = true;
-                
-                toggleBubble(null);
-                updateHUD();
-            };
-        }
-        container.appendChild(div);
-    };
+            // Validaciones de seguridad (copiadas de tu versión anterior)
+            if (!myUnits || myIdx < 0 || !myUnits[myIdx]) return;
+            const me = myUnits[myIdx];
+            
+            if (!me.gear || me.gear === "Nada") {
+                container.innerHTML = '<div style="padding:5px; color:#777; font-size:0.7rem;">Vacío</div>';
+                return;
+            }
         
             // Buscar en DB (Lógica de vinculación)
             const gearDef = Object.values(window.GEAR_DB).find(item => item.name === me.gear);
@@ -1122,116 +1085,36 @@
         
         // --- RENDERIZAR ACCIONES (ACT) ---
         window.renderActMenu = function() {
-        const container = document.getElementById('menu-act');
-        if (!container) return;
-        container.innerHTML = '';
-    
-        const me = myUnits[myIdx];
-        const ap = me.ap || 0; // Action Points actuales
-    
-        // Definimos las acciones disponibles
-        const actions = [
-            {
-                name: "MOVER",
-                icon: "🏃",
-                cost: 1,
-                // Deshabilitar si: No hay AP, ya movió, o está trabado en combate
-                disabled: ap < 1 || me.hasMoved || me.isEngaged,
-                func: "startMove" 
-            },
-            {
-                name: "DISPARAR",
-                icon: "🔫",
-                cost: 1,
-                // Deshabilitar si: No hay AP, ya disparó, o está en melee
-                disabled: ap < 1 || me.hasShot || me.isEngaged, 
-                func: "initiateCombat"
-            },
-            {
-                name: "COMBATE (MELEE)",
-                icon: "⚔️",
-                cost: 1,
-                // Deshabilitar si: No hay AP, ya peleó, o NO está cerca de nadie
-                disabled: ap < 1 || me.hasFought, 
-                func: "startMelee"
-            },
-            {
-                name: "PASAR TURNO",
-                icon: "⏭️",
-                cost: 0,
-                disabled: false, // Siempre se puede pasar
-                func: "passTurn"
-            }
-        ];
-    
-        actions.forEach(act => {
-            const div = document.createElement('div');
-            div.className = act.disabled ? "menu-item disabled" : "menu-item";
+            const container = document.getElementById('menu-act');
+            if (!container) return;
+            container.innerHTML = '';
             
-            div.innerHTML = `
-                <span>${act.icon} ${act.name}</span>
-                ${act.cost > 0 ? `<small style="color:#aaa">${act.cost} AP</small>` : ''}
-            `;
-    
-            if (!act.disabled) {
+            // Aquí irían tus botones de ataque:
+            // Ejemplo rápido:
+            const acts = [
+                { name: "ATACAR", icon: "💥", func: "performAttack" }, // Tu función de ataque
+                { name: "PASAR", icon: "⏭️", func: "passTurn" }       // Tu función de pasar
+            ];
+        
+            acts.forEach(act => {
+                const div = document.createElement('div');
+                div.className = "menu-item";
+                div.innerHTML = `<span>${act.icon} ${act.name}</span>`;
                 div.onclick = function() {
-                    toggleBubble(null); // Cerrar menú
-                    
-                    // Ejecutar la función real
-                    if (typeof window[act.func] === 'function') {
-                        window[act.func](); 
-                    } else {
-                        console.error("Función no encontrada:", act.func);
-                    }
+                    console.log("Acción:", act.name);
+                    // window[act.func]();  <-- Llamar a tu función real
+                    toggleBubble(null);
                 };
-            }
-            container.appendChild(div);
-        });
-    };
+                container.appendChild(div);
+            });
+        };
         
         // --- RENDERIZAR COMANDOS (CMD) ---
-       window.renderCmdMenu = function() {
-        const container = document.getElementById('menu-cmd');
-        if (!container) return;
-        container.innerHTML = '';
-    
-        // Header con tus CP actuales
-        const header = document.createElement('div');
-        header.style.cssText = "padding:4px; font-size:0.7rem; color:var(--gold); border-bottom:1px solid #333; margin-bottom:4px;";
-        header.innerText = `COMANDOS (CP: ${window.myCP || 0})`;
-        container.appendChild(header);
-    
-        window.PLOYS_DB.forEach(ploy => {
-            const canAfford = window.myCP >= ploy.cost;
-            
-            const div = document.createElement('div');
-            div.className = canAfford ? "menu-item" : "menu-item disabled";
-            
-            div.innerHTML = `
-                <div style="display:flex; flex-direction:column;">
-                    <span style="font-weight:bold;">${ploy.name}</span>
-                    <span style="font-size:0.6rem; color:#888;">${ploy.desc}</span>
-                </div>
-                <span style="color:${canAfford ? 'var(--gold)' : '#555'}; font-weight:bold;">${ploy.cost} CP</span>
-            `;
-    
-            if (canAfford) {
-                div.onclick = function() {
-                    // Ejecutar función
-                    if (typeof window[ploy.func] === 'function') {
-                        window[ploy.func]();
-                        // Restar CP aquí o dentro de la función específica
-                        window.myCP -= ploy.cost; 
-                    } else {
-                        console.log("Función de Ploy no definida:", ploy.func);
-                    }
-                    toggleBubble(null); // Cerrar menú
-                    updateHUD();        // Actualizar UI
-                };
-            }
-            container.appendChild(div);
-        });
-    };
+        window.renderCmdMenu = function() {
+            // Similar a los anteriores, renderiza tus Ploys aquí
+            const container = document.getElementById('menu-cmd');
+            container.innerHTML = '<div style="padding:5px; color:#aaa;">Ploys...</div>';
+        };
     
     // --- GAME INIT ---
     window.initSystem = function() {
@@ -2027,7 +1910,7 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
     // ==========================================================
     
     // Misión Secreta (Botón superior)
-   const btnSecret = document.getElementById('btn-claim-secret');
+    const btnSecret = document.getElementById('btn-claim-secret');
     if(btnSecret) {
         if (typeof secondaryActive !== 'undefined' && secondaryActive && !secretClaimed && gameState !== 'PLANNING') {
             btnSecret.style.display = 'block';
@@ -2035,16 +1918,14 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
         } else { 
             btnSecret.style.display = 'none'; 
         }
-    } 
-    
-    // ==========================================================
-    // 7. ACTUALIZAR BURBUJAS (Menú Unificado)
-    // ==========================================================
-    // IMPORTANTE: Esta llamada debe estar DENTRO de la función, antes de la última llave
-    if (typeof refreshActiveMenu === 'function') {
-        refreshActiveMenu();
     }
 
+     if(gearOpen) renderGearBubble(); // Solo renderizar si está abierta para ahorrar recursos
+
+    // ★ IMPORTANTE: Refrescar la Burbuja de Acciones para que coincida con la selección
+    if(typeof renderActionBubble === 'function') {
+        renderActionBubble();
+    }
 };
 
 // --- FUNCIONES VISUALES DE DADOS (HELPER FUNCTIONS) ---
@@ -2472,6 +2353,7 @@ window.renderStars = function(rolls, containerId) {
                 // Limpiar marcadores de listo
                 document.querySelectorAll('.ready-marker').forEach(e => e.classList.remove('show'));
                 toggleCommandHUD(true);
+                toggleActionBar(true);
                 
                 // --- ASIGNAR CP ---
                 // Si gané iniciativa (iWonInitiative es true), NO voy segundo (false) -> 3 CP
@@ -2514,10 +2396,10 @@ window.renderStars = function(rolls, containerId) {
     function hideAllCombatButtons() { const ids = ['btn-reroll', 'btn-reroll-def', 'btn-confirm-atk', 'btn-confirm-def', 'btn-apply-dmg', 'btn-cancel-combat', 'btn-close-combat', 'btn-cover-toggle']; ids.forEach(id => document.getElementById(id).style.display = 'none'); }
     
     // UI Helpers
-    window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; refreshActiveMenu(); updateHUD(); } }
+    window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; renderActionBubble(); updateHUD(); } }
     window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); updateHUD(); }
     window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
-    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged';refreshActiveMenu(); updateHUD();};
+    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; renderActionBubble(); updateHUD();};
     window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
     window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
     window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
@@ -2592,8 +2474,11 @@ window.renderStars = function(rolls, containerId) {
 
     // 3. RENDERIZAR LA NUEVA BURBUJA
     // Esta función ya tiene el "if (turnPhase === 1)... else if (turnPhase === 2)..." adentro.
-   if (typeof refreshActiveMenu === 'function') {
-        refreshActiveMenu();
+    renderActionBubble();
+    
+    // 4. Asegurar que la burbuja de Comandos (CP) también se vea si es mi turno
+    if(typeof toggleCommandHUD === 'function') {
+        toggleCommandHUD(gameState === 'MY_TURN' || gameState === 'ENEMY_TURN'); 
     }
 };
 
@@ -2624,5 +2509,4 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
-
 
