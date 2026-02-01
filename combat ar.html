@@ -3,2666 +3,657 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD COMMAND: v2.4 FORGE</title>
+    <title>SQUAD COMMAND: FULL NET</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
         :root { --c: #00f2ff; --r: #ff0055; --g: #00ff99; --gold: #ffcc00; --bg: #0d1117; }
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; color: var(--c); user-select: none; -webkit-user-select: none; }
 
-        /* --- UI GENERAL --- */
+        /* --- PANTALLAS --- */
         .screen { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; background: var(--bg); z-index: 10; transition: 0.3s; align-items: center; overflow-y: auto; }
         .screen.hidden { display: none !important; }
-        .screen.transparent { background: transparent; pointer-events: none; padding: 0; overflow: hidden; }
         
-        .box { border: 1px solid var(--c); padding: 15px; width: 100%; max-width: 400px; background: rgba(0,0,0,0.95); margin-bottom: 15px; text-align: center; }
-        
-        input, select, textarea { background: #000; border: 1px solid #333; color: #fff; padding: 8px; font-family: monospace; width: 100%; text-align: center; margin: 5px 0; text-transform: uppercase; box-sizing: border-box; }
-        textarea { height: 60px; color: var(--gold); border-color: var(--gold); font-size: 0.7rem; }
-        
-        .btn { background: var(--c); color: #000; border: none; padding: 12px; width: 100%; font-weight: bold; cursor: pointer; font-size: 1rem; clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%); margin-top: 5px; pointer-events: auto; }
-        .btn:disabled { background: #222; color: #555; pointer-events: none; }
-        .btn-small { font-size: 0.7rem; padding: 5px; width: auto; border: 1px solid var(--gold); background: #000; color: var(--gold); cursor: pointer; pointer-events: auto; }
-        .btn-del { background: var(--r); color: #fff; width: 30px; height: 30px; padding: 0; clip-path: none; }
+        /* --- ELEMENTOS UI --- */
+        button { background: rgba(0, 242, 255, 0.1); border: 1px solid var(--c); color: var(--c); padding: 10px 20px; font-family: inherit; font-weight: bold; cursor: pointer; text-transform: uppercase; margin: 5px; transition: 0.2s; }
+        button:active { background: var(--c); color: #000; }
+        button.danger { border-color: var(--r); color: var(--r); background: rgba(255, 0, 85, 0.1); }
+        input { background: #111; border: 1px solid #444; color: #fff; padding: 8px; text-align: center; font-family: inherit; margin-bottom: 10px; }
 
-        /* --- FORGE (CREADOR) STYLES --- */
-        .forge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; width: 100%; }
-        .forge-label { font-size: 0.6rem; color: #888; margin-top: 5px; }
-        .preview-box { background: #111; padding: 10px; margin-top: 10px; border-left: 2px solid var(--gold); text-align: left; }
-        .stat-preview { display: flex; gap: 10px; font-size: 0.8rem; color: #fff; margin-top: 5px; }
-        .unit-list { width: 100%; max-width: 400px; margin-bottom: 20px; }
-        .unit-item { background: #0a0a0a; border: 1px solid #333; padding: 10px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
-        .unit-info { font-size: 0.7rem; text-align: left; }
+        /* --- FORGE (CREADOR) --- */
+        .unit-select-card { width: 100%; border: 1px solid #444; padding: 10px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; background: #161b22; }
+        .unit-select-card:hover { border-color: var(--c); }
+        .faction-btn { width: 45%; display: inline-block; }
 
-        /* --- HUD ELEMENTS --- */
-        .hud-top { position: absolute; top: 0; width: 100%; padding: 10px; display: flex; flex-direction: column; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); pointer-events: auto; box-sizing: border-box;}
-        .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px; }
-        .score-board { font-size: 1.2rem; font-weight: bold; color: #fff; text-shadow: 0 0 10px var(--c); letter-spacing: 2px; }
-        .score-detail { font-size: 0.6rem; color: #aaa; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95%; }
-        .secret-hl { color: var(--gold); font-weight: bold; }
+        /* --- HUD DE JUEGO --- */
+        #hud-top { position: fixed; top: 0; left: 0; width: 100%; background: rgba(13, 17, 23, 0.95); padding: 5px; border-bottom: 1px solid #333; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* --- TARJETA DE UNIDAD --- */
+        .card { padding: 10px; border: 1px solid #333; background: #161b22; width: 100%; margin-bottom: 10px; }
+        .card.my { border-left: 3px solid var(--c); }
+        .card.enemy { border-left: 3px solid var(--r); }
+        .card.fatigued { opacity: 0.7; border-left-color: #888; }
+        .card.exhausted { opacity: 0.4; filter: grayscale(1); pointer-events: none; }
 
-        .turn-badge { border: 2px solid #555; padding: 5px 15px; font-weight: bold; background: #000; color: #555; text-transform: uppercase; font-size: 0.8rem; transition: 0.3s; }
-        .turn-badge.planning { border-color: var(--gold); color: var(--gold); }
-        .turn-badge.my-turn { border-color: var(--g); color: var(--g); box-shadow: 0 0 15px var(--g); transform: scale(1.1); }
-        .turn-badge.enemy-turn { border-color: var(--r); color: var(--r); opacity: 0.8; }
-
-        .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; }
-        .unit-selector { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
-        .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.85); cursor: pointer; min-height: 120px; transition: 0.2s; position: relative; display: flex; flex-direction: column; justify-content: space-between; pointer-events: auto !important; }
-        .card.active { border-color: #fff; transform: scale(1.02); z-index: 5; }
-        .card.fatigued { border-color: var(--gold); opacity: 0.9; }
-        .card.exhausted { opacity: 0.4; filter: grayscale(1); border-color: #222; }
-        .card.locked { opacity: 0.5; pointer-events: none; border-color: #333 !important; }
-        .card.my { border-left: 4px solid var(--c); }
-        .card.enemy { border-left: 4px solid var(--r); }
-        
-        .ready-marker { position:absolute; top:-10px; right:-5px; background:var(--g); color:#000; font-size:0.6rem; padding:2px 5px; font-weight:bold; display:none; animation: pop 0.3s; }
-        .ready-marker.show { display:block; }
-        @keyframes pop { 0%{transform:scale(0);} 80%{transform:scale(1.2);} 100%{transform:scale(1);} }
-
-        .hp-bar { height: 4px; background: #333; margin-top: 5px; width: 100%; }
-        .hp-fill { height: 100%; transition: width 0.3s; }
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; margin: 5px 0; background: rgba(255,255,255,0.05); padding: 3px; border-radius: 2px; }
-        .stat-box { display: flex; flex-direction: column; align-items: center; }
-        .stat-val { font-size: 0.7rem; font-weight: bold; color: #eee; transition: 0.3s; }
-        .stat-val.hl { color: var(--c); text-shadow: 0 0 8px var(--c); font-size: 0.8rem; }
-        .stat-label { font-size: 0.5rem; color: #888; }
-        
-       /* .tags-container { display:flex; flex-wrap:wrap; gap:2px; margin-top:4px; } */
-        .tag { font-size: 0.55rem; padding: 2px 4px; border-radius: 2px; text-transform: uppercase; font-weight: bold; border: 1px solid #444; }
-        .tag.active-gear { background: var(--gold); color: #000; border-color: #fff; }
-        .tag.passive { background: #222; color: #aaa; }
-        .tag.used { text-decoration: line-through; opacity: 0.5; background: #000; color: #444; }
-
-        .tactic-row { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.7rem; border-top: 1px solid #333; padding-top: 5px; }
-        .mode-toggle { cursor: pointer; padding: 2px 5px; border: 1px solid #555; color: #888; background: #000; font-family: monospace; font-size: 0.6rem; width: 45%; }
-        .mode-toggle.selected { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.1); }
-        
-        #btn-claim-secret { display: none; margin-top: 5px; background: #000; color: var(--gold); border: 1px solid var(--gold); box-shadow: 0 0 5px var(--gold); animation: pulseSecret 2s infinite; width: 100%; font-size: 0.7rem; padding: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
-        @keyframes pulseSecret { 0% { box-shadow: 0 0 2px var(--gold); } 50% { box-shadow: 0 0 10px var(--gold); } 100% { box-shadow: 0 0 2px var(--gold); } }
-
-        #btn-cover-toggle { background: #000; border: 2px solid #444; color: #666; padding: 8px 20px; font-family: monospace; font-weight: bold; cursor: pointer; margin-bottom: 10px; width: 80%; text-align: center; transition: 0.2s; pointer-events: auto; }
-        #btn-cover-toggle.active { background: rgba(0, 242, 255, 0.1); border-color: var(--c); color: var(--c); text-shadow: 0 0 5px var(--c); }
-
-        .btn-gear { background: #fff !important; color: #000 !important; border: 2px solid var(--gold) !important; box-shadow: 0 0 10px var(--gold); animation: pulseGold 2s infinite; }
-        @keyframes pulseGold { 0% { box-shadow: 0 0 5px var(--gold); } 50% { box-shadow: 0 0 15px var(--gold); } 100% { box-shadow: 0 0 5px var(--gold); } }
-
-        /*.ops-grid { display: none; grid-template-columns: 1fr 1fr 1fr; gap: 5px; width: 100%; } */
-        
-        /* AR & FX */
-        #ar-feed { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; filter: contrast(1.2) brightness(0.6); }
-        .scan-line { position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: rgba(0, 242, 255, 0.3); animation: scan 3s linear infinite; pointer-events: none; }
-        #flash-fx { pointer-events:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index: 50; }
-        .flash { animation: flashRed 0.3s; }
-        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
-        @keyframes flashRed { 50% { background: rgba(255, 0, 0, 0.5); } }
-
-        /* COMBAT ARENA */
-        #dice-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
-        .dice-arena { width: 100%; max-width: 400px; background: #111; border: 1px solid #333; padding: 15px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; }
-        .duel-container { display: flex; justify-content: space-between; align-items: center; width: 100%; margin: 20px 0; background: #000; padding: 10px; border-radius: 5px; box-sizing: border-box; }
-        .duel-side { width: 45%; text-align: center; }
-        .duel-label { font-size: 0.7rem; color: #666; margin-bottom: 5px; letter-spacing: 1px; }
-        .dice-pool { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; min-height: 45px; }
-
-        .die-face { font-size: 2.2rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s, color 0.2s; color: #fff; border-radius: 5px; background: #222; border: 1px solid #444; }
-        .die-face:hover { background: #333; }
-        .die-face.selected { color: #000; background: var(--gold); border-color: #fff; transform: scale(1.1); box-shadow: 0 0 10px var(--gold); }
-        .die-face.locked { pointer-events: none; opacity: 0.7; }
-
-        @keyframes popIn {
-            from { transform: scale(0); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        .d-icon { font-size: 1.8rem; animation: popIn 0.3s ease; display: inline-block; width: 40px; text-align: center; }
-        .star-gold { color: #ffd700; text-shadow: 0 0 8px #ffd700; }
-        .star-blue { color: #00ccff; text-shadow: 0 0 5px #00ccff; }
-        .star-miss { color: #444; font-size: 1.2rem; }
-        @keyframes popIn { 0%{transform:scale(0);} 80%{transform:scale(1.2);} 100%{transform:scale(1);} }
-
-        .combat-log { width: 100%; height: 80px; overflow-y: auto; background: #0a0a0a; border: 1px solid #222; font-size: 0.7rem; color: #888; text-align: left; padding: 5px; font-family: monospace; margin-bottom: 10px; }
-        .log-line { margin-bottom: 2px; border-bottom: 1px solid #1a1a1a; }
-
-        /* --- SISTEMA DE LOGS Y FEEDBACK VISUAL --- */
-        /* Contenedor de notificaciones (Tu estructura mejorada) */
-        .log-area { 
-            position: absolute; 
-            top: 100px; /* Ajustado para no tapar el HUD superior */
-            left: 10px; 
-            width: 60%; 
-            max-height: 300px; /* Evita que cubra toda la pantalla */
-            display: flex; 
-            flex-direction: column-reverse; /* Lo más nuevo abajo (o arriba si prefieres) */
-            pointer-events: none; /* Click-through */
-            z-index: 50; 
-            overflow: hidden;
-        }
-        
-        /* Estilo base de cada entrada */
-        .log-entry { 
-            background: rgba(0, 10, 20, 0.85); 
-            border-left: 4px solid var(--c); 
-            color: #fff; 
-            font-size: 0.75rem; 
-            padding: 6px 10px; 
-            margin-bottom: 4px; 
-            font-family: 'Courier New', monospace; 
-            text-shadow: 0 0 2px var(--c); 
-            backdrop-filter: blur(2px); 
-            animation: slideIn 0.3s ease-out; 
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.5); 
-            font-weight: bold; 
-            opacity: 1;
-            transition: opacity 0.5s; /* Para desvanecer al eliminar */
-        }
-        
-        /* Variantes de color */
-        .log-entry.danger { border-color: var(--r); color: #ffcccc; text-shadow: 0 0 5px var(--r); }
-        .log-entry.success { border-color: var(--gold); color: #fffee0; text-shadow: 0 0 5px var(--gold); }
-        .log-entry.cmd { border-color: var(--g); color: #e0ffee; text-shadow: 0 0 5px var(--g); }
-        
-        /* Animaciones */
-        @keyframes slideIn { from { opacity:0; transform: translateX(-30px); } to { opacity:1; transform: translateX(0); } }
-        
-        /* DAÑO FLOTANTE (Integrado) */
-        .damage-number {
-            position: absolute;
-            font-family: 'Impact', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 900;
-            pointer-events: none;
-            animation: floatUp 1s ease-out forwards;
-            z-index: 1000;
-            text-shadow: 2px 2px 0 #000;
-            -webkit-text-stroke: 1px black;
-        }
-        
-        @keyframes floatUp {
-            0% { transform: translateY(0) scale(1); opacity: 1; }
-            50% { transform: translateY(-30px) scale(1.3); }
-            100% { transform: translateY(-60px) scale(1); opacity: 0; }
-        }
-        
-        .shake-screen { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
-        @keyframes shake { 
-            10%, 90% { transform: translateX(-2px); } 
-            20%, 80% { transform: translateX(2px); } 
-            30%, 50%, 70% { transform: translateX(-4px); } 
-            40%, 60% { transform: translateX(4px); } 
-        }
-
-        #game-over-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
-        #game-over-screen.show { opacity: 1; pointer-events: auto; }
-        .end-title { font-size: 3rem; font-weight: bold; margin-bottom: 20px; letter-spacing: 5px; }
-        
-        #confirm-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; }
-        #confirm-modal.show { opacity: 1; pointer-events: auto; }
-        .modal-box { background: #111; border: 2px solid var(--gold); padding: 20px; width: 80%; max-width: 300px; text-align: center; box-shadow: 0 0 20px rgba(255,204,0,0.2); }
-        .modal-text { color: var(--gold); font-size: 0.9rem; margin-bottom: 20px; font-weight: bold; }
-        .modal-btn-row { display: flex; gap: 10px; justify-content: center; }
-        .btn-modal-yes { background: var(--gold); color: #000; padding: 10px 20px; border: none; font-weight: bold; cursor: pointer; }
-
-        //Tags y Badges
-        .badge {
-            font-size: 0.6rem;
-            padding: 1px 4px;
-            border-radius: 3px;
-            text-transform: uppercase;
-            font-weight: bold;
-            border: 1px solid #444;
-        }
-        
-        .unit-tag {
-            background: #222;
-            color: var(--c); /* Cyan para unidad */
-            border-color: var(--c);
-        }
-        
-        .weapon-tag {
-            background: #300;
-            color: var(--r); /* Rojo para armas */
-            border-color: var(--r);
-        }
-
-        /* Contenedor de tags dentro de la tarjeta */
-        .tags-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 3px;
-            margin-bottom: 5px;
-            min-height: 15px; /* Evita saltos si está vacío */
-        }
-        
-        /* Estilo de la etiqueta individual */
-        .hud-tag {
-            font-size: 0.55rem;
-            padding: 1px 3px;
-            border-radius: 2px;
-            font-weight: bold;
-            text-transform: uppercase;
-            border: 1px solid #444;
-        }
-        
-        /* Colores específicos */
-        .hud-tag.unit {
-            background: rgba(0, 242, 255, 0.1); /* Cyan tenue */
-            color: var(--c);
-            border-color: var(--c);
-        }
-        
-        .hud-tag.weapon {
-            background: rgba(255, 0, 85, 0.1); /* Rojo tenue */
-            color: var(--r);
-            border-color: var(--r);
-        }
-
-
-              /* Contenedor Flotante */
-        .hud-container {
-            position: fixed;
-            z-index: 1000;
-            display: flex;
-            align-items: flex-start; /* Alinea menú a la derecha de la burbuja */
-            gap: 10px;
-            transition: opacity 0.3s;
-        }
-        
-        /* LA BURBUJA (Botón Redondo) */
-        .hud-bubble {
-            width: 60px;
-            height: 60px;
-            background: radial-gradient(circle at 30% 30%, #444, #111);
-            border: 2px solid #666;
-            border-radius: 50%;
-            color: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            user-select: none;
-        }
-        
-        .hud-bubble:active { transform: scale(0.95); border-color: #fff; }
-        .hud-bubble.active { border-color: var(--c, #0ff); box-shadow: 0 0 15px var(--c, #0ff); }
-        
-        .bubble-icon { font-size: 1.4rem; font-weight: bold; }
-        .bubble-label { font-size: 0.6rem; color: #aaa; text-transform: uppercase; }
-        
-        /* EL MENÚ DESPLEGABLE (Lista) */
-        .hud-menu {
-            background: rgba(10, 10, 10, 0.95);
-            border: 1px solid #444;
-            border-radius: 8px;
-            padding: 8px;
-            min-width: 160px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            backdrop-filter: blur(4px);
-            
-            /* Animación de entrada */
-            animation: fadeIn 0.2s ease-out;
-        }
-        
+        /* --- BURBUJAS UNIFICADAS --- */
+        .hud-container { position: fixed; z-index: 1000; display: flex; align-items: flex-start; gap: 10px; transition: opacity 0.3s; }
+        .hud-bubble { width: 60px; height: 60px; background: radial-gradient(circle at 30% 30%, #444, #111); border: 2px solid #666; border-radius: 50%; color: white; box-shadow: 0 0 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; }
+        .hud-bubble.active { border-color: var(--c); box-shadow: 0 0 15px var(--c); }
+        .hud-menu { background: rgba(10, 10, 10, 0.95); border: 1px solid #444; border-radius: 8px; padding: 8px; min-width: 160px; display: flex; flex-direction: column; gap: 6px; backdrop-filter: blur(4px); }
         .hud-menu.hidden { display: none !important; }
+        .menu-item { background: #222; border: 1px solid #333; padding: 8px 10px; border-radius: 4px; color: #eee; font-size: 0.8rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         
-        /* Items dentro del menú */
-        .menu-item {
-            background: #222;
-            border: 1px solid #333;
-            padding: 8px 10px;
-            border-radius: 4px;
-            color: #eee;
-            font-size: 0.8rem;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: background 0.2s;
-        }
-        
-        .menu-item:hover { background: #333; border-color: #777; }
-        .menu-item.disabled { opacity: 0.5; pointer-events: none; }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-        
+        /* --- DADOS Y OVERLAY --- */
+        #dice-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .dice-pool { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 10px; min-height: 60px; }
+        .die { width: 45px; height: 45px; background: #fff; color: #000; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-weight: bold; border: 2px solid #000; }
+        .die.crit { background: var(--gold); box-shadow: 0 0 15px var(--gold); }
+        .tag { font-size: 0.7rem; padding: 2px 4px; border: 1px solid #444; margin: 1px; display: inline-block; }
     </style>
 </head>
 <body>
 
-    <div id="flash-fx"></div>
-    <video id="ar-feed" autoplay playsinline muted></video>
-    <div class="scan-line"></div>
-
-    <div id="confirm-modal">
-        <div class="modal-box">
-            <div id="modal-msg" class="modal-text">SOLICITUD ENTRANTE...</div>
-            <div class="modal-btn-row"><button type="button" class="btn-modal-yes" onclick="confirmRequest()">CONFIRMAR</button></div>
+    <div id="lobby-screen" class="screen">
+        <h1 style="text-shadow: 0 0 10px var(--c);">SQUAD COMMAND</h1>
+        <div style="background:#111; padding:20px; border:1px solid #333; width:90%; max-width:400px;">
+            <p>CONFIGURACIÓN DE RED</p>
+            <input type="text" id="net-channel" placeholder="CANAL (Ej: MESA_1)" value="MESA_TEST">
+            <input type="text" id="net-player" placeholder="TU NOMBRE" value="JUGADOR_1">
+            <div id="connection-status" style="font-size:0.7rem; color:#555; margin-bottom:10px;">Desconectado</div>
+            <button onclick="connectAndPlay()" style="width:100%">CONECTAR Y JUGAR</button>
         </div>
-    </div>
-    <div id="game-over-screen">
-        <div id="end-title" class="end-title">---</div>
-        <div id="end-score" style="font-size:1.5rem; margin-bottom:20px; color:#fff;"></div>
-        <button type="button" class="btn" style="max-width:200px;" onclick="returnToLobby()"><span>REINICIAR</span></button>
+        <br>
+        <button onclick="openForge()">IR AL FORGE (CREAR LISTA)</button>
     </div>
 
     <div id="creator-screen" class="screen hidden">
-        <h2 style="color:var(--gold); margin:0;">SQUAD FORGE</h2>
-        <div style="font-size:0.6rem; color:#888; margin-bottom:15px;">CONSTRUCTOR DE ESCUADRA</div>
-
-        <div class="box">
-            <div class="forge-grid">
-                <div>
-                    <div class="forge-label">NOMBRE</div>
-                    <input type="text" id="u-name" placeholder="Ej: Sargento Ray">
-                </div>
-                <div class="input-group">
-                <label>PEANA (BASE)</label>
-                <select id="u-base" onchange="calcForge()"></select>
-                </div>
-                <div>
-                    <div class="forge-label">ESPECIE</div>
-                    <select id="u-species" onchange="calcForge()"></select>
-                </div>
-                <div>
-                    <div class="forge-label">ROL</div>
-                    <select id="u-role" onchange="calcForge()"></select>
-                </div>
-                <div>
-                   <div class="input-group">
-                        <label>ARMA A DISTANCIA (Ranged)</label>
-                        <select id="u-weapon-r" onchange="calcForge()"></select>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label>ARMA DE CHOQUE (Melee)</label>
-                        <select id="u-weapon-m" onchange="calcForge()"></select>
-                    </div>
-                                    </div>
-                                </div>
-            
-            <div class="forge-label">EQUIPAMIENTO</div>
-            <select id="u-gear" onchange="calcForge()"></select>
-
-            <div class="preview-box">
-                <div id="preview-text" style="color:var(--c); font-weight:bold;">---</div>
-                <div class="stat-preview">
-                    <span>HP: <b id="p-hp" style="color:#fff"></b></span>
-                    <span>SV: <b id="p-sv" style="color:#fff"></b></span>
-                    <span>R: <b id="p-ratk" style="color:#fff"></b> / <b id="p-rhit" style="color:#aaa"></b></span>
-                    <span>M: <b id="p-matk" style="color:#fff"></b> / <b id="p-mhit" style="color:#aaa"></b></span>
-                </div>
-                <div style="font-size:0.7rem; color:var(--gold); margin-top:5px;">COSTE: <span id="p-cost">0</span> PTS</div>
-            </div>
-
-          <button class="btn" onclick="addUnitToSquad()" style="margin-top:10px;">AÑADIR OPERATIVO</button>
-                </div>
-                
-                <div id="forge-total" style="width:100%; max-width:400px; text-align:right; margin-bottom:5px; font-size:0.9rem; font-weight:bold; color:#fff;">
-                    PUNTOS: <span id="total-pts">0</span> / <span style="color:var(--gold)">100</span>
-                </div>
-                
-                <div class="unit-list" id="squad-list"></div>
+        <div style="width:100%; display:flex; justify-content:space-between; align-items:center;">
+            <h2>FORGE</h2>
+            <span id="army-points" style="color:var(--gold)">0 PTS</span>
+        </div>
         
-        <div style="width:100%; max-width:400px; display:flex; gap:10px;">
-            <button class="btn" style="background:#333; color:#fff;" onclick="closeForge()">VOLVER</button>
-            <button class="btn" style="background:var(--gold); color:#000;" onclick="deployToLobby()">DESPLEGAR EN LOBBY</button>
+        <div style="width:100%; text-align:center; margin-bottom:10px;">
+            <button class="faction-btn" onclick="setFaction('ASTARTES')">ASTARTES</button>
+            <button class="faction-btn" onclick="setFaction('NECRON')">NECRON</button>
+        </div>
+
+        <h3>TU LISTA:</h3>
+        <div id="my-army-list" style="width:100%; min-height:100px; border:1px dashed #444; padding:5px;"></div>
+        
+        <h3>DISPONIBLES:</h3>
+        <div id="available-units" style="width:100%;"></div>
+
+        <div style="margin-top:20px; width:100%; display:flex; justify-content:space-around;">
+            <button class="danger" onclick="returnToLobby()">SALIR</button>
+            <button onclick="confirmArmy()">DESPLEGAR</button>
         </div>
     </div>
 
-    <div id="lobby-screen" class="screen">
-        <h2 style="margin:0; color:var(--c)">SQUAD COMMAND</h2>
-        <div style="font-size:0.7rem; color:var(--gold); margin-bottom:15px;">v2.4 FORGE</div>
-        
-        <button class="btn" onclick="openForge()" style="background:#222; border:1px solid var(--gold); color:var(--gold); margin-bottom:15px;">🛠️ CREAR ESCUADRA</button>
-
-        <div class="box">
-            <textarea id="json-input" placeholder='Pega aquí tu JSON'></textarea>
-        </div>
-        <div class="box" style="border-color:var(--gold);">
-            <div style="font-size:0.6rem; color:#888;">CONFIGURACIÓN DE PARTIDA</div>
-            <select id="primary-mission">
-                <option value="DOMINACION">DOMINACIÓN</option>
-                <option value="SABOTAJE">SABOTAJE</option>
-                <option value="RELIC">RELIQUIA</option>
-            </select>
-            <select id="secondary-toggle">
-                <option value="NO">SIN SECUNDARIAS</option>
-                <option value="SI">CON SECUNDARIAS</option>
-            </select>
-            <select id="round-select">
-                <option value="4">4 RONDAS</option>
-                <option value="5">5 RONDAS</option>
-            </select>
-            <input type="text" id="room-id" value="WARZONE-10">
-            <button type="button" class="btn" onclick="initSystem()"><span>DESPLEGAR</span></button>
-        </div>
-    </div>
-
-    <div id="game-screen" class="screen transparent hidden">
-        <div class="hud-top">
-            <div class="top-row">
-                <div class="score-board">YO: <span id="my-score">0</span> | RIV: <span id="enemy-score">0</span></div>
-                <div id="cp-display" style="color:var(--gold); border:1px solid var(--gold); padding:0 5px;">CP: 0</div>
-                <div class="turn-badge planning" id="turn-indicator">PLANIFICACIÓN</div>
-            </div>
-            <div class="top-row">
-                <div id="round-display" style="font-size:0.8rem; font-weight:bold;">RND 1/4</div>
-                <div class="score-detail" id="mission-info">DOMINACION</div>
-            </div>
-            <button type="button" id="btn-claim-secret" onclick="tryClaimSecret()">RECLAMAR SECRETA</button>
-        </div>
-        
-       <div class="log-area" id="main-log-area"></div>
-
-        <div class="hud-bottom">
-            <div id="planning-controls" style="text-align:center; margin-bottom:10px;">
-                <button type="button" class="btn" id="btn-ready" onclick="commitPlanning()" disabled><span>ESPERANDO RIVAL...</span></button>
-            </div>
-                <div id="phase-controls" style="width:100%; text-align:center; margin-bottom:5px;">
-                    <div id="phase-display" style="font-size:0.8rem; color:var(--c); font-weight:bold; margin-bottom:5px;">ESPERANDO...</div>
-                </div>
-            <div class="unit-selector">
-                <div class="card my" onclick="nextMyUnit()" id="my-card">
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.6rem;"><span>YO</span> <span id="my-status-text" style="color:var(--gold)"></span></div>
-                        <div id="my-name" style="font-weight:bold;">---</div>
-                        <div class="tags-container" id="my-tags"></div>
-                        <div class="stat-grid">
-                            <div class="stat-box"><span class="stat-label">RNG</span><span class="stat-val hl" id="my-r">--</span></div>
-                            <div class="stat-box"><span class="stat-label">MEL</span><span class="stat-val" id="my-m">--</span></div>
-                            <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="my-sv">--</span></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="tactic-row" id="my-tactics">
-                            <button type="button" id="btn-mode-open" class="mode-toggle selected" onclick="setMode('open', event)">ATAQUE</button>
-                            <button type="button" id="btn-mode-hidden" class="mode-toggle" onclick="setMode('hidden', event)">TÁCTICA</button>
-                        </div>
-                        <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
-                    </div>
-                    <div id="my-ready-mark" class="ready-marker">LISTO</div>
-                </div>
-                <div class="card enemy" onclick="nextEnemyUnit()" id="en-card">
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)"><span>RIVAL</span> <span id="en-mode-icon">❓</span></div>
-                        <div id="enemy-name" style="font-weight:bold;">ESPERANDO...</div>
-                        <div class="tags-container" id="en-tags"></div>
-                        <div class="stat-grid">
-                            <div class="stat-box"><span class="stat-label">RNG</span><span class="stat-val" id="en-r">--</span></div>
-                            <div class="stat-box"><span class="stat-label">MEL</span><span class="stat-val" id="en-m">--</span></div>
-                            <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="en-sv">--</span></div>
-                        </div>
-                    </div>
-                    <div class="hp-bar"><div id="enemy-hp" class="hp-fill" style="background:var(--r)"></div></div>
-                    <div id="en-ready-mark" class="ready-marker">¡LISTO!</div>
+    <div id="game-screen" class="screen hidden" style="justify-content: flex-start; padding-top: 60px;">
+        <div id="hud-top">
+            <div>
+                <span id="my-name" style="font-weight:bold; font-size:1.1rem;">-</span>
+                <div style="width:100px; height:6px; background:#333; margin-top:2px;">
+                    <div id="my-hp" style="width:100%; height:100%; background:var(--g); transition:0.3s;"></div>
                 </div>
             </div>
+            <div style="text-align:right;">
+                <span id="cp-display" style="color:var(--gold);">CP: 2</span><br>
+                <span id="turn-indicator" style="font-size:0.7rem; color:#888;">ESPERANDO...</span>
+            </div>
+        </div>
+
+        <div id="my-card" class="card my">
+            <div style="display:flex; justify-content:space-between;">
+                <span id="my-status-text">LISTO</span>
+                <small id="my-sv">SV 3+</small>
+            </div>
+            <div id="my-tags" style="margin-top:5px;"></div>
+        </div>
+
+        <div style="flex:1; width:100%; display:flex; align-items:center; justify-content:center; border:1px solid #222; color:#333;">
+            <div style="text-align:center;">
+                <p>ZONA DE COMBATE</p>
+                <p id="net-log" style="font-size:0.7rem; color:var(--c); max-width:300px;">...</p>
+            </div>
+        </div>
+
+        <div id="hud-cmd" class="hud-container" style="top: 80px; left: 10px; display:none;">
+            <div class="hud-bubble" onclick="toggleBubble('cmd')">
+                <span class="bubble-icon">CP</span><small class="bubble-label">PLOYS</small>
+            </div>
+            <div id="menu-cmd" class="hud-menu hidden"></div>
+        </div>
+
+        <div id="hud-gear" class="hud-container" style="top: 150px; left: 10px; display:none;">
+            <div class="hud-bubble" onclick="toggleBubble('gear')">
+                <span class="bubble-icon">🎒</span><small class="bubble-label">ITEM</small>
+            </div>
+            <div id="menu-gear" class="hud-menu hidden"></div>
+        </div>
+
+        <div id="hud-act" class="hud-container" style="bottom: 20px; left: 10px; display:none;">
+            <div class="hud-bubble" onclick="toggleBubble('act')">
+                <span id="act-icon-display" class="bubble-icon">⚡</span><small class="bubble-label">ACT</small>
+            </div>
+            <div id="menu-act" class="hud-menu hidden"></div>
         </div>
     </div>
 
     <div id="dice-overlay">
-        <div class="dice-arena">
-            <h2 id="combat-phase-title" style="margin:0; color:#fff;">COMBATE</h2>
-            <button type="button" id="btn-cover-toggle" style="display:none;" onclick="toggleCover()">COBERTURA: NO</button>
-            <div class="duel-container">
-                <div class="duel-side" id="side-atk"><div class="duel-label">ATACANTE</div><div id="pool-atk" class="dice-pool"></div></div>
-                <div style="font-size:2rem; color:#444;">VS</div>
-                <div class="duel-side" id="side-def"><div class="duel-label">DEFENSOR</div><div id="pool-def" class="dice-pool">Esperando...</div></div>
-            </div>
-            <div id="combat-log-visual" class="combat-log"></div>
-            <div id="combat-actions-bar" style="margin-top:20px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-                <button id="btn-reroll" class="btn" style="background:#ff9900; color:#000; display:none;" onclick="rerollDice('ATK')">RE-TIRAR</button>
-                <button id="btn-confirm-atk" class="btn" style="background:var(--g); color:#000; display:none;" onclick="confirmAttack()">CONFIRMAR ATAQUE</button>
-                <button id="btn-reroll-def" class="btn" style="background:#ff9900; color:#000; display:none;" onclick="rerollDice('DEF')">RE-TIRAR</button>
-                <button id="btn-confirm-def" class="btn" style="background:var(--c); color:#000; display:none;" onclick="confirmDefense()">CONFIRMAR DEFENSA</button>
-                <button id="btn-apply-dmg" class="btn" style="background:var(--r); color:#fff; display:none;" onclick="applyCombatResult()">APLICAR DAÑO</button>
-                <button id="btn-cancel-combat" class="btn" style="background:#444;" onclick="cancelCombat()">CANCELAR</button>
-                <button id="btn-close-combat" class="btn" style="display:none;" onclick="endCombatTurn()">TERMINAR</button>
-                </div>
-            </div>
-            </div>
-                <div id="hud-cmd" class="hud-container" style="top: 80px; left: 10px;">
-                    <div class="hud-bubble" onclick="toggleBubble('cmd')">
-                        <span class="bubble-icon">CP</span>
-                        <small class="bubble-label">PLOYS</small>
-                    </div>
-                    <div id="menu-cmd" class="hud-menu hidden"></div> </div>
-                
-                <div id="hud-gear" class="hud-container" style="top: 150px; left: 10px;">
-                    <div class="hud-bubble" onclick="toggleBubble('gear')">
-                        <span class="bubble-icon">🎒</span>
-                        <small class="bubble-label">ITEM</small>
-                    </div>
-                    <div id="menu-gear" class="hud-menu hidden"></div>
-                </div>
-                
-                <div id="hud-act" class="hud-container" style="bottom: 20px; left: 10px;">
-                    <div class="hud-bubble" onclick="toggleBubble('act')">
-                        <span id="act-icon-display" class="bubble-icon">⚡</span>
-                        <small class="bubble-label">ACT</small>
-                    </div>
-                    <div id="menu-act" class="hud-menu hidden"></div>
-                </div>
-    
+        <h2 id="combat-title" style="color:var(--c)">COMBATE</h2>
+        <div id="combat-log-visual" style="font-size:0.8rem; color:#aaa; margin-bottom:10px;"></div>
+        
+        <div class="dice-pool" id="pool-atk"></div>
+        <div class="dice-pool" id="pool-def"></div>
+        
+        <div id="combat-controls" style="margin-top:20px;">
+            <button id="btn-confirm-atk" onclick="confirmAttack()" style="display:none;">CONFIRMAR ATAQUE</button>
+            <button id="btn-confirm-def" onclick="confirmDefense()" style="display:none;">TIRAR DEFENSA</button>
+            <button id="btn-apply-dmg" class="danger" onclick="applyCombatResult()" style="display:none;">APLICAR DAÑO</button>
+            <button id="btn-close-combat" onclick="closeCombatOverlay()" style="margin-top:10px; display:none;">CERRAR</button>
         </div>
-</div>
+    </div>
 
-<script>
-    // --- DATABASE (FORGE) ---
-
-    
-        const FORGE_DB = {
-    species: {
-        human: { name:"Humano", cost:5, hp:8, sv:"5+", r_hit:"4+", m_hit:"4+", keywords: ["IMPERIUM", "ASTRA_MILITARUM"] },
-        ork:   { name:"Orko", cost:6, hp:10, sv:"6+", r_hit:"5+", m_hit:"3+", keywords: ["XENOS", "ORK"] }
-    },
-    roles: {
-        trooper: { name:"Trooper", cost:0, modHP:0, modA:0, modHit:0, keywords: [] },
-        leader:  { name:"Líder", cost:15, modHP:2, modA:1, modHit:-1, keywords: ["LEADER", "HERO"] },
-        scout:   { name:"Explorador", cost:5, modHP:0, modA:0, modHit:0, keywords: ["SCOUT", "LIGHT"] },
-        gunner:  { name:"Artillero", cost:10, modHP:1, modA:0, modHit:0, keywords: ["HEAVY_INFANTRY", "GRENADIER"] }
-    },
-    weapons: {
-        lasgun: { name:"Lasgun", type:"Ranged", cost:0, A:4, D:2, traits: ["BALANCED"] },
-        sniper: { name:"Sniper", type:"Ranged", cost:5, A:4, D:3, traits: ["HEAVY", "SILENT", "MORTAL_1"] },
-        plasma: { name:"Plasma", type:"Ranged", cost:10, A:4, D:5, traits: ["HOT", "AP_1"] },
-        knife:  { name:"Cuchillo", type:"Melee", cost:0, A:3, D:3, traits: [] },
-        sword:  { name:"Espada Energía", type:"Melee", cost:5, A:4, D:5, traits: ["LETHAL_5", "RENDING"] }
-    },
-    gear: {
-        none: { name:"Nada", cost:0, keywords: [] },
-        nades: { name:"Granadas Frag", cost:2, keywords: ["GRENADIER"] , mechanicRef: "grenade" },
-        medkit: { name:"Medkit", cost:3, keywords: ["MEDIC"], mechanicRef: "medkit" }
-    },
-    bases: { 
-        b25: { name:"25mm", cost:0, hp:0 }, 
-        b32: { name:"32mm", cost:4, hp:2 },
-        b40: { name:"40mm", cost:6, hp:6 }
-    }
-};
-
-    const GEAR_DB = {
-    none:   { name:"Nada", cost:0, keywords: [] },
-    
-    // AQUI ESTA LA VINCULACIÓN: agregamos mechanicRef: "grenade"
-    nades:  { name:"Granadas Frag", cost:2, keywords: ["GRENADIER"], mechanicRef: "grenade" }, 
-    
-    // AQUI TAMBIÉN: vinculamos con "medkit"
-    medkit: { name:"Medkit", cost:3, keywords: ["MEDIC"], mechanicRef: "medkit" },
-    
-    stim:   { name:"Estimulante", cost:1, keywords: [], mechanicRef: "stim" }
-};
-    // --- DICCIONARIO DE REGLAS Y TAGS ---
-    // 1. TAGS DE UNIDAD (Keywords)
-    const UNIT_TAGS = {
-        'LEADER': { desc: 'Genera 1 CP extra si está en el campo.', type: 'ROLE' },
-        'SCOUT': { desc: 'Movimiento gratuito al inicio de la partida.', type: 'PASSIVE' },
-        'HEAVY_INFANTRY': { desc: 'Armadura +1, Movimiento -1".', type: 'STAT' },
-        'FLY': { desc: 'Ignora terreno vertical al mover.', type: 'MOVE' },
-        'GRENADIER': { desc: 'Habilitado para usar acción de Granada.', type: 'ACTION' }
-    };
-    
-    // 2. TAGS DE ARMA (Weapon Traits)
-    const WEAPON_TRAITS = {
-        'BALANCED': { desc: 'Repite 1 dado de ataque fallido.', func: 'reroll_1' },
-        'HEAVY': { desc: 'No puede disparar si movió en el mismo turno.', func: 'check_move' },
-        'LETHAL_5': { desc: 'Críticos con 5+ en lugar de 6.', func: 'crit_boost' },
-        'SILENT': { desc: 'Disparar no revela posición (si usas sigilo).', func: 'stealth' },
-        'RENDING': { desc: 'Si sacas crítico, el objetivo tiene -1 Def.', func: 'pierce' }
-    };
-    
-    // --- GAME CONSTANTS ---
-    const MECHANICS_DB = {
-        "grenade": { name: "GRANADA", icon: "💣", type: "ACTIVE", func: "THROW_GRENADE", oneUse: true },
-        "medkit":  { name: "MEDKIT",  icon: "💊", type: "ACTIVE", func: "USE_MEDKIT", oneUse: true },
-        "regen":   { name: "REGEN",   icon: "🩸", type: "AUTO",   func: "AUTO_REGEN" },
-        "stim":    { name: "ESTIM",   icon: "💉", type: "ACTIVE", func: "USE_STIM", oneUse: true },
-        "scope":   { name: "MIRA",    icon: "🎯", type: "PASSIVE" },
-        "stealth": { name: "SIGILO",  icon: "👻", type: "PASSIVE" },
-        "shield":  { name: "ESCUDO",  icon: "🔵", type: "PASSIVE" }
-    };
-
-    // --- BASE DE DATOS DE HABILIDADES (PLOYS) ---
-    const PLOYS_DB = {
-        'RUSH': { 
-            name: "AVANCE RÁPIDO", 
-            cost: 1, 
-            icon: "🏃", 
-            desc: "Suma +2\" al movimiento de esta unidad.",
-            phase: 1 // Solo Fase Movimiento
-        },
-        'SHOOT_HARD': { 
-            name: "FUEGO CONCENTRADO", 
-            cost: 1, 
-            icon: "🔥", 
-            desc: "Tus armas obtienen el rasgo 'LETHAL 5+' este turno.",
-            phase: 2 // Solo Fase Acciones
-        },
-        'TAKE_COVER': { 
-            name: "¡A CUBIERTO!", 
-            cost: 1, 
-            icon: "🛡️", 
-            desc: "Si estás en cobertura, un éxito normal de defensa se vuelve crítico.",
-            phase: 3 // Resolución/Defensa
-        },
-        'REROLL': { 
-            name: "REPETICIÓN TÁCTICA", 
-            cost: 1, 
-            icon: "🎲", 
-            desc: "Repite un dado de ataque o defensa cualquiera.",
-            phase: 'ANY' // Especial, se gestiona en combate
-        }
-    };
-    
-    let selectedPloyId = null; // Cuál estás mirando
-    
-    const BROKER = "broker.hivemq.com"; const PORT = 8884; 
-    const SECRET_POOL = ["ASESINATO", "INFILTRACION", "SEGURIDAD", "RECONOCIMIENTO"];
-    
-    // --- STATE VARIABLES ---
-    let MY_ID = ""; let client=null, TOPIC="";
-    let myUnits=[], enemyUnits=[], globalHP={};
-    let editorSquad = []; // FORGE SQUAD
-    let myIdx=0, enIdx=0, combatMode='ranged'; 
-    let gameState = 'PLANNING'; let isGameOver = false;
-    let myVP = 0; let enemyVP = 0;
-    
-    let secretMission = null; let secretClaimed = false;
-    let primaryMission = "DOMINACION"; let secondaryActive = false;
-    let maxRounds = 4; let currentRound = 1;
-    let iAmReady=false, enemyIsReady=false;
-    let myInitRoll = null, enemyInitRoll = null;
-    let pendingRequest = null; let passConfirm = null;
-    
-    let atkRolls = [], defRolls = [], selectedIndices = [], canReroll = true;
-    let combatTargetVal = 4, currentWeaponDmg = 1;
-    let pendingAtkStats = null, coverActive = false;
-
-    let turnPhase = 0; // 0: Espera, 1: Movimiento, 2: Acciones, 3: Resolución
-    const PHASE_NAMES = { 1: "FASE 1: MOVIMIENTO", 2: "FASE 2: ACCIONES", 3: "FASE 3: RESOLUCIÓN" };
-
-    let myCP = 0;
-    let isPlayerTwo = false; // Cambiar a true si eres el segundo jugador
-    let activePloys = {}; // Para rastrear qué habilidades están activas este turno
-    
-    // --- FORGE FUNCTIONS (LOGICA CREADOR) ---
-    function openForge() {
-        document.getElementById('lobby-screen').classList.add('hidden');
-        document.getElementById('creator-screen').classList.remove('hidden');
+    <script>
+        // =============================================================
+        // 1. BASES DE DATOS (UNIDADES, ARMAS, EQUIPO)
+        // =============================================================
         
-        toggleCombatHUD(false);
-        
-        initForgeSelects();
-        renderEditorSquad();
-    }
-    
-    function closeForge() {
-        document.getElementById('creator-screen').classList.add('hidden');
-        document.getElementById('lobby-screen').classList.remove('hidden');
-    }
-
-    function initForgeSelects() {
-        const fill = (id, data, filterType = null) => {
-            const el = document.getElementById(id);
-            el.innerHTML = "";
-            
-            for (let k in data) {
-                const item = data[k];
-                // FILTRO: Si pedimos un tipo específico (Ranged/Melee) y no coincide, saltamos
-                if (filterType && item.type !== filterType) continue;
-
-                let opt = document.createElement('option');
-                opt.value = k;
-                opt.innerText = `${item.name} [${item.cost}pts]`;
-                el.appendChild(opt);
-            }
-        };
-
-        fill('u-species', FORGE_DB.species);
-        fill('u-role', FORGE_DB.roles);
-        
-        // --- AQUÍ ESTÁ EL TRUCO: FILTRAMOS POR TIPO ---
-        fill('u-weapon-r', FORGE_DB.weapons, "Ranged");
-        fill('u-weapon-m', FORGE_DB.weapons, "Melee");
-        
-        fill('u-gear', FORGE_DB.gear);
-        fill('u-base', FORGE_DB.bases);
-        
-        calcForge();
-    }
-
-  function calcForge() {
-        // 1. Obtener claves (AHORA SON 2 ARMAS)
-        const sKey = document.getElementById('u-species').value;
-        const rKey = document.getElementById('u-role').value;
-        const wrKey = document.getElementById('u-weapon-r').value; // Ranged
-        const wmKey = document.getElementById('u-weapon-m').value; // Melee
-        const gKey = document.getElementById('u-gear').value;
-        const bKey = document.getElementById('u-base').value;
-
-        // 2. Cargar Objetos
-        const s = FORGE_DB.species[sKey] || { hp:0, cost:0, sv:"-", r_hit:"6+", m_hit:"6+" };
-        const r = FORGE_DB.roles[rKey]   || { modHP:0, cost:0, modA:0, modHit:0 };
-        const wr = FORGE_DB.weapons[wrKey] || { cost:0, A:0, D:0 };
-        const wm = FORGE_DB.weapons[wmKey] || { cost:0, A:0, D:0 };
-        const g = FORGE_DB.gear[gKey]    || { cost:0 };
-        const b = FORGE_DB.bases[bKey]   || { cost:0, hp:0 };
-
-        // 3. Cálculos
-        const totalHP = (s.hp || 0) + (r.modHP || 0) + (b.hp || 0);
-        // Coste = Suma Base + Rol + Arma R + Arma M + Equipo + Peana
-        const totalCost = s.cost + r.cost + wr.cost + wm.cost + g.cost + b.cost;
-
-        // Cálculos de Hit (Rango y Melee por separado)
-        // Ranged Hit
-        let rhVal = parseInt(s.r_hit) + r.modHit;
-        if(rhVal < 2) rhVal = 2; if(rhVal > 6) rhVal = 6;
-        
-        // Melee Hit
-        let mhVal = parseInt(s.m_hit) + r.modHit;
-        if(mhVal < 2) mhVal = 2; if(mhVal > 6) mhVal = 6;
-
-        // 4. Actualizar UI
-        const name = document.getElementById('u-name').value || "OPERATIVO";
-        document.getElementById('preview-text').innerText = `${name} [${r.name}]`;
-        
-        document.getElementById('p-hp').innerText = totalHP;
-        document.getElementById('p-sv').innerText = s.sv;
-        document.getElementById('p-cost').innerText = totalCost;
-
-        // Mostrar Stats RANGED (Fila Superior)
-        document.getElementById('p-ratk').innerText = (wr.A + r.modA);
-        document.getElementById('p-rhit').innerText = rhVal + "+";
-
-        // Mostrar Stats MELEE (Fila Inferior)
-        document.getElementById('p-matk').innerText = (wm.A + r.modA);
-        document.getElementById('p-mhit').innerText = mhVal + "+";
-    }
-
-        window.addUnitToSquad = function() {
-        // 1. Obtener valores del DOM
-        const name = document.getElementById('u-name').value || "Operativo " + (editorSquad.length+1);
-        const sKey = document.getElementById('u-species').value;
-        const rKey = document.getElementById('u-role').value;
-        const wrKey = document.getElementById('u-weapon-r').value;
-        const wmKey = document.getElementById('u-weapon-m').value;
-        const gKey = document.getElementById('u-gear').value;
-        const bKey = document.getElementById('u-base').value;
-    
-        // 2. Cargar Objetos de la DB
-        const s = FORGE_DB.species[sKey];
-        const r = FORGE_DB.roles[rKey];
-        const wr = FORGE_DB.weapons[wrKey];
-        const wm = FORGE_DB.weapons[wmKey];
-        const g = FORGE_DB.gear[gKey];
-        const b = FORGE_DB.bases[bKey];
-    
-        // 3. Validar Coste (Igual que antes)
-        const unitCost = s.cost + r.cost + wr.cost + wm.cost + g.cost + b.cost;
-        const currentTotal = editorSquad.reduce((sum, u) => sum + u.cost, 0);
-        if (currentTotal + unitCost > 100) {
-            alert(`Límite excedido (${unitCost} pts).`);
-            return;
-        }
-    
-        // 4. --- LÓGICA DE TAGS (NUEVO) ---
-        // Combinamos arrays de keywords de Especie, Rol y Equipo
-        let combinedKeywords = [
-            ...(s.keywords || []), 
-            ...(r.keywords || []), 
-            ...(g.keywords || [])
-        ];
-        // Eliminar duplicados usando Set
-        combinedKeywords = [...new Set(combinedKeywords)];
-    
-        // 5. Calcular Hits (Igual que antes)
-        let rhVal = parseInt(s.r_hit) + r.modHit; if(rhVal<2) rhVal=2; if(rhVal>6) rhVal=6;
-        let mhVal = parseInt(s.m_hit) + r.modHit; if(mhVal<2) mhVal=2; if(mhVal>6) mhVal=6;
-    
-        // 6. Construir Objeto FINAL DE UNIDAD
-        // Nota: Ahora guardamos las armas como OBJETOS completos, no solo nombres.
-        const newUnit = {
-            id: Date.now(),
-            name: name,
-            cost: unitCost,
-            base: b.name,
-            keywords: combinedKeywords, // <--- AQUÍ ESTÁN TUS TAGS DE UNIDAD
-            stats: {
-                hp: s.hp + r.modHP + b.hp,
-                sv: s.sv,
-                // Guardamos Stats base calculados por conveniencia visual
-                r_hit_val: rhVal,
-                m_hit_val: mhVal
-            },
-            weapons: [
-                {
-                    name: wr.name,
-                    type: 'RANGED',
-                    atk: wr.A + r.modA,
-                    hit: rhVal,
-                    dmg: wr.D,
-                    traits: wr.traits || [] // <--- AQUÍ ESTÁN TUS TAGS DE ARMA
-                },
-                {
-                    name: wm.name,
-                    type: 'MELEE',
-                    atk: wm.A + r.modA,
-                    hit: mhVal,
-                    dmg: wm.D,
-                    traits: wm.traits || [] // <--- AQUÍ ESTÁN TUS TAGS DE ARMA
-                }
+        // UNIDADES PARA EL FORGE
+        const UNIT_DB = {
+            ASTARTES: [
+                { id: "int_sgt", name: "Sargento Intercesor", pts: 15, stats: { m: 6, sv: 3, df: 3 }, hp: 14, weapons: ["bolt_rifle", "chainsword"], keywords: ["LEADER", "IMPERIUM"] },
+                { id: "int_war", name: "Guerrero Intercesor", pts: 12, stats: { m: 6, sv: 3, df: 3 }, hp: 13, weapons: ["bolt_rifle", "fists"], keywords: ["IMPERIUM"] },
+                { id: "ass_int", name: "Asalto Intercesor",   pts: 13, stats: { m: 6, sv: 3, df: 3 }, hp: 13, weapons: ["heavy_pistol", "chainsword"], keywords: ["IMPERIUM"] }
             ],
-            gear: g.name
+            NECRON: [
+                { id: "nec_imm", name: "Inmortal Gauss",      pts: 14, stats: { m: 4, sv: 3, df: 3 }, hp: 12, weapons: ["gauss_blaster", "fists"], keywords: ["NECRON"] },
+                { id: "nec_war", name: "Guerrero Necron",     pts: 10, stats: { m: 4, sv: 4, df: 3 }, hp: 10, weapons: ["gauss_flayer", "fists"], keywords: ["NECRON"] }
+            ]
         };
-    
-        editorSquad.push(newUnit);
-        renderEditorSquad();
-        document.getElementById('u-name').value = "";
-    };
-    
-        window.renderEditorSquad = function() {
-            const c = document.getElementById('squad-list'); 
-            c.innerHTML = "";
-            let totalCost = 0;
-        
-            editorSquad.forEach((u, i) => {
-                totalCost += u.cost;
-                
-                // Generar HTML de etiquetas (badges)
-                // Muestra Keywords de unidad y Traits de armas en pequeño
-                let badges = u.keywords.map(k => `<span class="badge unit-tag">${k}</span>`).join('');
-                
-                // Agregar Traits de armas principales si son importantes
-                u.weapons.forEach(w => {
-                    if(w.traits && w.traits.length > 0) {
-                        // Solo mostrar la primera letra o algo corto para no saturar
-                        badges += w.traits.map(t => `<span class="badge weapon-tag" title="${w.name}">${t}</span>`).join('');
-                    }
-                });
-        
-                let div = document.createElement('div');
-                div.className = "unit-item";
-                div.innerHTML = `
-                    <div class="unit-info">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="color:var(--c); font-weight:bold;">${u.name}</span>
-                            <span style="color:var(--gold)">[${u.cost} PTS]</span>
-                        </div>
-                        
-                        <div style="font-size:0.7rem; color:#aaa; margin-top:2px;">
-                            HP:${u.stats.hp} SV:${u.stats.sv} | ${u.weapons[0].name} & ${u.weapons[1].name}
-                        </div>
-                        
-                        <div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:3px;">
-                            ${badges}
-                        </div>
-                    </div>
-                    <button class="btn btn-del" onclick="removeEditorUnit(${i})">X</button>
-                `;
-                c.appendChild(div);
-            });
-        
-            const lbl = document.getElementById('total-pts');
-            lbl.innerText = totalCost;
-            lbl.style.color = (totalCost > 100) ? "var(--r)" : (totalCost === 100 ? "var(--gold)" : "#fff");
+
+        const WEAPON_DB = {
+            "bolt_rifle":    { name: "Rifle Bólter",  type: "RANGED", atk: 4, hit: 3, dmg: 3, traits: ["BALANCED"] },
+            "heavy_pistol":  { name: "Pistola Pesada",type: "RANGED", atk: 4, hit: 3, dmg: 4, traits: ["PISTOL"] },
+            "gauss_blaster": { name: "Blaster Gauss", type: "RANGED", atk: 4, hit: 3, dmg: 4, traits: ["AP_1"] },
+            "gauss_flayer":  { name: "Desollador",    type: "RANGED", atk: 4, hit: 3, dmg: 3, traits: [] },
+            "chainsword":    { name: "Espada Sierra", type: "MELEE",  atk: 5, hit: 3, dmg: 4, traits: [] },
+            "fists":         { name: "Puños",         type: "MELEE",  atk: 3, hit: 3, dmg: 3, traits: [] }
         };
+
+        const GEAR_DB = {
+            "none":   { name: "Nada", cost: 0, keywords: [] },
+            "nades":  { name: "Granadas Frag", cost: 2, keywords: ["GRENADIER"], mechanicRef: "grenade" },
+            "medkit": { name: "Medkit",        cost: 3, keywords: ["MEDIC"],     mechanicRef: "medkit" }
+        };
+
+        const MECHANICS_DB = {
+            "grenade": { name: "GRANADA", icon: "💣", type: "ACTIVE", func: "startAttack", params: "grenade", oneUse: true },
+            "medkit":  { name: "MEDKIT",  icon: "💊", type: "ACTIVE", func: "useMedkit",    oneUse: true }
+        };
+
+        const PLOYS_DB = [
+            { id: "reroll", name: "RE-ROLL TÁCTICO", cost: 1, desc: "Repite 1 dado.", func: "activateCPReroll" },
+            { id: "dash",   name: "SPRINT (DASH)",   cost: 1, desc: "+Movimiento.",   func: "activateDash" }
+        ];
+
+        // =============================================================
+        // 2. GESTIÓN DE RED (MQTT)
+        // =============================================================
+        let client;
+        let myChannel = "MESA_DEFAULT";
+        let myPlayerID = "Player_" + Math.floor(Math.random()*1000);
+        let isConnected = false;
+
+        function connectAndPlay() {
+            myChannel = document.getElementById('net-channel').value || "MESA_TEST";
+            myPlayerID = document.getElementById('net-player').value || "Unknown";
             
-        function renderEditorSquad() {
-                const c = document.getElementById('squad-list'); c.innerHTML = "";
-                let totalCost = 0;
-        
-                editorSquad.forEach((u, i) => {
-                    totalCost += u.cost;
-                    let div = document.createElement('div');
-                    div.className = "unit-item";
-                    // Mostramos iconos de arma según sea Rango o Melee para identificar rápido
-                    const wIcon = u.stats.r_atk > 0 ? "🔫" : "⚔️";
-                    
-                    div.innerHTML = `
-                        <div class="unit-info">
-                            <div style="color:var(--c); font-weight:bold;">${u.name} <span style="color:var(--gold)">[${u.cost} PTS]</span></div>
-                            <div style="color:#666;">${wIcon} HP:${u.stats.hp} SV:${u.stats.sv} | ${u.gear ? u.gear : 'NO GEAR'}</div>
-                        </div>
-                        <button class="btn btn-del" onclick="removeEditorUnit(${i})">X</button>
-                    `;
-                    c.appendChild(div);
-                });
-        
-                // Actualizar el HTML del contador
-                const lbl = document.getElementById('total-pts');
-                lbl.innerText = totalCost;
-                
-                if(totalCost >= 100) lbl.style.color = "var(--gold)";
-                else lbl.style.color = "#fff";
-            }
-        
+            client = new Paho.MQTT.Client("broker.hivemq.com", 8000, myPlayerID + "_" + Math.random());
+            client.onConnectionLost = onConnectionLost;
+            client.onMessageArrived = onMessageArrived;
+
+            document.getElementById('connection-status').innerText = "Conectando...";
             
-            window.startNewRound = function(amISecond) {
-                isPlayerTwo = amISecond; // True si vas segundo
-                myCP = isPlayerTwo ? 4 : 3; // 3 CP para el primero, 4 para el segundo
-                activePloys = {}; // Limpiar efectos
-                updateCPUI();
-                log(`=== NUEVA RONDA: ${myCP} CP GENERADOS ===`);
-            };
-        
-                // Función maestra para mostrar/ocultar la interfaz de combate
-            function toggleCombatHUD(show) {
-            const displayStyle = show ? 'flex' : 'none';
-            
-            // Lista de los nuevos IDs unificados
-            const bubbles = ['hud-cmd', 'hud-gear', 'hud-act'];
-            
-            bubbles.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.style.display = displayStyle;
-                    
-                    // Si estamos OCULTANDO, también cerramos los menús internos por seguridad
-                    if (!show) {
-                        // Aseguramos que la variable global de estado se resetee
-                        if(typeof currentBubble !== 'undefined') currentBubble = null;
-                        
-                        // Quitamos clases activas visuales
-                        el.querySelector('.hud-bubble')?.classList.remove('active');
-                        el.querySelector('.hud-menu')?.classList.add('hidden');
-                    }
-                }
+            client.connect({
+                onSuccess: onConnect,
+                onFailure: (e) => { alert("Error Conexión: " + e.errorMessage); }
             });
         }
-        
-            // --- GESTIÓN DE UI DE CP ---
-            function updateCPUI() {
-                document.getElementById('cp-display').innerText = "CP: " + myCP;
-                document.getElementById('cp-modal-display').innerText = "CP DISPONIBLES: " + myCP;
-                
-                // Ocultar botón de comando si no es mi turno (opcional)
-                const btnCmd = document.getElementById('btn-cmd');
-                if(btnCmd) btnCmd.style.display = (gameState === 'MY_TURN') ? 'block' : 'none';
-            }
+
+        function onConnect() {
+            console.log("MQTT Conectado");
+            isConnected = true;
+            document.getElementById('connection-status').innerText = "CONECTADO A: " + myChannel;
+            document.getElementById('connection-status').style.color = "var(--g)";
             
-            function toggleCommandMenu() {
-                const modal = document.getElementById('command-modal');
-                modal.classList.toggle('hidden');
-                updateCPUI();
-            }
-        
-           // Variable de estado: 'cmd', 'gear', 'act' o null (cerrado)
-        let currentBubble = null;
-        
-        // === 1. FUNCIÓN MAESTRA DE APERTURA ===
-        window.toggleBubble = function(bubbleType) {
-            // A. Si hacemos click en la que ya está abierta, la cerramos
-            if (currentBubble === bubbleType) {
-                closeAllBubbles();
-                return;
-            }
-        
-            // B. Si es una nueva, cerramos todo primero y abrimos la nueva
-            closeAllBubbles();
+            client.subscribe(myChannel + "/#");
+            publish({ type: 'JOIN', sender: myPlayerID });
             
-            currentBubble = bubbleType;
-            
-            // UI: Marcar la burbuja como activa (Borde brillante)
-            const bubbleEl = document.querySelector(`#hud-${bubbleType} .hud-bubble`);
-            if(bubbleEl) bubbleEl.classList.add('active');
-        
-            // UI: Mostrar el menú correspondiente
-            const menuEl = document.getElementById(`menu-${bubbleType}`);
-            if(menuEl) menuEl.classList.remove('hidden');
-        
-            // LÓGICA: Renderizar el contenido
-            refreshActiveMenu();
+            // Si conectamos desde el lobby, vamos al forge
+            if(document.getElementById('game-screen').classList.contains('hidden')) {
+                openForge();
+            }
+        }
+
+        function onConnectionLost(responseObject) {
+            if (responseObject.errorCode !== 0) console.log("Conexión perdida:"+responseObject.errorMessage);
+            document.getElementById('connection-status').innerText = "DESCONECTADO";
+            document.getElementById('connection-status').style.color = "var(--r)";
+        }
+
+        function publish(payload) {
+            if(!isConnected) return;
+            const message = new Paho.MQTT.Message(JSON.stringify(payload));
+            message.destinationName = myChannel + "/game";
+            client.send(message);
+        }
+
+        function onMessageArrived(message) {
+            try {
+                const data = JSON.parse(message.payloadString);
+                if(data.sender === myPlayerID) return; // Ignorar mis propios mensajes
+
+                // LOGICA DE RECEPCIÓN
+                document.getElementById('net-log').innerText = `RIVAL: ${data.type}`;
+
+                if (data.type === 'COMBAT_SYNC') {
+                    handleCombatSync(data);
+                } else if (data.type === 'TURN_PASS') {
+                    alert("Tu Rival pasó turno. ¡Es tu turno!");
+                    // Aquí lógica de cambio de turno real
+                }
+            } catch(e) { console.error("Error msg", e); }
+        }
+
+        // =============================================================
+        // 3. LOGICA DEL FORGE (CREADOR)
+        // =============================================================
+        let myArmy = [];
+        let currentPoints = 0;
+
+        window.openForge = function() {
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('creator-screen').classList.remove('hidden');
+            toggleCombatHUD(false); // Ocultar burbujas en forge
+            setFaction('ASTARTES'); // Default
         };
-        
-        // === 2. FUNCIÓN DE LIMPIEZA ===
+
+        window.returnToLobby = function() {
+            document.getElementById('creator-screen').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.remove('hidden');
+        };
+
+        window.setFaction = function(faction) {
+            const container = document.getElementById('available-units');
+            container.innerHTML = '';
+            
+            if(!UNIT_DB[faction]) return;
+
+            UNIT_DB[faction].forEach(u => {
+                const div = document.createElement('div');
+                div.className = "unit-select-card";
+                div.innerHTML = `
+                    <span><b>${u.name}</b> (${u.pts} pts)</span>
+                    <button style="padding:4px 8px; font-size:0.8rem;" onclick="addToArmy('${faction}', '${u.id}')">+</button>
+                `;
+                container.appendChild(div);
+            });
+        };
+
+        window.addToArmy = function(faction, uid) {
+            const template = UNIT_DB[faction].find(u => u.id === uid);
+            // Copia profunda para editar
+            const newUnit = JSON.parse(JSON.stringify(template));
+            
+            // Asignar UID único
+            newUnit.uid = "u_" + Math.floor(Math.random()*10000);
+            
+            // Resolver Armas (De string a objeto real)
+            newUnit.weapons = newUnit.weapons.map(wId => {
+                return WEAPON_DB[wId] ? { ...WEAPON_DB[wId] } : { name: "Desconocido", atk:1, hit:6, dmg:1, type:"MELEE" };
+            });
+
+            // Default Gear
+            newUnit.gear = "nades"; // Ejemplo default
+            newUnit.gearUsed = false;
+            newUnit.ap = 2;
+            newUnit.activations = 0;
+
+            myArmy.push(newUnit);
+            updateArmyListUI();
+        };
+
+        function updateArmyListUI() {
+            const list = document.getElementById('my-army-list');
+            list.innerHTML = '';
+            currentPoints = 0;
+            
+            myArmy.forEach((u, idx) => {
+                currentPoints += u.pts;
+                const div = document.createElement('div');
+                div.style.cssText = "display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:4px;";
+                div.innerHTML = `<span>${u.name}</span> <small onclick="removeFromArmy(${idx})" style="color:var(--r); cursor:pointer;">[X]</small>`;
+                list.appendChild(div);
+            });
+            document.getElementById('army-points').innerText = currentPoints + " PTS";
+        }
+
+        window.removeFromArmy = function(idx) {
+            myArmy.splice(idx, 1);
+            updateArmyListUI();
+        };
+
+        window.confirmArmy = function() {
+            if(myArmy.length === 0) { alert("Añade unidades primero."); return; }
+            myUnits = myArmy; // Transferir al juego
+            startGame();
+        };
+
+        // =============================================================
+        // 4. LÓGICA DE JUEGO (GAME LOOP & UI UNIFICADA)
+        // =============================================================
+        let myUnits = [];
+        let myIdx = 0;
+        let myCP = 2;
+        let combatMode = 'ranged';
+        let currentBubble = null;
+        let activeCombatStats = {};
+        let atkRolls = [], defRolls = [];
+
+        function startGame() {
+            document.getElementById('creator-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            
+            // Inicializar UI
+            toggleCombatHUD(true); // <--- IMPORTANTE: Mostrar burbujas
+            updateHUD();
+            
+            // Avisar a red
+            publish({ type: 'GAME_START', armySize: myUnits.length });
+        }
+
+        // --- SISTEMA DE BURBUJAS UNIFICADO ---
+        window.toggleBubble = function(type) {
+            if (currentBubble === type) {
+                closeAllBubbles();
+            } else {
+                closeAllBubbles();
+                currentBubble = type;
+                document.querySelector(`#hud-${type} .hud-bubble`)?.classList.add('active');
+                document.getElementById(`menu-${type}`)?.classList.remove('hidden');
+                refreshActiveMenu();
+            }
+        };
+
         function closeAllBubbles() {
             currentBubble = null;
-            
-            // Quitar clase .active de todas las bolas
             document.querySelectorAll('.hud-bubble').forEach(el => el.classList.remove('active'));
-            
-            // Ocultar todos los menús
             document.querySelectorAll('.hud-menu').forEach(el => el.classList.add('hidden'));
         }
-        
-        // === 3. RENDERIZADOR CENTRAL (Despachador) ===
-        function refreshActiveMenu() {
-            if (!currentBubble) return;
-        
-            if (currentBubble === 'gear') renderGearMenu();
-            else if (currentBubble === 'cmd') renderCmdMenu(); // Tu lógica de Ploys
-            else if (currentBubble === 'act') renderActMenu(); // Tu lógica de Acciones
+
+        function toggleCombatHUD(show) {
+            const val = show ? 'flex' : 'none';
+            document.getElementById('hud-cmd').style.display = val;
+            document.getElementById('hud-gear').style.display = val;
+            document.getElementById('hud-act').style.display = val;
+            if(!show) closeAllBubbles();
         }
+
+        window.refreshActiveMenu = function() {
+            if (currentBubble === 'cmd') renderCmdMenu();
+            else if (currentBubble === 'gear') renderGearMenu();
+            else if (currentBubble === 'act') renderActMenu();
+        };
+
+        // --- RENDERIZADORES DE MENÚS ---
+        window.renderActMenu = function() {
+            const container = document.getElementById('menu-act');
+            container.innerHTML = '';
+            const me = myUnits[myIdx];
             
-          // --- RENDERIZAR EQUIPO (GEAR) ---
+            const acts = [
+                { name: "MOVER", icon: "🏃", cost: 1, disabled: me.ap<1 || me.hasMoved, func: "startMove" },
+                { name: "DISPARAR", icon: "🔫", cost: 1, disabled: me.ap<1 || me.hasShot, func: "startShooting" },
+                { name: "COMBATE", icon: "⚔️", cost: 1, disabled: me.ap<1 || me.hasFought, func: "startMelee" },
+                { name: "PASAR", icon: "⏭️", cost: 0, disabled: false, func: "passTurn" }
+            ];
+
+            acts.forEach(act => {
+                const div = document.createElement('div');
+                div.className = act.disabled ? "menu-item disabled" : "menu-item";
+                div.innerHTML = `<span>${act.icon} ${act.name}</span>`;
+                if(!act.disabled) {
+                    div.onclick = () => { window[act.func](); toggleBubble(null); };
+                }
+                container.appendChild(div);
+            });
+        };
+
         window.renderGearMenu = function() {
-        const container = document.getElementById('menu-gear');
-        if (!container) return;
-        container.innerHTML = '';
-    
-        if (!myUnits || myIdx < 0 || !myUnits[myIdx]) return;
-        const me = myUnits[myIdx];
-    
-        // Validar si tiene equipo y buscarlo en la DB
-        const gearDef = Object.values(window.GEAR_DB).find(item => item.name === me.gear);
-        
-        // Si no tiene equipo válido o mecánica
-        if (!gearDef || !gearDef.mechanicRef) {
-            container.innerHTML = '<div style="padding:8px; color:#777; font-size:0.8rem; text-align:center;">Sin equipo activo</div>';
-            return;
-        }
-    
-        const mech = window.MECHANICS_DB[gearDef.mechanicRef];
-        const isUsed = (mech.oneUse && me.gearUsed);
-    
-        const div = document.createElement('div');
-        div.className = isUsed ? "menu-item disabled" : "menu-item";
-        
-        div.innerHTML = `
-            <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:1.2rem;">${mech.icon}</span>
-                <div style="display:flex; flex-direction:column;">
-                    <span style="font-weight:bold;">${mech.name}</span>
-                    <span style="font-size:0.6rem; color:#aaa;">${gearDef.name}</span>
-                </div>
-            </div>
-            <small style="color:${isUsed ? '#f55' : 'var(--c)'}">${isUsed ? 'AGOTADO' : 'USAR'}</small>
-        `;
-    
-        if (!isUsed) {
-            div.onclick = function() {
-                // Ejecutar la mecánica
-                if (mech.func === "THROW_GRENADE") window.startAttack("grenade"); // Ejemplo especial
-                else if (mech.func === "USE_MEDKIT") window.healUnit(me);
-                else console.log("Efecto genérico:", mech.name);
-    
-                // Marcar usado
-                if (mech.oneUse) me.gearUsed = true;
-                
-                toggleBubble(null);
-                updateHUD();
-            };
-        }
-        container.appendChild(div);
-    };
-        
-            // Buscar en DB (Lógica de vinculación)
-            const gearDef = Object.values(window.GEAR_DB).find(item => item.name === me.gear);
-            if (!gearDef || !gearDef.mechanicRef) {
-                container.innerHTML = `<div class="menu-item disabled">${me.gear} (Pasivo)</div>`;
-                return;
+            const container = document.getElementById('menu-gear');
+            container.innerHTML = '';
+            const me = myUnits[myIdx];
+            const gInfo = GEAR_DB[me.gear] || GEAR_DB["none"];
+            
+            if(!gInfo.mechanicRef) {
+                container.innerHTML = '<div style="color:#777; padding:5px;">Vacío</div>'; return;
             }
             
-            const mech = window.MECHANICS_DB[gearDef.mechanicRef];
-            const isUsed = (mech.oneUse && me.gearUsed);
-        
+            const mech = MECHANICS_DB[gInfo.mechanicRef];
+            const isUsed = me.gearUsed && mech.oneUse;
+            
             const div = document.createElement('div');
             div.className = isUsed ? "menu-item disabled" : "menu-item";
-            div.innerHTML = `
-                <span>${mech.icon} ${mech.name}</span>
-                <small>${isUsed ? 'USADO' : 'USAR'}</small>
-            `;
+            div.innerHTML = `<span>${mech.icon} ${mech.name}</span><small>${isUsed?'USADO':'USAR'}</small>`;
             
             if(!isUsed) {
-                div.onclick = function() {
-                    // Lógica de uso
-                    console.log("Usando:", mech.name);
+                div.onclick = () => {
+                    console.log("Usando", mech.name);
+                    if(mech.func === 'startAttack') initiateCombat(0); // Hack para granada
                     if(mech.oneUse) me.gearUsed = true;
-                    toggleBubble(null); // Cerrar menú al usar
-                    updateHUD();        // Refrescar todo
+                    toggleBubble(null); updateHUD();
                 };
             }
             container.appendChild(div);
         };
-        
-        // --- RENDERIZAR ACCIONES (ACT) ---
-        window.renderActMenu = function() {
-        const container = document.getElementById('menu-act');
-        if (!container) return;
-        container.innerHTML = '';
-    
-        const me = myUnits[myIdx];
-        const ap = me.ap || 0; // Action Points actuales
-    
-        // Definimos las acciones disponibles
-        const actions = [
-            {
-                name: "MOVER",
-                icon: "🏃",
-                cost: 1,
-                // Deshabilitar si: No hay AP, ya movió, o está trabado en combate
-                disabled: ap < 1 || me.hasMoved || me.isEngaged,
-                func: "startMove" 
-            },
-            {
-                name: "DISPARAR",
-                icon: "🔫",
-                cost: 1,
-                // Deshabilitar si: No hay AP, ya disparó, o está en melee
-                disabled: ap < 1 || me.hasShot || me.isEngaged, 
-                func: "startShooting"
-            },
-            {
-                name: "COMBATE (MELEE)",
-                icon: "⚔️",
-                cost: 1,
-                // Deshabilitar si: No hay AP, ya peleó, o NO está cerca de nadie
-                disabled: ap < 1 || me.hasFought, 
-                func: "startMelee"
-            },
-            {
-                name: "PASAR TURNO",
-                icon: "⏭️",
-                cost: 0,
-                disabled: false, // Siempre se puede pasar
-                func: "passTurn"
-            }
-        ];
-    
-        actions.forEach(act => {
-            const div = document.createElement('div');
-            div.className = act.disabled ? "menu-item disabled" : "menu-item";
+
+        window.renderCmdMenu = function() {
+            const container = document.getElementById('menu-cmd');
+            container.innerHTML = `<div style="border-bottom:1px solid #333; color:var(--gold); font-size:0.7rem;">CP: ${myCP}</div>`;
             
-            div.innerHTML = `
-                <span>${act.icon} ${act.name}</span>
-                ${act.cost > 0 ? `<small style="color:#aaa">${act.cost} AP</small>` : ''}
-            `;
-    
-            if (!act.disabled) {
-                div.onclick = function() {
-                    toggleBubble(null); // Cerrar menú
-                    
-                    // Ejecutar la función real
-                    if (typeof window[act.func] === 'function') {
-                        window[act.func](); 
-                    } else {
-                        console.error("Función no encontrada:", act.func);
-                    }
-                };
-            }
-            container.appendChild(div);
-        });
-    };
-        
-        // --- RENDERIZAR COMANDOS (CMD) ---
-       window.renderCmdMenu = function() {
-        const container = document.getElementById('menu-cmd');
-        if (!container) return;
-        container.innerHTML = '';
-    
-        // Header con tus CP actuales
-        const header = document.createElement('div');
-        header.style.cssText = "padding:4px; font-size:0.7rem; color:var(--gold); border-bottom:1px solid #333; margin-bottom:4px;";
-        header.innerText = `COMANDOS (CP: ${window.myCP || 0})`;
-        container.appendChild(header);
-    
-        window.PLOYS_DB.forEach(ploy => {
-            const canAfford = window.myCP >= ploy.cost;
-            
-            const div = document.createElement('div');
-            div.className = canAfford ? "menu-item" : "menu-item disabled";
-            
-            div.innerHTML = `
-                <div style="display:flex; flex-direction:column;">
-                    <span style="font-weight:bold;">${ploy.name}</span>
-                    <span style="font-size:0.6rem; color:#888;">${ploy.desc}</span>
-                </div>
-                <span style="color:${canAfford ? 'var(--gold)' : '#555'}; font-weight:bold;">${ploy.cost} CP</span>
-            `;
-    
-            if (canAfford) {
-                div.onclick = function() {
-                    // Ejecutar función
-                    if (typeof window[ploy.func] === 'function') {
-                        window[ploy.func]();
-                        // Restar CP aquí o dentro de la función específica
-                        window.myCP -= ploy.cost; 
-                    } else {
-                        console.log("Función de Ploy no definida:", ploy.func);
-                    }
-                    toggleBubble(null); // Cerrar menú
-                    updateHUD();        // Actualizar UI
-                };
-            }
-            container.appendChild(div);
-        });
-    };
-    
-    // --- GAME INIT ---
-    window.initSystem = function() {
-        MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
-        const json = document.getElementById('json-input').value;
-        const code = document.getElementById('room-id').value.trim().toUpperCase();
-        maxRounds = parseInt(document.getElementById('round-select').value, 10);
-        primaryMission = document.getElementById('primary-mission').value;
-        secondaryActive = (document.getElementById('secondary-toggle').value === "SI");
-        
-        try {
-            const parsed = JSON.parse(json);
-            if(!parsed.squad) throw new Error("Falta 'squad' en JSON.");
-            myUnits = parsed.squad.map(u => {
-                const unit = { ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', activations: 0, gearUsed: false, mechanics: [] };
-                if(u.gear && MECHANICS_DB[u.gear]) unit.mechanics.push(MECHANICS_DB[u.gear]);
-                return unit;
-            });
-            myUnits.forEach(u => { globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
-            
-            document.getElementById('lobby-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
-            assignSecretMission(); updateMissionDisplay(); toggleCombatHUD(true); updateHUD(); 
-            
-            navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>console.log("No AR"));
-            startNetwork(code);
-        } catch(e) { alert("ERROR DE DATOS: " + e.message); }
-    }
-
-    function removeEditorUnit(index) {
-        // Borra 1 elemento en la posición 'index'
-        editorSquad.splice(index, 1);
-        // Vuelve a renderizar la lista y recalcular puntos
-        renderEditorSquad();
-    }
-
-    function deployToLobby() {
-        // 1. Validar que hay escuadra
-        if (editorSquad.length === 0) {
-            alert("¡Necesitas al menos 1 Operativo para desplegar!");
-            return;
-        }
-
-        // 2. Preparar el JSON en el formato correcto
-        // Nota: Creamos un objeto { squad: ... } para que initSystem lo lea bien
-        const finalObj = { squad: editorSquad };
-        const jsonStr = JSON.stringify(finalObj, null, 2); // Formato legible
-        
-        // 3. Pegar el JSON en la caja de texto del Lobby
-        document.getElementById('json-input').value = jsonStr;
-        
-        // 4. Cambiar de pantalla MANUALMENTE (Solución al error showScreen)
-        document.getElementById('creator-screen').classList.add('hidden');
-        document.getElementById('lobby-screen').classList.remove('hidden');
-        
-        // Feedback opcional
-        console.log("Escuadra transferida al Lobby");
-    }
-
-    function startNetwork(code) {
-        TOPIC = `sqcmd/v2.4/${code}`;
-        client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
-        client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
-        client.onMessageArrived=onMessage;
-        client.connect({useSSL:true, onSuccess:()=>{ client.subscribe(TOPIC); publish({type:'JOIN_REQ', squad:myUnits, pMission:primaryMission, secActive:secondaryActive}); }});
-    }
-
-    // --- NETWORK HANDLER ---
-    function onMessage(msg) {
-        if(isGameOver) return;
-        const d = JSON.parse(msg.payloadString);
-        if(d.sender === MY_ID) return;
-
-        if(d.type === 'JOIN_REQ') {
-            if(!enemyUnits.length) {
-                enemyUnits = d.squad; initialEnemyCount = enemyUnits.length;
-                publish({type: 'JOIN_ACK', squad: myUnits, rounds: maxRounds, pMission: primaryMission, secActive: secondaryActive});
-                enemyUnits.forEach(u => { if(!globalHP[u.uid] && u.stats) globalHP[u.uid] = {c:parseInt(u.stats.hp)||1, m:parseInt(u.stats.hp)||1}; });
-                const btn = document.getElementById('btn-ready');
-                btn.disabled = false; btn.querySelector('span').innerText = "CONFIRMAR ÓRDENES";
-                btn.style.background = "var(--c)"; btn.style.color = "#000";
-                updateHUD(); log(`RIVAL CONECTADO.`);
-            }
-        }
-        else if(d.type === 'JOIN_ACK') {
-            if(!enemyUnits.length) {
-                enemyUnits = d.squad; initialEnemyCount = enemyUnits.length;
-                maxRounds = d.rounds;
-                if(d.pMission) primaryMission = d.pMission;
-                if(typeof d.secActive !== 'undefined') { secondaryActive = d.secActive; assignSecretMission(); }
-                enemyUnits.forEach(u => { if(!globalHP[u.uid] && u.stats) globalHP[u.uid] = {c:parseInt(u.stats.hp)||1, m:parseInt(u.stats.hp)||1}; });
-                const btn = document.getElementById('btn-ready');
-                btn.disabled = false; btn.querySelector('span').innerText = "CONFIRMAR ÓRDENES";
-                btn.style.background = "var(--c)"; btn.style.color = "#000";
-                updateMissionDisplay(); updateHUD(); log(`REGLAS SINCRONIZADAS.`);
-            }
-        }
-        else if(d.type === 'READY') {
-            enemyUnits = d.squad; enemyIsReady = true; enemyInitRoll = d.roll;
-            document.getElementById('en-ready-mark').classList.add('show'); checkStartRound();
-        }
-        else if(d.type === 'COMBAT_SYNC') { handleCombatSync(d); }
-        else if(d.type === 'SCORE_UPDATE') { enemyVP = d.vp; updateHUD(); }
-        else if(d.type === 'SYNC_SQUAD') { enemyUnits = d.squad; updateHUD(); }
-        else if(d.type === 'SYNC_HP') { 
-            const oldHP = {...globalHP}; globalHP = {...globalHP, ...d.state}; 
-            enemyUnits.forEach(u => {
-                if(oldHP[u.uid] && oldHP[u.uid].c > 0 && globalHP[u.uid].c <= 0) {
-                    let pts = getKillPoints(initialEnemyCount); myVP += pts;
-                    log(`ENEMIGO ABATIDO (+${pts} PV)`); publish({type:'SCORE_UPDATE', vp:myVP});
-                }
-            });
-            updateHUD(); checkAliveStatus();
-        }
-        else if(d.type === 'REQ_SECRET') showConfirmModal(`RIVAL RECLAMA SECRETA: ${d.missionName}`, d);
-        else if(d.type === 'ACK_SECRET') executeSecretClaim();
-        else if(d.type === 'GEAR_EFFECT') {
-            log(`RIVAL USA ${d.gearName}: ${d.desc}`);
-            if(d.dmg) { applyDamage(d.dmg); log(`RECIBES ${d.dmg} DAÑO`, 'danger'); }
-        }
-        else if(d.type === 'OP_ACTION') { if(gameState!=='PLANNING'){ log(`RIVAL: ${d.opType}`); setTurn('MY_TURN', 0); } }
-        else if(d.type === 'CHANGE_TURN') { if(gameState!=='PLANNING') setTurn('MY_TURN', d.passes || 0);  }
-        else if(d.type === 'ROUND_OVER') resetRound();
-    }
-
-    function startMyTurnPhases() {
-        gameState = 'MY_TURN';
-        turnPhase = 1; // Iniciar en Fase 1
-        log("=== TU TURNO: FASE DE MOVIMIENTO ===");
-        updatePhaseUI();
-    }
-
-    function resolvePhase(actionType) {
-        turnPhase = 3;
-        updatePhaseUI();
-        log("RESOLVIENDO: " + actionType + "...");
-        
-        // Pequeña pausa para que el jugador vea el resultado antes de pasar turno automáticamente
-        // O puedes mostrar un botón de "FIN DE TURNO" aquí si prefieres manual.
-        setTimeout(() => {
-            log("TURNO COMPLETADO.");
-            passTurn(0);
-            }, 1500);
-        }
-        
-        window.log = function(msg, type = 'NORMAL') {
-            const area = document.getElementById('main-log-area');
-            if (!area) return;
-        
-            // Crear elemento
-            const div = document.createElement('div');
-            div.classList.add('log-entry');
-            div.innerHTML = `> ${msg}`; // Agregamos el > por estilo consola
-        
-            // Asignar clase según tipo (reutilizando tu lógica de colores)
-            if (type === 'COMBAT' || type === 'DANGER') div.classList.add('danger');
-            else if (type === 'GOLD' || type === 'SUCCESS') div.classList.add('success');
-            else if (type === 'CMD') div.classList.add('cmd');
-        
-            // Insertar al principio (arriba) o final (abajo)
-            area.appendChild(div);
-        
-            // AUTO-LIMPIEZA: Eliminar logs viejos para no saturar la pantalla
-            // Desaparece a los 5 segundos
-            setTimeout(() => {
-                div.style.opacity = '0';
-                setTimeout(() => div.remove(), 500); // Esperar a que termine la transición css
-            }, 5000);
-        
-            // Mantener máximo 6 logs en pantalla para evitar desborde
-            if (area.children.length > 6) {
-                area.removeChild(area.firstChild);
-            }
-        };
-
-            // Función simplificada de Daño Flotante
-            window.showDamage = function(targetId, amount, isCrit) {
-                // Intentar buscar el elemento objetivo, si no existe, usar el centro de pantalla
-                const target = document.getElementById(targetId) || document.body;
-                const rect = target.getBoundingClientRect();
-                
-                // Crear el número
-                const el = document.createElement('div');
-                el.classList.add('damage-number');
-                el.innerText = isCrit ? `CRIT ${amount}!` : amount;
-                
-                // Color según crítico
-                el.style.color = isCrit ? 'var(--gold)' : 'var(--r)';
-                
-                // Posicionar (Aleatoriedad pequeña para que no se encimen)
-                const randomX = (Math.random() * 40) - 20;
-                
-                // Si es body (fallback), centrar. Si es unidad, usar sus coordenadas.
-                if(target === document.body) {
-                    el.style.top = "50%"; el.style.left = "50%";
-                } else {
-                    el.style.top = (rect.top) + 'px';
-                    el.style.left = (rect.left + rect.width/2 + randomX) + 'px';
-                }
-            
-                document.body.appendChild(el);
-                setTimeout(() => el.remove(), 1000);
-            
-                // Efecto de sacudida si es crítico o daño alto (>5)
-                if (isCrit || amount >= 5) {
-                    document.body.classList.add('shake-screen');
-                    setTimeout(() => document.body.classList.remove('shake-screen'), 400);
-                }
-            };
-    
-            // --- LÓGICA DE PLOYS ---
-
-            window.toggleCommandHUD = function(show) {
-            const hud = document.getElementById('cmd-hud');
-            if (hud) hud.style.display = show ? 'flex' : 'none';
-        };
-    
-            window.triggerPloy = function(type, cost) {
-                if (gameState !== 'MY_TURN' && type !== 'COVER') { 
-                    // Nota: 'COVER' podría usarse en defensa (turno rival), pero simplifiquemos por ahora
-                    alert("Solo en tu turno."); 
-                    return; 
-                }
-                
-                if (myCP < cost) {
-                    log("¡NO TIENES SUFICIENTES CP!");
-                    return;
-                }
-            
-                // Gastar CP
-                myCP -= cost;
-                updateCPUI();
-                toggleCommandMenu(); // Cerrar menú
-            
-                // Ejecutar Efecto
-                switch(type) {
-                    case 'REROLL':
-                        // Lógica abstracta: Marcar que tienes un reroll disponible
-                        activePloys['REROLL'] = true;
-                        log(">> COMANDO: REPETICIÓN TÁCTICA ACTIVADA");
-                        publish({type:'CHAT', msg: "Activa Repetición Táctica (CP)"});
-                        break;
-                        
-                    case 'RUSH':
-                        activePloys['RUSH'] = true;
-                        log(">> COMANDO: AVANCE RÁPIDO (+2\" MOV)");
-                        publish({type:'CHAT', msg: "Activa Avance Rápido (CP)"});
-                        break;
-            
-                    case 'COVER':
-                        // Podrías sumar vida temporal o flag de defensa
-                        activePloys['COVER'] = true;
-                        log(">> COMANDO: ¡CUBRIRSE! (BONO DEFENSA)");
-                        publish({type:'CHAT', msg: "Activa ¡Cubrirse! (CP)"});
-                        break;
-                }
-            };
-    
-        // --- ESTADO DEL COMBATE ACTUAL -- Variable global para guardar las reglas del ataque en curso
-        let activeCombatStats = {
-            hitVal: 4,
-            critVal: 6,
-            dmg: 3,
-            traits: [] // Aquí guardaremos ['BALANCED', 'LETHAL_5', etc]
-        };
-    
-        // --- VALIDACIONES DE DISPARO ---
-        window.canShootWeapon = function(unit, weapon) {         
-         //1. Regla: HEAVY (Pesada)Si el arma es Heavy y la unidad se movió en la Fase 1
-            if (hasTrait(weapon, 'HEAVY') && unit.hasMoved) { log("❌ ARMA PESADA: No puedes disparar tras mover.", "DANGER"); return false; }
-    
-            // 2. Regla: Modo Oculto (Hidden) Asumimos que las armas RANGED requieren estar en modo OPEN, salvo que tengan 'SILENT'
-            if (weapon.type === 'RANGED' && unit.mode !== 'open' && !hasTrait(weapon, 'SILENT')) { log("❌ REQUIERE ORDEN 'ENGAGE' PARA DISPARAR", "DANGER"); return false; }
-        
-            // 3. Regla: Unidades Trabadas (Melee) Si estás en combate cuerpo a cuerpo (base con base), no puedes disparar armas Ranged (regla general KT)
-            // (Esta lógica depende de si tienes una flag 'inMelee'. Si no, ignora esto por ahora).
-            return true;
-        };
-        
-    window.initiateCombat = function(weaponIdx) {
-        if(gameState !== 'MY_TURN') return;
-        const me = myUnits[myIdx];
-        
-        // 1. Obtener el arma real (del objeto u array de armas)
-        // Si no se pasa índice, usamos la primera por defecto
-        const weapon = (typeof weaponIdx !== 'undefined') ? me.weapons[weaponIdx] : me.weapons[0];
-        
-        // Validaciones básicas
-        if(me.activations >= 2) { log("UNIDAD AGOTADA", "DANGER"); return; }
-        if(weapon.type === 'RANGED' && me.mode !== 'open' && !hasTrait(weapon, 'SILENT')) {
-            log("REQUIERE ORDEN 'ENGAGE'", "DANGER"); return; 
-        }
-    
-        // 2. Calcular Estadísticas Base
-        let diceCount = parseInt(weapon.atk);
-        let hitVal = parseInt(weapon.hit);
-        let critVal = 6; // Por defecto
-        let dmg = parseInt(weapon.dmg);
-        const traits = weapon.traits || [];
-    
-        // --- LÓGICA DE TAGS (Pre-Tirada) ---
-        
-        // FATIGA (-1 al Hit)
-        if(me.activations === 1) { 
-            hitVal++; 
-            log("FATIGA: Impactar es más difícil (+1)", "warning"); 
-        }
-    
-        // LETHAL X (Mejora el crítico)
-        const lethal = traits.find(t => t.startsWith('LETHAL_'));
-        if(lethal) {
-            critVal = parseInt(lethal.split('_')[1]); // "LETHAL_5" -> 5
-            log(`TRAIT: ${lethal} (Crit en ${critVal}+)`, "info");
-        }
-    
-        // Guardar en la variable global para usarla después
-        activeCombatStats = { hitVal, critVal, dmg, traits, weaponName: weapon.name };
-    
-        // 3. Preparar Interfaz
-        setupCombatUI('ATTACKER'); // Abre el modal
-
-        if(activePloys['SHOOT_HARD']) activeCombatStats.traits.push('LETHAL_5');
-        
-        // BALANCED / CEASELESS (Habilitar botón de Reroll)
-        // En Kill Team, Balanced permite repetir 1 dado. Ceaseless permite repetir los 1s.
-        // Aquí habilitamos el sistema de reroll genérico si tiene el trait.
-        if(traits.includes('BALANCED') || traits.includes('CEASELESS')) {
-            canReroll = true; // Variable global que permite seleccionar dados
-            document.getElementById('btn-reroll').style.display = 'inline-block';
-            log("TRAIT: RE-ROLL Habilitado (Selecciona dados)", "success");
-        } else {
-            canReroll = false;
-            document.getElementById('btn-reroll').style.display = 'none';
-        }
-    
-        // 4. Tirar Dados
-        atkRolls = []; 
-        for(let i=0; i<diceCount; i++) atkRolls.push(Math.ceil(Math.random()*6));
-        
-        renderDiceFaces(atkRolls, 'pool-atk', true);
-        syncVisuals('PRE_ATTACK', atkRolls);
-        logCombat(`${me.name} dispara ${weapon.name}...`);
-    };
-    
-    // --- COMBAT LOGIC ---
-    function initiateCombat() {
-        if(gameState !== 'MY_TURN') return;
-        const me = myUnits[myIdx];
-        if(me.activations >= 2) { log("UNIDAD AGOTADA"); return; }
-        if(me.mode !== 'open') { log("ERROR: REQUIERE ORDEN DE ATAQUE", "danger"); return; }
-
-        let diceCount = combatMode==='ranged' ? parseInt(me.stats.r_atk) : parseInt(me.stats.m_atk);
-        combatTargetVal = combatMode==='ranged' ? parseInt(me.stats.r_hit.replace('+','')) : parseInt(me.stats.m_hit.replace('+',''));
-        let dmgRaw = combatMode==='ranged' ? me.stats.r_dmg : me.stats.m_dmg;
-        currentWeaponDmg = parseInt(dmgRaw) || 1;
-        if(me.activations === 1) { combatTargetVal++; log("FATIGA: +1 DIFICULTAD", "danger"); }
-
-        setupCombatUI('ATTACKER');
-        atkRolls = []; for(let i=0; i<diceCount; i++) atkRolls.push(Math.ceil(Math.random()*6));
-        renderDiceFaces(atkRolls, 'pool-atk', true);
-        syncVisuals('PRE_ATTACK', atkRolls);
-        logCombat(`${me.name} inicia ataque...`);
-    }
-
-    function rerollDice(type) {
-        if(!canReroll || selectedIndices.length === 0) return;
-        let targetArray = (type === 'ATK') ? atkRolls : defRolls;
-        selectedIndices.forEach(idx => { targetArray[idx] = Math.ceil(Math.random()*6); });
-        canReroll = false; selectedIndices = [];
-        if(type === 'ATK') {
-            renderDiceFaces(atkRolls, 'pool-atk', false);
-            document.getElementById('btn-reroll').style.display = 'none';
-            syncVisuals('ATK_REROLL', atkRolls);
-            logCombat(">> ATACANTE RE-TIRA");
-        } else {
-            renderDiceFaces(defRolls, 'pool-def', false);
-            document.getElementById('btn-reroll-def').style.display = 'none';
-            logCombat(">> DEFENSA RE-TIRA");
-        }
-    }
-
-    window.confirmAttack = function() {
-        hideAllCombatButtons();
-        document.getElementById('btn-cancel-combat').style.display = 'inline-block';
-        
-        // Animación final de dados
-        renderStars(atkRolls, 'pool-atk');
-    
-        let hits = 0;
-        let crits = 0;
-    
-        // --- CÁLCULO DE ÉXITOS USANDO LAS REGLAS GUARDADAS ---
-        atkRolls.forEach(r => {
-            if (r >= activeCombatStats.critVal) {
-                crits++; // Es crítico si supera el umbral (ej: 5+ con Lethal)
-            } else if (r >= activeCombatStats.hitVal) {
-                hits++; // Es hit normal
-            }
-        });
-    
-        // Trait: RENDING (Si hay critico, añade logica especial, aqui simplificada)
-        if (crits > 0 && activeCombatStats.traits.includes('RENDING')) {
-            log("TRAIT: RENDING ACTIVO (Efecto pendiente en defensa)", "gold");
-            // Aquí podrías enviar una flag 'isRending: true' al defensor
-        }
-    
-        let potDmg = (hits * activeCombatStats.dmg) + (crits * activeCombatStats.dmg); // Ajustar si critico hace más daño
-        
-        logCombat(`CONFIRMADO: ${hits} Hits, ${crits} Crits (Crit en ${activeCombatStats.critVal}+).`);
-    
-        // ENVIAR AL RIVAL
-        publish({ 
-            type: 'COMBAT_SYNC', 
-            stage: 'ATTACK_CONFIRMED', 
-            rolls: atkRolls, 
-            dmg: potDmg, 
-            hitsStruct: { 
-                normal: hits, 
-                crit: crits, 
-                dmgValue: activeCombatStats.dmg,
-                traits: activeCombatStats.traits // Enviamos traits para que el defensor sepa (ej: AP)
-            }, 
-            uName: myUnits[myIdx].name 
-        });
-    };
-
-    window.startDefenseSequence = function(incomingHits, enemyRolls) {
-        pendingAtkStats = incomingHits; // Guardamos lo que nos mandó el atacante
-        const traits = incomingHits.traits || []; // Traits del arma atacante
-    
-        setupCombatUI('DEFENDER');
-        document.getElementById('pool-atk').innerHTML = '';
-        renderStars(enemyRolls, 'pool-atk'); // Mostrar los éxitos del rival visualmente
-        
-        // --- LÓGICA DE TAGS EN DEFENSA ---
-        
-        let defDiceCount = 3; // Base de Kill Team (DF)
-        // Si tu unidad tiene stat DF diferente, úsalo: parseInt(me.stats.df)
-    
-        // APx (Armor Penetration): Quita dados de defensa
-        const apTrait = traits.find(t => t.startsWith('AP_'));
-        if(apTrait) {
-            const apVal = parseInt(apTrait.split('_')[1]); // "AP_1" -> 1
-            defDiceCount -= apVal;
-            if(defDiceCount < 0) defDiceCount = 0;
-            logCombat(`ENEMIGO TIENE ${apTrait}: -${apVal} Dados de Defensa`, "danger");
-        }
-    
-        // Tirar Dados de Defensa
-        defRolls = []; 
-        for(let i=0; i<defDiceCount; i++) defRolls.push(Math.ceil(Math.random()*6));
-        
-        renderDiceFaces(defRolls, 'pool-def', true);
-        logCombat(`Defendiendo con ${defDiceCount} dados...`);
-    };
-
-    window.confirmDefense = function() {
-        hideAllCombatButtons();
-        renderStars(defRolls, 'pool-def'); // Animación final defensa
-    
-        // 1. Calcular Éxitos de Defensa
-        let defHits = 0; // Salvas Normales
-        let defCrits = 0; // Salvas Críticas
-        let sv = parseInt(myUnits[myIdx].stats.sv.replace('+','')) || 5; 
-        
-        // Tag: INVULNERABLE? (Si lo implementas a futuro, aquí chequearías invuln save)
-    
-        defRolls.forEach(r => { 
-            if(r === 6) defCrits++; 
-            else if(r >= sv) defHits++; 
-        });
-    
-        if(coverActive) { 
-            defHits++; // Regla de Cobertura automática (simplificada)
-            logCombat("COBERTURA: +1 Bloqueo Normal"); 
-        }
-
-if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
-            defHits--;
-            defCrits++;
-            logCombat("COMANDO ¡A CUBIERTO!: 1 dEF convertido en Crítico", "danger");
-}
-        
-        // 2. Traer datos del atacante
-        let atkCrit = pendingAtkStats.crit;
-        let atkNorm = pendingAtkStats.normal;
-        let dmg = pendingAtkStats.dmgValue;
-        const traits = pendingAtkStats.traits || [];
-    
-        // --- LÓGICA DE TAGS: RENDING ---
-        // Si el atacante sacó al menos 1 crítico y tiene RENDING, convierte 1 hit normal en crítico
-        if (traits.includes('RENDING') && atkCrit > 0 && atkNorm > 0) {
-            atkNorm--;
-            atkCrit++;
-            logCombat("TRAIT RENDING: 1 Hit convertido en Crítico", "danger");
-        }
-    
-        // 3. Mecánica de Cancelación (Parry/Save) - Estilo Disparo
-        // Críticos bloquean Críticos (o Normales)
-        // Normales bloquean Normales
-        
-        // Bloquear Críticos del atacante
-        let blockedCrits = Math.min(atkCrit, defCrits);
-        atkCrit -= blockedCrits;
-        defCrits -= blockedCrits;
-    
-        // Si sobran críticos de defensa, pueden bloquear normales (opcional, regla estándar: 1 crit def bloquea 1 normal? No en KT disparo, pero sí en melee. Asumimos Disparo estándar)
-        // En KT Disparo: SV Crit bloquea Crit. SV Normal bloquea Normal.
-        
-        // Bloquear Normales
-        let blockedNorm = Math.min(atkNorm, defHits);
-        atkNorm -= blockedNorm;
-        
-        // 4. Calcular Daño Final
-        // MW (Mortal Wounds) se aplican siempre? (Si quieres implementar MW)
-        const mwTrait = traits.find(t => t.startsWith('MW_'));
-        let mortalWounds = 0;
-        if(mwTrait && pendingAtkStats.crit > 0) { // MW suele activarse en críticos retenidos
-             mortalWounds = parseInt(mwTrait.split('_')[1]) * (pendingAtkStats.crit); // MW por cada crit original? Ojo con la regla exacta.
-        }
-    
-        let totalDmg = (atkCrit * dmg) + (atkNorm * dmg) + (atkCrit * 1); // +1 si crítico hace más daño base? O definelo en DB.
-        // Usualmente Crítico tiene su propio perfil de daño. Para simplificar, asumo Crítico = Daño Normal + 1 o x2?
-        // SUGERENCIA: Usa un daño fijo extra para críticos si no está en DB.
-        // Si tu DB tiene arma.critDmg, úsalo. Si no, (Hits + Crits) * DmgBase + (Crits * 1).
-        
-        // Simplificación basada en tu código anterior:
-        let finalDmg = (atkNorm * dmg) + (atkCrit * (dmg + 1)); // Críticos hacen +1 daño
-    
-        logCombat(`RESULTADO: ${atkCrit} Crits y ${atkNorm} Hits entran.`);
-        logCombat(`DAÑO TOTAL: ${finalDmg}`, "danger");
-    
-        // Preparar botón de aplicar
-        const btnApply = document.getElementById('btn-apply-dmg');
-        btnApply.style.display = 'inline-block';
-        btnApply.innerText = `RECIBIR ${finalDmg} DAÑO`;
-        btnApply.dataset.dmg = finalDmg;
-    };
-    
-    function startDefenseSequence(stats, enemyRolls) {
-        pendingAtkStats = stats;
-        setupCombatUI('DEFENDER');
-        document.getElementById('pool-atk').innerHTML = '';
-        renderStars(enemyRolls, 'pool-atk');
-        
-        defRolls = []; for(let i=0; i<3; i++) defRolls.push(Math.ceil(Math.random()*6));
-        renderDiceFaces(defRolls, 'pool-def', true);
-        logCombat(`RECIBES ATAQUE. Tira defensa...`);
-    }
-
-    function confirmDefense() {
-        hideAllCombatButtons();
-        renderStars(defRolls, 'pool-def');
-        let defHits = 0, defCrits = 0;
-        let sv = parseInt(myUnits[myIdx].stats.sv.replace('+','')) || 3;
-        
-        defRolls.forEach(r => { if(r===6) defCrits++; else if(r>=sv) defHits++; });
-        if(coverActive) { defHits++; logCombat("COBERTURA: +1 Bloqueo Normal"); }
-
-        let incCrit = pendingAtkStats.crit;
-        let incNorm = pendingAtkStats.normal;
-        let dmgPerHit = pendingAtkStats.dmgValue;
-
-        let blockedCrits = Math.min(incCrit, defCrits);
-        let remainingAtkCrits = incCrit - blockedCrits;
-        let remainingDefCrits = defCrits - blockedCrits;
-        let convertedDefHits = remainingDefCrits * 2; 
-        let totalDefNormal = defHits + convertedDefHits;
-        let blockedNormals = Math.min(incNorm, totalDefNormal);
-        let remainingAtkNormals = incNorm - blockedNormals;
-        let totalUnblockedHits = remainingAtkCrits + remainingAtkNormals;
-        let finalDmg = totalUnblockedHits * dmgPerHit;
-
-        logCombat(`DEF: ${defCrits} Crit, ${defHits} Hit. BLQ: ${blockedCrits} Crit, ${blockedNormals} Norm.`);
-        logCombat(`DAÑO FINAL: ${finalDmg}`);
-        
-        // Guardamos el daño calculado en un atributo del botón para usarlo al hacer click
-        const btnApply = document.getElementById('btn-apply-dmg');
-        btnApply.style.display = 'inline-block';
-        btnApply.innerText = `RECIBIR ${finalDmg} DAÑO`;
-        btnApply.dataset.dmg = finalDmg; // Store damage value
-    }
-
-    function applyCombatResult() {
-        const btn = document.getElementById('btn-apply-dmg');
-        const finalDmg = parseInt(btn.dataset.dmg);
-        applyDamage(finalDmg);
-        publish({type: 'COMBAT_SYNC', stage: 'RESOLVED', rolls: defRolls, finalDmg: finalDmg});
-        closeCombatOverlay();
-    }
-
-    function handleCombatSync(d) {
-        const overlay = document.getElementById('dice-overlay');
-        if (d.stage === 'PRE_ATTACK') {
-            overlay.style.display = 'flex';
-            document.getElementById('combat-log-visual').innerHTML = '';
-            document.getElementById('pool-def').innerHTML = 'Esperando confirmación...';
-            hideAllCombatButtons();
-            renderDiceFaces(d.rolls, 'pool-atk', false);
-            logCombat(`ENEMIGO prepara ataque...`);
-        } 
-        else if (d.stage === 'ATK_REROLL') {
-            renderDiceFaces(d.rolls, 'pool-atk', false);
-            logCombat(`>> ENEMIGO RE-TIRA DADOS`);
-        }
-        else if (d.stage === 'ATTACK_CONFIRMED') {
-            renderStars(d.rolls, 'pool-atk');
-            logCombat(`ATAQUE ENTRANTE: ${d.hitsStruct.crit} Crits, ${d.hitsStruct.normal} Hits`);
-            startDefenseSequence(d.hitsStruct, d.rolls);
-        }
-        else if (d.stage === 'RESOLVED') {
-            renderStars(d.rolls, 'pool-def');
-            logCombat(`RIVAL defendió. Daño Aplicado: ${d.finalDmg}`);
-            hideAllCombatButtons();
-            const btnClose = document.getElementById('btn-close-combat');
-            btnClose.style.display = 'inline-block';
-            btnClose.innerText = "TERMINAR ACTIVACIÓN";
-        }
-        else if (d.stage === 'CANCEL') {
-            closeCombatOverlay(); log("COMBATE CANCELADO POR RIVAL", "warning");
-        }
-    }
-
-    // --- UTILS ---
- window.updateHUD = function() {
-    // 0. SEGURIDAD: Si no hay unidades, no hacemos nada
-    if(!myUnits || !myUnits.length || myIdx < 0) return;
-    
-    // Auto-selección si la unidad actual está bloqueada (Opcional, según tu lógica de juego)
-    if (gameState === 'MY_TURN' && typeof canSelectUnit === 'function' && !canSelectUnit(myIdx)) {
-        if(typeof autoSelectValidUnit === 'function') autoSelectValidUnit();
-    }
-    
-    const me = myUnits[myIdx]; 
-    const en = enemyUnits[enIdx];
-    
-    // ==========================================================
-    // 1. ACTUALIZAR LA TARJETA DEL JUGADOR (VISUAL)
-    // ==========================================================
-    
-    // Nombre y Estado
-    const nameEl = document.getElementById('my-name');
-    if(nameEl) nameEl.innerText = me.name;
-
-    const card = document.getElementById('my-card');
-    if(card) {
-        card.className = "card my"; // Reset
-        if(me.activations === 1) card.classList.add('fatigued');
-        if(me.activations >= 2) card.classList.add('exhausted');
-        if (gameState === 'MY_TURN' && typeof canSelectUnit === 'function' && !canSelectUnit(myIdx)) {
-            card.classList.add('locked');
-        }
-    }
-    
-    // Texto de estado
-    let statusText = "LISTO"; 
-    if(me.activations === 1) statusText = "FATIGADO"; 
-    if(me.activations === 2) statusText = "AGOTADO";
-    const statusEl = document.getElementById('my-status-text');
-    if(statusEl) statusEl.innerText = statusText;
-    
-    // Barra de Vida
-    if(globalHP[me.uid]) {
-        const hpBar = document.getElementById('my-hp');
-        if(hpBar) hpBar.style.width = (globalHP[me.uid].c / globalHP[me.uid].m * 100) + "%";
-    }
-    
-    // Toggles de Modo (Engage/Conceal) - Asumimos que están en la tarjeta
-    const btnOpen = document.getElementById('btn-mode-open');
-    if(btnOpen) btnOpen.className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
-    
-    const btnHidden = document.getElementById('btn-mode-hidden');
-    if(btnHidden) btnHidden.className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
-
-    // ==========================================================
-    // 2. STATS LATERALES (Resumen rápido)
-    // ==========================================================
-    const rWep = me.weapons.find(w => w.type === 'RANGED');
-    const mWep = me.weapons.find(w => w.type === 'MELEE');
-    
-    const rEl = document.getElementById('my-r');
-    if(rEl) rEl.innerText = rWep ? rWep.hit + "+" : "-";
-    
-    const mEl = document.getElementById('my-m');
-    if(mEl) mEl.innerText = mWep ? mWep.hit + "+" : "-";
-    
-    const svEl = document.getElementById('my-sv');
-    if(svEl) svEl.innerText = me.stats.sv + "+";
-
-    // ==========================================================
-    // 3. VISUALIZACIÓN DE ARMAS Y TAGS (Interactiva)
-    // ==========================================================
-    const tagContainer = document.getElementById('my-tags'); 
-    if(tagContainer) {
-        tagContainer.innerHTML = ''; // Limpiar
-
-        // A. KEYWORDS (Etiquetas Cyan)
-        if (me.keywords && me.keywords.length > 0) {
-            let kHtml = '<div style="margin-bottom:4px; display:flex; gap:2px; flex-wrap:wrap;">';
-            me.keywords.forEach(k => {
-                kHtml += `<span class="hud-tag unit">${k}</span>`;
-            });
-            kHtml += '</div>';
-            tagContainer.innerHTML += kHtml;
-        }
-
-        // B. LISTA DE ARMAS (Clickeables para cambiar modo)
-        if (me.weapons && me.weapons.length > 0) {
-            me.weapons.forEach((w) => {
-                let isActive = false;
-                let themeColor = "#444"; 
-                let icon = "🗡️";
-
-                // Detectar si esta es el arma activa actual
-                if (w.type === 'RANGED') {
-                    icon = "🔫";
-                    if (combatMode === 'ranged') { isActive = true; themeColor = "var(--c)"; }
-                } else if (w.type === 'MELEE') {
-                    icon = "⚔️";
-                    if (combatMode === 'melee') { isActive = true; themeColor = "var(--gold)"; }
-                }
-
-                // Estilos
-                const borderStyle = isActive 
-                    ? `border:1px solid ${themeColor}; background:rgba(20,20,20,0.8); box-shadow: inset 0 0 5px ${themeColor}; color:#fff;`
-                    : `border:1px solid #333; color:#666; opacity:0.8;`;
-
-                // Crear elemento
+            PLOYS_DB.forEach(p => {
+                const can = myCP >= p.cost;
                 const div = document.createElement('div');
-                div.className = "tag"; 
-                div.style.cssText = `width:98%; display:block; margin-bottom:4px; cursor:pointer; padding:4px; ${borderStyle}`;
-                
-                // --- LOGICA IMPORTANTE ---
-                // Al hacer click en el arma de la tarjeta, cambiamos el modo y refrescamos la burbuja
-                div.onclick = function() { 
-                    combatMode = (w.type === 'RANGED') ? 'ranged' : 'melee';
-                    // Forzamos actualización visual
-                    updateHUD(); 
-                };
-
-                // Traits del arma
-                let traitsHtml = '';
-                if (w.traits && w.traits.length > 0) {
-                    traitsHtml = '<div style="margin-top:2px; display:flex; gap:2px;">';
-                    w.traits.forEach(t => {
-                        traitsHtml += `<span class="hud-tag weapon">${t}</span>`;
-                    });
-                    traitsHtml += '</div>';
+                div.className = can ? "menu-item" : "menu-item disabled";
+                div.innerHTML = `<span>${p.name}</span><span style="color:var(--gold)">${p.cost}</span>`;
+                if(can) {
+                    div.onclick = () => {
+                        if(confirm("¿Gastar CP?")) { myCP -= p.cost; window[p.func](); updateHUD(); toggleBubble(null); }
+                    };
                 }
+                container.appendChild(div);
+            });
+        };
 
-                div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:bold; font-size:0.65rem;">${icon} ${w.name}</span>
-                        <span style="font-family:monospace; font-size:0.6rem;">A:${w.atk} H:${w.hit}+ D:${w.dmg}</span>
-                    </div>
-                    ${traitsHtml}
-                `;
-                
+        // --- UPDATE HUD CENTRAL ---
+        window.updateHUD = function() {
+            if(!myUnits.length) return;
+            const me = myUnits[myIdx];
+
+            document.getElementById('my-name').innerText = me.name;
+            document.getElementById('my-hp').style.width = (me.hp / 14 * 100) + "%"; // Mock HP calc
+            document.getElementById('cp-display').innerText = "CP: " + myCP;
+            
+            const card = document.getElementById('my-card');
+            card.className = "card my";
+            if(me.activations >= 2) card.classList.add('exhausted');
+
+            // Render Tags/Weapons
+            const tagContainer = document.getElementById('my-tags');
+            tagContainer.innerHTML = '';
+            me.weapons.forEach(w => {
+                let active = (w.type === 'RANGED' && combatMode === 'ranged') || (w.type === 'MELEE' && combatMode === 'melee');
+                const div = document.createElement('div');
+                div.className = "tag";
+                div.style.cssText = `display:block; width:95%; border-color:${active?'var(--c)':'#444'}; cursor:pointer;`;
+                div.innerHTML = `<b>${w.name}</b> A:${w.atk} H:${w.hit}+`;
+                div.onclick = () => { combatMode = w.type === 'RANGED' ? 'ranged' : 'melee'; updateHUD(); };
                 tagContainer.appendChild(div);
             });
-        }
-    }
-
-    // ==========================================================
-    // 4. DATOS DEL ENEMIGO
-    // ==========================================================
-    if(en && globalHP[en.uid]) {
-        const enName = document.getElementById('enemy-name');
-        if(enName) enName.innerText = en.name;
-        
-        const enHp = document.getElementById('enemy-hp');
-        if(enHp) enHp.style.width = (globalHP[en.uid].c / globalHP[en.uid].m * 100) + "%";
-    }
-    
-    // ==========================================================
-    // 5. MARCADORES GLOBALES (Top HUD)
-    // ==========================================================
-    const myScoreEl = document.getElementById('my-score');
-    if(myScoreEl) myScoreEl.innerText = myVP;
-
-    const enScoreEl = document.getElementById('enemy-score');
-    if(enScoreEl) enScoreEl.innerText = enemyVP;
-
-    const rndEl = document.getElementById('round-display');
-    if(rndEl) rndEl.innerText = `RND ${currentRound}/${maxRounds}`;
-
-    // CP Display
-    const cpEl = document.getElementById('cp-display');
-    if(cpEl) cpEl.innerText = `CP: ${myCP}`;
-
-    // ==========================================================
-    // 6. SINCRONIZACIÓN FINAL
-    // ==========================================================
-    
-    // Misión Secreta (Botón superior)
-   const btnSecret = document.getElementById('btn-claim-secret');
-    if(btnSecret) {
-        if (typeof secondaryActive !== 'undefined' && secondaryActive && !secretClaimed && gameState !== 'PLANNING') {
-            btnSecret.style.display = 'block';
-            btnSecret.innerText = `RECLAMAR: ${secretMission} (+2 PV)`;
-        } else { 
-            btnSecret.style.display = 'none'; 
-        }
-    } 
-    
-    // ==========================================================
-    // 7. ACTUALIZAR BURBUJAS (Menú Unificado)
-    // ==========================================================
-    // IMPORTANTE: Esta llamada debe estar DENTRO de la función, antes de la última llave
-    if (typeof refreshActiveMenu === 'function') {
-        refreshActiveMenu();
-    }
-
-};
-
-// --- FUNCIONES VISUALES DE DADOS (HELPER FUNCTIONS) ---
-
-window.renderDiceFaces = function(rolls, containerId, interactive) {
-    const container = document.getElementById(containerId); 
-    if(!container) return;
-    
-    container.innerHTML = '';
-    const faces = ['?', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-    
-    rolls.forEach((val, index) => {
-        let div = document.createElement('div'); 
-        div.className = 'die-face'; 
-        div.innerText = faces[val] || '?';
-        
-        // Animación de entrada suave
-        div.style.animation = "popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
-
-        // Lógica de interactividad (para Rerolls)
-        if (interactive && typeof canReroll !== 'undefined' && canReroll) {
-            div.style.cursor = 'pointer';
-            div.onclick = (e) => toggleDieSelection(index, e);
             
-            // Si ya estaba seleccionado (al repintar), mantener la clase
-            if (typeof selectedIndices !== 'undefined' && selectedIndices.includes(index)) {
-                div.classList.add('selected');
-            }
-        } else {
-            div.classList.add('locked'); // Visualmente no clickeable
-        }
-        
-        container.appendChild(div);
-    });
-};
-
-// Función necesaria para seleccionar dados para Re-Roll
-window.toggleDieSelection = function(index, event) {
-    // Asegurarnos que la variable global existe
-    if (typeof selectedIndices === 'undefined') window.selectedIndices = [];
-    
-    if (!canReroll) return;
-
-    const arrIdx = selectedIndices.indexOf(index);
-    if (arrIdx > -1) {
-        // Deseleccionar
-        selectedIndices.splice(arrIdx, 1); 
-        event.target.classList.remove('selected');
-    } else {
-        // Seleccionar
-        selectedIndices.push(index); 
-        event.target.classList.add('selected');
-    }
-    
-    // Mostrar/Ocultar botón de confirmar reroll si hay dados seleccionados
-    // Intentamos buscar ambos botones (ataque o defensa)
-    const btnAtk = document.getElementById('btn-reroll');
-    const btnDef = document.getElementById('btn-reroll-def');
-    
-    if(btnAtk && btnAtk.style.display !== 'none') {
-        // Podrías cambiar el texto o color si hay seleccionados
-    }
-};
-
-// Función para mostrar resultados finales (Estrellas/Explosiones)
-// Úsala en confirmAttack / confirmDefense
-window.renderStars = function(rolls, containerId) {
-    const container = document.getElementById(containerId);
-    if(!container) return;
-    container.innerHTML = '';
-    
-    // Usamos los stats guardados o valores por defecto
-    const critVal = (typeof activeCombatStats !== 'undefined') ? activeCombatStats.critVal : 6;
-    const hitVal = (typeof activeCombatStats !== 'undefined') ? activeCombatStats.hitVal : 4;
-
-    rolls.forEach(val => {
-       let div = document.createElement('div');
-       div.className = 'die-face';
-       
-       if(val >= critVal) {
-           div.innerText = "★"; // Crítico
-           div.style.textShadow = "0 0 10px var(--gold)";
-           div.style.color = "var(--gold)";
-           div.style.borderColor = "var(--gold)";
-       } else if (val >= hitVal) {
-           div.innerText = "★"; // Hit
-           div.style.color = "#fff";
-           div.style.borderColor = "#fff";
-       } else {
-           div.innerText = "✕"; // Fallo
-           div.style.opacity = "0.5";
-           div.style.borderColor = "#555";
-       }
-       container.appendChild(div);
-    });
-};
-    
-    function toggleDieSelection(index, event) {
-        if(!canReroll) return;
-        const parentId = event.target.parentElement.id; 
-        const isAtk = parentId === 'pool-atk';
-        if (gameState === 'MY_TURN' && !isAtk) return; 
-        if (gameState !== 'MY_TURN' && isAtk) return;  
-        const div = event.target;
-        if (selectedIndices.includes(index)) { selectedIndices = selectedIndices.filter(i => i !== index); div.classList.remove('selected'); } 
-        else { selectedIndices.push(index); div.classList.add('selected'); }
-        const btnId = (gameState === 'MY_TURN') ? 'btn-reroll' : 'btn-reroll-def';
-        const btn = document.getElementById(btnId);
-        if (selectedIndices.length > 0) { btn.style.display = 'inline-block'; btn.innerText = `RE-TIRAR (${selectedIndices.length})`; } 
-        else { btn.style.display = 'none'; }
-    }
-
-    function renderStars(rolls, elementId) {
-        const el = document.getElementById(elementId); el.innerHTML = '';
-        rolls.forEach(r => {
-            let span = document.createElement('span'); span.className = 'd-icon';
-            if(r >= 6) { span.innerHTML = '★'; span.classList.add('star-gold'); }
-            else if(r >= 3) { span.innerHTML = '★'; span.classList.add('star-blue'); }
-            else { span.innerHTML = '•'; span.classList.add('star-miss'); }
-            el.appendChild(span);
-        });
-    }
-
-    function setupCombatUI(role) {
-        canReroll = true; selectedIndices = [];
-        document.getElementById('dice-overlay').style.display = 'flex';
-        document.getElementById('combat-log-visual').innerHTML = '';
-        hideAllCombatButtons();
-        if(role === 'ATTACKER') {
-            document.getElementById('pool-atk').innerHTML = '';
-            document.getElementById('pool-def').innerHTML = 'Esperando...';
-            document.getElementById('btn-confirm-atk').style.display = 'inline-block';
-            document.getElementById('btn-cancel-combat').style.display = 'inline-block';
-        } else {
-            document.getElementById('pool-def').innerHTML = '';
-            document.getElementById('btn-confirm-def').style.display = 'inline-block';
-            document.getElementById('btn-cover-toggle').style.display = 'block';
-        }
-    }
-
-
-    // --- GESTIÓN DE LA INTERFAZ DE COMANDOS ---
-    
-    // 1. Abrir/Cerrar la barra
-    window.toggleCmdBar = function() {
-        const bar = document.getElementById('cmd-bar');
-        const details = document.getElementById('cmd-details');
-        
-        // Si ya está abierto, cerrar todo
-        if (bar.classList.contains('open')) {
-            bar.classList.remove('open');
-            details.style.display = 'none';
-            return;
-        }
-    
-        // Si abrimos, renderizamos los iconos disponibles AHORA
-        renderPloyIcons();
-        bar.classList.add('open');
-    };
-    
-    // 2. Dibujar iconos según el contexto
-    function renderPloyIcons() {
-        const container = document.getElementById('cmd-bar');
-        container.innerHTML = "";
-        
-        // Filtramos qué ploys mostrar
-        for (let key in PLOYS_DB) {
-            const ploy = PLOYS_DB[key];
+            document.getElementById('act-icon-display').innerText = combatMode === 'ranged' ? "🔫" : "⚔️";
             
-            // FILTRO DE CONTEXTO: ¿Es válido en esta fase?
-            // Si es 'ANY' siempre sale (ej: Reroll).
-            // Si no, debe coincidir con turnPhase.
-            // Además, REROLL suele ser reactivo, tal vez quieras mostrarlo siempre en combate.
-            let isVisible = false;
-            
-            if (ploy.phase === 'ANY') isVisible = true;
-            else if (ploy.phase === turnPhase) isVisible = true;
-            
-            // Si no es mi turno, generalmente solo puedo usar defensivos o rerolls
-            if (gameState !== 'MY_TURN' && key !== 'TAKE_COVER' && key !== 'REROLL') isVisible = false;
-    
-            if (!isVisible) continue;
-    
-            // Crear elemento
-            const div = document.createElement('div');
-            div.className = "ploy-icon";
-            div.innerText = ploy.icon;
-            
-            // Estado: ¿Me alcanza el dinero?
-            if (myCP >= ploy.cost) {
-                div.classList.add('affordable');
-                div.onclick = () => selectPloy(key, div);
-            } else {
-                div.classList.add('expensive');
-                // Opcional: Permitir click para ver qué hace aunque no puedas pagarlo
-                 div.onclick = () => selectPloy(key, div);
-            }
-            
-            container.appendChild(div);
-        }
-        
-        // Mensaje si no hay nada disponible
-        if (container.children.length === 0) {
-            container.innerHTML = "<div style='font-size:0.5rem; color:#555; padding:2px;'>N/A</div>";
-        }
-    }
-    
-    // 3. Mostrar detalles al hacer clic en icono
-    window.selectPloy = function(id, element) {
-        // Quitar selección visual previa
-        document.querySelectorAll('.ploy-icon').forEach(e => e.classList.remove('selected'));
-        element.classList.add('selected');
-        
-        selectedPloyId = id;
-        const ploy = PLOYS_DB[id];
-        const details = document.getElementById('cmd-details');
-        
-        // Llenar datos
-        document.getElementById('cmd-det-title').innerText = ploy.name;
-        document.getElementById('cmd-det-cost').innerText = `COSTE: ${ploy.cost} CP`;
-        
-        // Validar color del coste en el detalle
-        const costLabel = document.getElementById('cmd-det-cost');
-        if(myCP >= ploy.cost) costLabel.style.color = "var(--g)";
-        else costLabel.style.color = "var(--r)";
-    
-        document.getElementById('cmd-det-desc').innerText = ploy.desc;
-        
-        // Mostrar panel
-        details.style.display = 'block';
-    };
-    
-    window.closeCmdDetails = function() {
-        document.getElementById('cmd-details').style.display = 'none';
-        document.querySelectorAll('.ploy-icon').forEach(e => e.classList.remove('selected'));
-        selectedPloyId = null;
-    };
-    
-    // 4. Activar la Habilidad
-    window.confirmActivePloy = function() {
-        if (!selectedPloyId) return;
-        const ploy = PLOYS_DB[selectedPloyId];
-    
-        if (myCP < ploy.cost) {
-            log("¡CP INSUFICIENTES!", "DANGER");
-            return;
-        }
-    
-        // A. Pagar
-        myCP -= ploy.cost;
-        updateCPUI(); // Refrescar burbuja
-        
-        // B. Activar Efecto Lógico
-        // Usamos el objeto global activePloys que creamos antes
-        if (typeof activePloys === 'undefined') window.activePloys = {};
-        activePloys[selectedPloyId] = true;
-    
-        // C. Feedback y Cierre
-        log(`>> COMANDO: ${ploy.name}`, "CMD");
-        publish({type:'CHAT', msg: `Activa Estratagema: ${ploy.name}`});
-        
-        // Efectos inmediatos si los hay (ej: animación o sonido)
-        toggleCmdBar(); // Cierra todo
-        
-        // IMPORTANTE: Si es Reroll, habilitar la UI de dados si estamos en combate
-        if (selectedPloyId === 'REROLL' && typeof canReroll !== 'undefined') {
-            window.canReroll = true;
-            // Intentar actualizar botones si existen
-            const btnAtk = document.getElementById('btn-reroll');
-            const btnDef = document.getElementById('btn-reroll-def');
-            if(btnAtk) { btnAtk.style.display = 'inline-block'; btnAtk.innerText = "USAR COMANDO"; }
-            if(btnDef) { btnDef.style.display = 'inline-block'; btnDef.innerText = "USAR COMANDO"; }
-        }
-    };
-    
-    // ACTUALIZAR INTERFAZ DE CP (Modificar la existente para apuntar a la burbuja)
-    window.updateCPUI = function() {
-        // Actualizar texto dentro de la burbuja
-        const bubbleVal = document.getElementById('bubble-cp-val');
-        if(bubbleVal) bubbleVal.innerText = myCP;
-        
-        // Cambiar color del borde según si tienes algo (Visual feedback)
-        const bubble = document.querySelector('.cmd-bubble');
-        if(bubble) {
-            if(myCP > 0) {
-                bubble.style.borderColor = "var(--gold)";
-                bubble.style.boxShadow = "0 0 10px var(--gold)";
-            } else {
-                bubble.style.borderColor = "#555";
-                bubble.style.boxShadow = "none";
-            }
-        }
-    };
+            refreshActiveMenu();
+        };
 
-    
-
-    function returnToLobby() {
-        if(!isGameOver) return;
-        if(client) { try{ client.disconnect(); } catch(e){} client=null; }
-        document.getElementById('game-over-screen').classList.remove('show');
-        document.getElementById('game-screen').classList.add('hidden');
-        document.getElementById('lobby-screen').classList.remove('hidden');
-        document.getElementById('dice-overlay').style.display = 'none';
-        document.getElementById('combat-log').innerHTML = "";
-        isGameOver = false; myUnits = []; enemyUnits = []; globalHP = {};
-        myVP = 0; enemyVP = 0; currentRound = 1;
-        iAmReady = false; enemyIsReady = false;
-        coverActive = false;
-        toggleCombatHUD(false);
-    }
-
-    function triggerGameOver(resultText, colorStr, subText) {
-        isGameOver = true;
-        document.getElementById('dice-overlay').style.display = 'none';
-        const screen = document.getElementById('game-over-screen');
-        const title = document.getElementById('end-title');
-        const score = document.getElementById('end-score');
-        if(!resultText) {
-            if(myVP > enemyVP) { resultText="VICTORIA"; colorStr="#00ff99"; subText="POR PUNTOS"; }
-            else if(myVP < enemyVP) { resultText="DERROTA"; colorStr="#ff0055"; subText="POR PUNTOS"; }
-            else { resultText="EMPATE"; colorStr="#ffcc00"; subText="TIEMPO AGOTADO"; }
-        }
-        screen.classList.add('show');
-        title.innerText = resultText; title.style.color = colorStr;
-        score.innerHTML = `<div style="font-size:0.8rem; color:#888; margin-bottom:10px;">${subText}</div>YO: ${myVP} - RIV: ${enemyVP}`;
-        if(client) try{ client.disconnect(); } catch(e){}
-    }
-    const checkWinCondition = () => triggerGameOver(null, null, null);
-
-    function checkAliveStatus() {
-        if(isGameOver || !myUnits.length || !enemyUnits.length) return;
-        const myLiveCount = myUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
-        const enLiveCount = enemyUnits.filter(u => globalHP[u.uid] && globalHP[u.uid].c > 0).length;
-        if (myLiveCount === 0) triggerGameOver("DERROTA", "#ff0055", "SQUAD ELIMINADO");
-        else if (enLiveCount === 0) triggerGameOver("VICTORIA", "#00ff99", "ENEMIGO ANIQUILADO");
-    }
-
-    function checkRoundOver() {
-        if(isGameOver) return;
-        const myReady = myUnits.filter(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0).length;
-        const enReady = enemyUnits.filter(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0).length;
-        if (myReady === 0 && enReady === 0) { log("FIN DE RONDA"); publish({type:'ROUND_OVER'}); resetRound(); return true; }
-        return false;
-    }
-
-    function setTurn(state, passes) {
-        gameState = state; 
-        const ind = document.getElementById('turn-indicator');
-        if(gameState === 'MY_TURN') {
-            checkAutoMechanics(); if(checkRoundOver()) return;
-            ind.className = "turn-badge my-turn"; ind.innerText = "TU TURNO";
-            document.querySelector('.hud-bottom').style.pointerEvents = "auto";
-            document.querySelector('.hud-bottom').style.opacity = "1";
-            startMyTurnPhases();
-            autoSelectValidUnit(); 
-        } else {
-            ind.className = "turn-badge enemy-turn"; ind.innerText = "TURNO RIVAL";
-            document.querySelector('.hud-bottom').style.pointerEvents = "none";
-            document.querySelector('.hud-bottom').style.opacity = "0.7";
-        }
-        updateHUD();
-    }
-
-    function passTurn(passes) {
-        const me = myUnits[myIdx];
-        if (me.activations < 2) me.activations++;
-        publish({type: 'SYNC_SQUAD', squad: myUnits});
-        if(passes >= 2) { publish({type:'ROUND_OVER'}); resetRound(); } 
-        else { if(!checkRoundOver()) { setTurn('ENEMY_TURN', passes); publish({type: 'CHANGE_TURN', passes: passes}); } }
-    }
-
-    function applyDamage(n) { 
-        if(n>0){ 
-            document.getElementById('flash-fx').className='flash'; setTimeout(()=>document.getElementById('flash-fx').className='',300); 
-            globalHP[myUnits[myIdx].uid].c=Math.max(0,globalHP[myUnits[myIdx].uid].c-n); 
-            publish({type:'SYNC_HP',state:globalHP}); updateHUD(); checkAliveStatus();
-        } 
-    }
-
-    function canUnitAct(unit, team, opponents) {
-        if (!globalHP[unit.uid] || globalHP[unit.uid].c <= 0) return false; 
-        if (unit.activations >= 2) return false; 
-        if (unit.activations === 0) return true; 
-        const iHaveReady = team.some(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
-        if (iHaveReady) return false;
-        const enemyHasReady = opponents.some(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
-        return !!enemyHasReady; 
-    }
-    function canSelectUnit(index) { if (!myUnits[index]) return false; return canUnitAct(myUnits[index], myUnits, enemyUnits); }
-    function autoSelectValidUnit() {
-        if (canSelectUnit(myIdx)) return;
-        const freshIdx = myUnits.findIndex(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
-        if (freshIdx !== -1) { myIdx = freshIdx; return; }
-        const tiredIdx = myUnits.findIndex((u, i) => canSelectUnit(i));
-        if (tiredIdx !== -1) myIdx = tiredIdx;
-    }
-    function executeSecretClaim() { secretClaimed = true; myVP += 2; log(`SECRETA ACEPTADA (+2 PV)`); document.getElementById('btn-claim-secret').style.display = 'none'; publish({type: 'SCORE_UPDATE', vp: myVP}); updateHUD(); }
-    function showConfirmModal(text, reqData) { pendingRequest = reqData; const modal = document.getElementById('confirm-modal'); document.getElementById('modal-msg').innerText = text; modal.classList.add('show'); }
-    function assignSecretMission() { if(secondaryActive) secretMission = SECRET_POOL[Math.floor(Math.random()*SECRET_POOL.length)]; else secretMission = null; }
-    function updateMissionDisplay() { 
-        const container = document.getElementById('mission-info');
-        if (secondaryActive && secretMission) container.innerHTML = `${primaryMission} <span style="color:#666">|</span> <span class="secret-hl">SEC: ${secretMission}</span>`;
-        else if (secondaryActive) container.innerHTML = `${primaryMission} <span style="color:#666">|</span> SEC: ???`;
-        else container.innerText = primaryMission;
-    }
-    function commitPlanning() { 
-        if(gameState !== 'PLANNING') return; 
-        if(enemyUnits.length === 0) { log("ESPERANDO RIVAL..."); return; }
-        iAmReady = true; myInitRoll = Math.ceil(Math.random()*100); 
-        document.getElementById('planning-controls').style.display = 'none'; document.getElementById('my-ready-mark').classList.add('show'); 
-        publish({type: 'READY', squad: myUnits, roll: myInitRoll}); checkStartRound(); 
-    }
-   
-
-        window.checkStartRound = function() { 
-            if(iAmReady && enemyIsReady) { 
-                log(`INICIATIVA: YO ${myInitRoll} vs ${enemyInitRoll} RIV`); 
-                
-                // Determinar si gané la iniciativa
-                const iWonInitiative = (myInitRoll >= enemyInitRoll);
-                
-                // Configurar estado del juego
-                gameState = iWonInitiative ? 'MY_TURN' : 'ENEMY_TURN'; 
-                
-                // Limpiar marcadores de listo
-                document.querySelectorAll('.ready-marker').forEach(e => e.classList.remove('show'));
-                toggleCommandHUD(true);
-                
-                // --- ASIGNAR CP ---
-                // Si gané iniciativa (iWonInitiative es true), NO voy segundo (false) -> 3 CP
-                // Si perdí iniciativa (iWonInitiative es false), SÍ voy segundo (true) -> 4 CP
-                startNewRound(!iWonInitiative);
-        
-                // Iniciar el turno
-                setTurn(gameState, 0); 
+        // =============================================================
+        // 5. ACCIONES DE JUEGO
+        // =============================================================
+        window.startMove = function() {
+            const me = myUnits[myIdx];
+            if(confirm("¿Mover? (-1 AP)")) { me.hasMoved=true; me.ap--; updateHUD(); }
+        };
+        window.startShooting = function() {
+            const me = myUnits[myIdx];
+            const wIdx = me.weapons.findIndex(w => w.type === 'RANGED');
+            if(wIdx === -1) { alert("Sin disparo"); return; }
+            combatMode='ranged'; me.hasShot=true; me.ap--;
+            initiateCombat(wIdx); updateHUD();
+        };
+        window.startMelee = function() {
+            const me = myUnits[myIdx];
+            const wIdx = me.weapons.findIndex(w => w.type === 'MELEE');
+            combatMode='melee'; me.hasFought=true; me.ap--;
+            initiateCombat(wIdx!==-1?wIdx:0); updateHUD();
+        };
+        window.passTurn = function() {
+            if(confirm("¿Pasar Turno?")) {
+                const me = myUnits[myIdx];
+                me.activations++; me.ap=0;
+                me.hasMoved=false; me.hasShot=false; me.hasFought=false;
+                toggleCombatHUD(false);
+                publish({type: 'TURN_PASS'});
+                updateHUD();
             }
         };
 
-    
-    function getKillPoints(total) { return total <= 4 ? 4 : (total <= 7 ? 3 : 1); }
-    function checkAutoMechanics() { 
-        const me = myUnits[myIdx]; if(!me || globalHP[me.uid].c <= 0) return; 
-        me.mechanics.forEach(m => { if(m.type === 'AUTO' && m.func === 'AUTO_REGEN' && globalHP[me.uid].c < globalHP[me.uid].m) { globalHP[me.uid].c++; publish({type: 'SYNC_HP', state: globalHP}); log(`REGEN: ${me.name} recupera 1 HP`); updateHUD(); } }); 
-    }
-    function syncVisuals(stage, rollsData) { publish({ type: 'COMBAT_SYNC', stage: stage, rolls: rollsData, uName: myUnits[myIdx].name }); }
-    function logCombat(msg) { const log = document.getElementById('combat-log-visual'); log.innerHTML += `<div class="log-line">> ${msg}</div>`; log.scrollTop = log.scrollHeight; }
-    function log(t, type='info') { const c = document.getElementById('combat-log'); while(c.children.length>=6) c.lastChild.remove(); const el = document.createElement('div'); el.innerText = `> ${t}`; el.className = `log-entry ${type}`; c.prepend(el); setTimeout(()=>el.remove(), 10000); }
-    function publish(p) { if(client){ p.sender=MY_ID; client.send(TOPIC, JSON.stringify(p)); } }
-    function resetRound() { 
-        if(isGameOver) return; 
-        if(currentRound>=maxRounds) { checkWinCondition(); return; } 
-        currentRound++; gameState='PLANNING'; iAmReady=false; enemyIsReady=false; 
-        myUnits.forEach(u=>{u.activations=0;u.gearUsed=false;}); 
-        document.getElementById('planning-controls').style.display='block'; 
-        document.getElementById('turn-indicator').innerText='PLANIFICACIÓN'; 
-        document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show')); 
-        // Reactivar el equipo de todas las unidades para la nueva ronda
-    myUnits.forEach(u => {
-        u.gearUsed = false; // Permitir usar items de nuevo
-        u.activations = 0;  // Resetear fatiga (si aplica)
-    });
-        updateHUD(); log(`INICIO RONDA ${currentRound}`); 
-    }
-    function cancelCombat() { publish({type:'COMBAT_SYNC', stage:'CANCEL'}); closeCombatOverlay(); }
-    function endCombatTurn() { document.getElementById('dice-overlay').style.display = 'none'; passTurn(0); }
-    function closeCombatOverlay() { document.getElementById('dice-overlay').style.display = 'none'; }
-    function hideAllCombatButtons() { const ids = ['btn-reroll', 'btn-reroll-def', 'btn-confirm-atk', 'btn-confirm-def', 'btn-apply-dmg', 'btn-cancel-combat', 'btn-close-combat', 'btn-cover-toggle']; ids.forEach(id => document.getElementById(id).style.display = 'none'); }
-    
-    // UI Helpers
-    window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; refreshActiveMenu(); updateHUD(); } }
-    window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); updateHUD(); }
-    window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
-    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged';refreshActiveMenu(); updateHUD();};
-    window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
-    window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
-    window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
-    
-    window.performOp = function(op) {
-    if(gameState !== 'MY_TURN') return;
-    
-    // Bloqueo: Solo permitir en Fase 2 (o Fase 1 si es 'PASAR' turno completo sin mover)
-    if(turnPhase !== 2 && op !== 'PASAR') { 
-        log("¡DEBES TERMINAR EL MOVIMIENTO PRIMERO!"); 
-        return; 
-    }
+        // =============================================================
+        // 6. CORE DE COMBATE (RED INCLUIDA)
+        // =============================================================
+        window.initiateCombat = function(wIdx) {
+            const me = myUnits[myIdx];
+            const w = me.weapons[wIdx];
+            
+            activeCombatStats = { name: w.name, hit: w.hit, dmg: w.dmg, traits: w.traits };
+            
+            document.getElementById('dice-overlay').style.display = 'flex';
+            document.getElementById('combat-title').innerText = "ATAQUE: " + w.name;
+            document.getElementById('btn-confirm-atk').style.display = 'inline-block';
+            document.getElementById('btn-confirm-def').style.display = 'none';
+            document.getElementById('btn-apply-dmg').style.display = 'none';
+            document.getElementById('btn-close-combat').style.display = 'inline-block';
+            document.getElementById('btn-close-combat').innerText = "CANCELAR";
+            document.getElementById('pool-def').innerHTML = '';
 
-    const me = myUnits[myIdx];
+            // Dados
+            atkRolls = [];
+            for(let i=0; i<w.atk; i++) atkRolls.push(Math.ceil(Math.random()*6));
+            renderDice(atkRolls, 'pool-atk');
+            
+            publish({ type: 'COMBAT_SYNC', stage: 'PRE_ATK', uName: me.name, wName: w.name, rolls: atkRolls });
+        };
 
-    if(op === 'DASH') {
-        // Ejecutar Dash
-        log("DASH REALIZADO (MUEVE 3\")");
-        publish({type:'OP_ACTION', opType: 'DASH'});
-        resolvePhase("DASH"); // Ir a Fase 3
+        window.confirmAttack = function() {
+            document.getElementById('btn-confirm-atk').style.display = 'none';
+            document.getElementById('combat-log-visual').innerText = "Enviando ataque al rival...";
+            
+            // Calc hits basicos
+            let hits = 0; let crits = 0;
+            atkRolls.forEach(r => { if(r==6) crits++; else if(r>=activeCombatStats.hit) hits++; });
+            
+            publish({ 
+                type: 'COMBAT_SYNC', stage: 'ATK_CONFIRMED', 
+                hits: hits, crits: crits, dmg: activeCombatStats.dmg, 
+                rolls: atkRolls 
+            });
+        };
+
+        window.handleCombatSync = function(d) {
+            document.getElementById('dice-overlay').style.display = 'flex';
+            document.getElementById('btn-close-combat').style.display = 'none';
+            
+            if(d.stage === 'PRE_ATK') {
+                document.getElementById('combat-title').innerText = "DEFENDIENDO vs " + d.wName;
+                renderDice(d.rolls, 'pool-atk');
+                document.getElementById('combat-log-visual').innerText = "El rival está tirando...";
+            }
+            if(d.stage === 'ATK_CONFIRMED') {
+                renderDice(d.rolls, 'pool-atk');
+                document.getElementById('combat-log-visual').innerText = `Entran: ${d.crits} Crits, ${d.hits} Hits. ¡TIRA DEFENSA!`;
+                document.getElementById('btn-confirm-def').style.display = 'inline-block';
+                
+                // Guardar datos entrantes para calcular daño
+                activeCombatStats.incoming = { hits: d.hits, crits: d.crits, dmg: d.dmg };
+                
+                // Tirar mis dados def (Mock 3 dados)
+                defRolls = [];
+                for(let i=0; i<3; i++) defRolls.push(Math.ceil(Math.random()*6));
+                renderDice(defRolls, 'pool-def');
+            }
+            if(d.stage === 'RESOLVED') {
+                renderDice(d.defRolls, 'pool-def');
+                document.getElementById('combat-log-visual').innerText = `Rival defendió. Daño final: ${d.finalDmg}`;
+                document.getElementById('btn-close-combat').style.display = 'inline-block';
+                document.getElementById('btn-close-combat').innerText = "CERRAR";
+            }
+        };
+
+        window.confirmDefense = function() {
+            document.getElementById('btn-confirm-def').style.display = 'none';
+            
+            // Lógica simple de defensa (saves bloquean hits)
+            let saves = defRolls.filter(r => r >= 3).length; // SV 3+ fijo por ahora
+            let inc = activeCombatStats.incoming;
+            
+            let totalHits = inc.hits + inc.crits;
+            let finalHits = Math.max(0, totalHits - saves);
+            let finalDmg = finalHits * inc.dmg;
+
+            document.getElementById('btn-apply-dmg').style.display = 'inline-block';
+            document.getElementById('btn-apply-dmg').innerText = `RECIBIR ${finalDmg} DAÑO`;
+            document.getElementById('btn-apply-dmg').dataset.dmg = finalDmg;
+            
+            publish({ type: 'COMBAT_SYNC', stage: 'RESOLVED', finalDmg: finalDmg, defRolls: defRolls });
+        };
+
+        window.applyCombatResult = function() {
+            const dmg = parseInt(document.getElementById('btn-apply-dmg').dataset.dmg);
+            const me = myUnits[myIdx];
+            me.hp = Math.max(0, me.hp - dmg);
+            updateHUD();
+            closeCombatOverlay();
+        };
+
+        window.closeCombatOverlay = function() {
+            document.getElementById('dice-overlay').style.display = 'none';
+        };
+
+        function renderDice(arr, id) {
+            const c = document.getElementById(id); c.innerHTML = '';
+            arr.forEach(r => {
+                const d = document.createElement('div');
+                d.className = r==6 ? 'die crit' : 'die';
+                d.innerText = r;
+                c.appendChild(d);
+            });
+        }
         
-    } else if (op === 'MISION') {
-        // Ejecutar Misión
-        myVP++;
-        document.getElementById('my-score').innerText = myVP;
-        publish({type:'SYNC_SCORE', id:MY_ID, vp:myVP});
-        log("MISION CUMPLIDA (+1 VP)");
-        publish({type:'OP_ACTION', opType: 'MISION'});
-        resolvePhase("MISION"); // Ir a Fase 3
-        
-        } else if (op === 'PASAR') {
-            // Pasar turno cancela acciones restantes
-            passTurn(0);
-        }
-    };
-    
-    window.useSpecialGear = function() { 
-        if(gameState !== 'MY_TURN') return; 
-        const me = myUnits[myIdx]; const item = me.mechanics.find(m => m.type === 'ACTIVE' && !me.gearUsed); 
-        if(!item) return; 
-        if(item.func === 'THROW_GRENADE') { log(`GRANADA LANZADA!`); publish({type: 'GEAR_EFFECT', gearName: 'GRANADA', desc: `BOOM! 3 Daño`, dmg: 3}); passTurn(0); } 
-        else if(item.func === 'USE_MEDKIT') { globalHP[me.uid].c = Math.min(globalHP[me.uid].m, globalHP[me.uid].c + 3); publish({type: 'SYNC_HP', state: globalHP}); log("MEDKIT USADO"); updateHUD(); passTurn(0); } 
-        if(item.oneUse) { me.gearUsed = true; updateHUD(); } 
-    }
-    window.tryPass = function(btnId) { const btn = document.getElementById(btnId); if (passConfirm === btnId) { performOp('PASAR'); } else { passConfirm = btnId; btn.innerText = "¿CONFIRMAR?"; btn.style.background = "var(--gold)"; btn.style.color = "#000"; } }
-   
-    // Avanzar de Fase 1 (Movimiento) a Fase 2 (Acciones)
-    window.endMovementPhase = function() {
-        if (turnPhase !== 1) return;
-        turnPhase = 2;
-        log("=== FASE 2: ELIGE UNA ACCIÓN ===");
-        updatePhaseUI();
-    };
-    
-    // Función central para actualizar qué botones se ven según la fase
-    window.updatePhaseUI = function() {
-    // 1. Actualizar el Texto de la Fase (Arriba)
-    const phaseDisplay = document.getElementById('phase-display');
-    if (phaseDisplay) {
-        if (gameState === 'MY_TURN') {
-            const names = { 1: "FASE 1: MOVIMIENTO", 2: "FASE 2: ACCIONES", 3: "FASE 3: RESOLUCIÓN" };
-            phaseDisplay.innerText = names[turnPhase] || "TU TURNO";
-            phaseDisplay.style.color = (turnPhase === 3) ? "var(--r)" : "var(--c)";
-        } else {
-            phaseDisplay.innerText = "TURNO RIVAL";
-            phaseDisplay.style.color = "#555";
-        }
-    }
+        // PLOYS UTILS
+        window.activateCPReroll = () => alert("Reroll activado");
+        window.activateDash = () => { myUnits[myIdx].ap++; updateHUD(); };
 
-    // 2. LIMPIEZA: Ocultar forzosamente los paneles viejos del HTML
-    // (Esto reemplaza el bloque if/else que me mostraste)
-
-    // 3. RENDERIZAR LA NUEVA BURBUJA
-    // Esta función ya tiene el "if (turnPhase === 1)... else if (turnPhase === 2)..." adentro.
-   if (typeof refreshActiveMenu === 'function') {
-        refreshActiveMenu();
-    }
-};
-
-
-    // Verifica si la unidad tiene un keyword (Ej: hasKeyword(me, 'LEADER'))
-function hasKeyword(unit, tag) {
-    return unit.keywords && unit.keywords.includes(tag);
-}
-
-// Verifica si el arma actual tiene un trait (Ej: hasTrait(currentWeapon, 'BALANCED'))
-function hasTrait(weapon, trait) {
-    return weapon.traits && weapon.traits.includes(trait);
-}
-
-// --- INTEGRACIÓN CON FASES (Ejemplo HEAVY) ---
-// Usar en Fase 2 al intentar atacar
-function canShootWeapon(unit, weapon) {
-    if (hasTrait(weapon, 'HEAVY')) {
-        // Asumiendo que trackeas si movió en Fase 1 con una bandera 'hasMoved'
-        if (unit.hasMoved) {
-            log("¡ARMA PESADA! No puedes disparar tras mover.", "DANGER");
-            return false;
-        }
-    }
-    return true;
-}
-
-</script>
+    </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
