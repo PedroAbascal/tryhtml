@@ -87,13 +87,8 @@
         .btn-gear { background: #fff !important; color: #000 !important; border: 2px solid var(--gold) !important; box-shadow: 0 0 10px var(--gold); animation: pulseGold 2s infinite; }
         @keyframes pulseGold { 0% { box-shadow: 0 0 5px var(--gold); } 50% { box-shadow: 0 0 15px var(--gold); } 100% { box-shadow: 0 0 5px var(--gold); } }
 
-        .ops-grid { display: none; grid-template-columns: 1fr 1fr 1fr; gap: 5px; width: 100%; }
-        #combat-actions { display: none; gap:5px; flex-wrap: wrap; width: 100%; }
-        .btn-op { font-size: 0.8rem; padding: 15px 5px; clip-path: none; border: 1px solid #000; color: #000; font-weight: bold; }
-        .op-dash { background: var(--c); }
-        .op-mission { background: var(--gold); }
-        .op-pass { background: #888; color: #000; transition: 0.2s; }
-
+        /*.ops-grid { display: none; grid-template-columns: 1fr 1fr 1fr; gap: 5px; width: 100%; } */
+        
         /* AR & FX */
         #ar-feed { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; filter: contrast(1.2) brightness(0.6); }
         .scan-line { position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: rgba(0, 242, 255, 0.3); animation: scan 3s linear infinite; pointer-events: none; }
@@ -268,9 +263,12 @@
             position: fixed;
             left: 0;
             top: 50%;
-            transform: translateY(-50%); /* Centrado vertical */
-            z-index: 900;
-            display: flex;
+            transform: translateY(-50%);
+            /* Z-INDEX MUY ALTO: Para estar encima del dice-overlay (que suele ser 1000) */
+            z-index: 2000; 
+            
+            display: none; /* <--- IMPORTANTE: Oculto por defecto (Lobby/Creador) */
+            
             align-items: flex-start;
             gap: 10px;
             padding-left: 5px;
@@ -370,12 +368,187 @@
             display: none; /* Oculto por defecto */
             border-radius: 4px;
             box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
-            z-index: 905;
+            z-index: 2005; /* Mayor que el HUD */
         }
         .cmd-title { color: var(--gold); font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid #333; }
         .cmd-desc { margin-bottom: 10px; color: #ccc; }
         .cmd-cost { font-size: 0.7rem; color: #888; margin-bottom: 10px; }
 
+
+        /* --- HUD DE ACCIONES (BURBUJA DERECHA) --- */
+        #act-hud {
+            position: fixed;
+            left: 0;
+            /* La otra burbuja está al 50%, esta la ponemos 60px más abajo */
+            top: calc(50% + 65px); 
+            transform: translateY(-50%);
+            
+            z-index: 1500;
+            display: flex; /* Contenedor principal */
+            align-items: flex-start; /* Alinear arriba */
+            gap: 10px;
+            padding-left: 5px;
+        }
+        
+        /* Burbuja Principal */
+        .act-bubble {
+            width: 50px; /* Tamaño igual a la de Ploys */
+            height: 50px;
+            background: rgba(0, 10, 20, 0.9);
+            border: 2px solid var(--c);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: var(--c);
+            box-shadow: 0 0 10px var(--c);
+            cursor: pointer;
+            transition: 0.3s;
+            z-index: 1502;
+            backdrop-filter: blur(4px);
+            order: 1; /* La burbuja va primero (izquierda) */
+        }
+        .act-bubble:active { transform: scale(0.9); }
+        .act-bubble.pulse { animation: pulseBorder 1.5s infinite; }
+        
+        /* Barra de Botones (Desplegable a la derecha) */
+        #act-bar {
+            position: absolute;
+            left: 60px; /* A la derecha de la burbuja */
+            top: 0;
+            
+            display: flex;
+            flex-direction: column; /* Lista vertical */
+            gap: 8px;
+            background: rgba(0, 10, 20, 0.9);
+            border: 1px solid #333;
+            padding: 8px;
+            border-radius: 8px;
+            backdrop-filter: blur(4px);
+            
+            /* Animación de entrada lateral */
+            transform: translateX(-20px);
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1501;
+        }
+        
+        #act-bar.open {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        /* Botones Individuales */
+        .act-btn {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; /* Icono izquierda, texto derecha */
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .act-btn-icon {
+            width: 35px; /* Un poco más pequeños para que encaje mejor */
+            height: 35px;
+            background: #111;
+            border: 1px solid #555;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        
+        .act-btn-label {
+            background: none;
+            color: #ccc;
+            font-size: 0.75rem;
+            font-weight: bold;
+            white-space: nowrap; /* Que no se rompa el texto */
+            opacity: 0.8;
+            transition: 0.2s;
+        }
+        
+        .act-btn:hover .act-btn-label { color: #fff; opacity: 1; text-shadow: 0 0 5px var(--c); }
+        .act-btn:hover .act-btn-icon { border-color: #fff; transform: scale(1.1); }
+        
+        /* Colores por tipo */
+        .act-btn.combat .act-btn-icon { border-color: var(--r); color: var(--r); }
+        .act-btn.move .act-btn-icon { border-color: var(--gold); color: var(--gold); }
+        .act-btn.mission .act-btn-icon { border-color: var(--g); color: var(--g); }
+
+        /* Contenedor general para posicionar */
+        #gear-hud {
+            display: none;
+            position: fixed;
+            left: 0;
+            /* La otra burbuja está al 50%, esta la ponemos 60px más abajo */
+            top: calc(50% - 65px); 
+            transform: translateY(-50%);
+            
+            z-index: 1500;
+            display: flex; /* Contenedor principal */
+            align-items: flex-start; /* Alinear arriba */
+            gap: 10px;
+            padding-left: 5px;
+        }
+        
+        /* Estilo específico para la bola de Gear */
+        .gear-theme {
+            background: radial-gradient(circle at 30% 30%, #444, #111);
+            border: 2px solid #888;
+            color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .gear-theme:active { transform: scale(0.95); }
+        
+        /* Lista desplegable de items */
+        #gear-bar {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #666;
+            border-radius: 8px;
+            padding: 8px;
+            min-width: 150px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .hidden { display: none !important; }
+        
+        /* Estilo de cada Item en la lista */
+        .gear-item {
+            background: #222;
+            border: 1px solid #444;
+            padding: 8px;
+            color: #eee;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-radius: 4px;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .gear-item:hover { background: #333; border-color: #888; }
+        .gear-item.used { opacity: 0.5; pointer-events: none; text-decoration: line-through; }
         
     </style>
 </head>
@@ -512,7 +685,6 @@
             </div>
                 <div id="phase-controls" style="width:100%; text-align:center; margin-bottom:5px;">
                     <div id="phase-display" style="font-size:0.8rem; color:var(--c); font-weight:bold; margin-bottom:5px;">ESPERANDO...</div>
-                    <button id="btn-end-move" class="btn" style="background:var(--gold); color:#000; display:none;" onclick="endMovementPhase()">FIN MOVIMIENTO (IR A ACCIONES)</button>
                 </div>
             <div class="unit-selector">
                 <div class="card my" onclick="nextMyUnit()" id="my-card">
@@ -550,17 +722,6 @@
                     <div id="en-ready-mark" class="ready-marker">¡LISTO!</div>
                 </div>
             </div>
-            <div id="combat-actions">
-                <button type="button" class="btn" id="btn-combat-mode" style="width:40px; background:#333; color:#fff;" onclick="resetPassButtons(); switchMode()"><span>🔫</span></button>
-                <button type="button" class="btn" id="btn-pass-open" style="flex:1; background:#555; color:#fff;" onclick="tryPass('btn-pass-open')"><span>PASAR</span></button>
-                <button type="button" class="btn" id="btn-act" style="flex:2; background:var(--r); color:#fff;" onclick="resetPassButtons(); initiateCombat()"><span>DISPARAR</span></button>
-                <button type="button" class="btn btn-gear" id="btn-gear" style="flex:2; display:none;" onclick="useSpecialGear()"><span>ITEM</span></button>
-            </div>
-            <div id="ops-actions" class="ops-grid">
-                <button type="button" class="btn btn-op op-dash" onclick="resetPassButtons(); performOp('DASH')"><span>DASH</span></button>
-                <button type="button" class="btn btn-op op-mission" onclick="resetPassButtons(); performOp('MISION')"><span>MISIÓN (+1PV)</span></button>
-                <button type="button" id="btn-op-pass" class="btn btn-op op-pass" onclick="tryPass('btn-op-pass')"><span>PASAR</span></button>
-            </div>
         </div>
     </div>
 
@@ -582,8 +743,6 @@
                 <button id="btn-apply-dmg" class="btn" style="background:var(--r); color:#fff; display:none;" onclick="applyCombatResult()">APLICAR DAÑO</button>
                 <button id="btn-cancel-combat" class="btn" style="background:#444;" onclick="cancelCombat()">CANCELAR</button>
                 <button id="btn-close-combat" class="btn" style="display:none;" onclick="endCombatTurn()">TERMINAR</button>
-            
-                    <button class="btn" style="background:#333; margin-top:20px;" onclick="toggleCommandMenu()">CERRAR</button>
                 </div>
             </div>
             </div>
@@ -607,9 +766,24 @@
                 <button class="btn btn-small" style="border-color:var(--r); color:var(--r);" onclick="closeCmdDetails()">X</button>
             </div>
         </div>
-    </div>
+    </div> 
+
+    <div id="act-hud" style="display:none;"> <div id="act-bar">
+                </div>
+        
+            <div class="act-bubble" id="main-act-bubble" onclick="toggleActionBar()">
+                <span id="act-bubble-icon">⚡</span>
+            </div>
+        </div>
         
     </div>
+
+    <div id="gear-hud" class="hud-bubble-container">
+    <div class="cmd-bubble gear-theme" onclick="toggleGearHUD()">
+        <span>🎒</span><small>ITEM</small>
+    </div>
+    <div id="gear-bar" class="hud-bar hidden"></div> 
+</div>
 
 <script>
     // --- DATABASE (FORGE) ---
@@ -630,19 +804,31 @@
         lasgun: { name:"Lasgun", type:"Ranged", cost:0, A:4, D:2, traits: ["BALANCED"] },
         sniper: { name:"Sniper", type:"Ranged", cost:5, A:4, D:3, traits: ["HEAVY", "SILENT", "MORTAL_1"] },
         plasma: { name:"Plasma", type:"Ranged", cost:10, A:4, D:5, traits: ["HOT", "AP_1"] },
-        knife:  { name:"Cuchillo", type:"Melee", cost:0, A:3, D:3, traits: ["BALANCED"] },
+        knife:  { name:"Cuchillo", type:"Melee", cost:0, A:3, D:3, traits: [] },
         sword:  { name:"Espada Energía", type:"Melee", cost:5, A:4, D:5, traits: ["LETHAL_5", "RENDING"] }
     },
     gear: {
         none: { name:"Nada", cost:0, keywords: [] },
-        nades: { name:"Granadas Frag", cost:2, keywords: ["GRENADIER"] },
-        medkit: { name:"Medkit", cost:3, keywords: ["MEDIC"] }
+        nades: { name:"Granadas Frag", cost:2, keywords: ["GRENADIER"] , mechanicRef: "grenade" },
+        medkit: { name:"Medkit", cost:3, keywords: ["MEDIC"], mechanicRef: "medkit" }
     },
     bases: { 
         b25: { name:"25mm", cost:0, hp:0 }, 
         b32: { name:"32mm", cost:4, hp:2 },
         b40: { name:"40mm", cost:6, hp:6 }
     }
+};
+
+    const GEAR_DB = {
+    none:   { name:"Nada", cost:0, keywords: [] },
+    
+    // AQUI ESTA LA VINCULACIÓN: agregamos mechanicRef: "grenade"
+    nades:  { name:"Granadas Frag", cost:2, keywords: ["GRENADIER"], mechanicRef: "grenade" }, 
+    
+    // AQUI TAMBIÉN: vinculamos con "medkit"
+    medkit: { name:"Medkit", cost:3, keywords: ["MEDIC"], mechanicRef: "medkit" },
+    
+    stim:   { name:"Estimulante", cost:1, keywords: [], mechanicRef: "stim" }
 };
     // --- DICCIONARIO DE REGLAS Y TAGS ---
     // 1. TAGS DE UNIDAD (Keywords)
@@ -741,6 +927,9 @@
     function openForge() {
         document.getElementById('lobby-screen').classList.add('hidden');
         document.getElementById('creator-screen').classList.remove('hidden');
+        toggleCommandHUD(false);
+        toggleActionBar(false);
+        
         initForgeSelects();
         renderEditorSquad();
     }
@@ -994,6 +1183,29 @@ function renderEditorSquad() {
         log(`=== NUEVA RONDA: ${myCP} CP GENERADOS ===`);
     };
 
+        // Función maestra para mostrar/ocultar la interfaz de combate
+    function toggleCombatHUD(show) {
+        const displayStyle = show ? 'flex' : 'none'; // Flex para que mantengan su alineación
+        
+        // 1. Burbuja de Comandos (CP/Ploys)
+        const cmdHud = document.getElementById('cmd-hud');
+        if (cmdHud) cmdHud.style.display = displayStyle;
+    
+        // 2. Burbuja de Acciones (Rayo)
+        const actHud = document.getElementById('act-hud');
+        if (actHud) actHud.style.display = displayStyle;
+    
+        // 3. NUEVA: Burbuja de Equipo (Mochila)
+        const gearHud = document.getElementById('gear-hud');
+        if (gearHud) gearHud.style.display = displayStyle;
+
+        if (typeof gearOpen !== 'undefined' && gearOpen) {
+        if (typeof renderGearBubble === 'function') {
+            renderGearBubble();
+        }
+    }
+};
+
     // --- GESTIÓN DE UI DE CP ---
     function updateCPUI() {
         document.getElementById('cp-display').innerText = "CP: " + myCP;
@@ -1009,6 +1221,217 @@ function renderEditorSquad() {
         modal.classList.toggle('hidden');
         updateCPUI();
     }
+
+    // --- GESTIÓN DEL HUD DE ACCIONES ---
+
+    // 1. Mostrar/Ocultar la barra
+    window.toggleActionBar = function() {
+        const bar = document.getElementById('act-bar');
+        if(!bar) return;
+        bar.classList.toggle('open');
+    };
+    
+    // 2. Función Principal: Actualiza qué botones hay en la burbuja según la FASE
+    // Reemplaza o llama a esto dentro de tu 'updatePhaseUI' original
+   window.renderActionBubble = function() {
+    const hud = document.getElementById('act-hud');
+    const bar = document.getElementById('act-bar');
+    const bubbleIcon = document.getElementById('act-bubble-icon');
+    const bubble = document.getElementById('main-act-bubble');
+    
+    // Limpiar barra anterior
+    bar.innerHTML = "";
+    
+    // Si no es mi turno, ocultar
+    if (gameState !== 'MY_TURN') {
+        hud.style.display = 'none';
+        return;
+    } else {
+        hud.style.display = 'flex';
+    }
+
+    const me = myUnits[myIdx];
+
+    // ==========================================
+    // FASE 1: MOVIMIENTO
+    // ==========================================
+    if (turnPhase === 1) {
+        bubbleIcon.innerText = "🦶"; 
+        bubble.classList.add('pulse'); 
+
+        // OPCIÓN A: CONFIRMAR MOVIMIENTO
+        // Úsalo después de haber arrastrado la miniatura
+        createActionButton("TERMINAR MOVER", "✅", "move", () => {
+            // Asumimos que si das clic aquí, la unidad "se movió"
+            // (La lógica de movimiento real ya habrá puesto hasMoved=true al soltar la mini)
+            endMovementPhase();
+            toggleActionBar();
+        });
+        
+        // OPCIÓN B: NO MOVER (NUEVO)
+        // Úsalo para activar reglas de "Estacionario" (Heavy, etc)
+        createActionButton("MANTENER POSICIÓN", "⚓", "combat", () => {
+            // Forzamos la bandera a falso explícitamente
+            me.hasMoved = false; 
+            
+            // Feedback visual
+            log(`${me.name} mantiene posición (Preparado para Heavy)`, "info");
+            
+            // Pasamos directo a la fase de acción
+            endMovementPhase();
+            toggleActionBar();
+        });
+    } 
+    
+    // ==========================================
+    // FASE 2: ACCIONES
+    // ==========================================
+    else if (turnPhase === 2) {
+        bubbleIcon.innerText = "⚡"; 
+        bubble.classList.remove('pulse');
+
+        if (me.activations < 2) {
+            // 1. COMBATE (Ranged / Melee)
+            if (me.mode === 'open') {
+                if (combatMode === 'ranged') {
+                     createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); toggleActionBar(); });
+                } else {
+                     createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); toggleActionBar(); });
+                }
+            } else {
+                // Si está en Hidden, permitimos Melee (emboscada) pero no disparo
+                createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); toggleActionBar(); });
+            }
+
+            // 2. DASH (Mover extra)
+            // Dash cuenta como movimiento, ojo con Heavy si disparas después
+            createActionButton("DASH (3\")", "💨", "move", () => { 
+                performOp('DASH'); 
+                toggleActionBar(); 
+            });
+
+            // 3. MISIÓN
+            createActionButton("MISIÓN / OBJ", "🚩", "mission", () => { performOp('MISION'); toggleActionBar(); });
+        }
+
+        // 4. PASAR TURNO
+        createActionButton("PASAR TURNO", "⏭️", "normal", () => { performOp('PASAR'); toggleActionBar(); });
+    } 
+    
+    // FASE 3
+    else if (turnPhase === 3) {
+        bubbleIcon.innerText = "🎲"; 
+    }
+};
+
+    let gearOpen = false;
+
+window.toggleGearHUD = function() {
+    gearOpen = !gearOpen;
+    const bar = document.getElementById('gear-bar');
+    if (gearOpen) {
+        bar.classList.remove('hidden');
+        renderGearBubble(); // Refrescamos al abrir
+    } else {
+        bar.classList.add('hidden');
+    }
+};
+
+    window.renderGearBubble = function() {
+        const container = document.getElementById('gear-bar');
+        if (!container) return;
+        container.innerHTML = ''; 
+    
+        const me = myUnits[myIdx];
+        
+        // Validar si la unidad tiene equipo asignado
+        if (!me.gear || me.gear === "Nada") {
+            container.innerHTML = '<div style="color:#777; font-size:0.7rem; padding:4px;">Sin Equipo</div>';
+            return;
+        }
+    
+        // 1. BUSCAR EL EQUIPO EN LA DB POR NOMBRE
+        // Recorremos GEAR_DB buscando qué objeto tiene name === me.gear
+        // Nota: Object.values convierte el objeto en un array para poder buscar
+        const gearDef = Object.values(GEAR_DB).find(item => item.name === me.gear);
+    
+        // Si no encontramos la definición o no tiene mecánica vinculada, salimos
+        if (!gearDef || !gearDef.mechanicRef) {
+            console.log("Equipo encontrado pero sin mecánica vinculada:", me.gear);
+            return;
+        }
+    
+        // 2. OBTENER LA MECÁNICA REAL
+        const mechanicId = gearDef.mechanicRef; // ej: "grenade"
+        const mech = MECHANICS_DB[mechanicId];  // Obtenemos los datos finales
+    
+        if (mech && mech.type === 'ACTIVE') {
+            
+            const div = document.createElement('div');
+            
+            // Verificamos si ya se usó (usando la variable gearUsed de la unidad)
+            const isUsed = (mech.oneUse && me.gearUsed);
+    
+            div.className = isUsed ? "gear-item used" : "gear-item";
+            
+            div.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1.2rem;">${mech.icon || '📦'}</span>
+                    <div style="display:flex; flex-direction:column;">
+                        <span style="font-weight:bold; color:white;">${mech.name}</span>
+                        <span style="font-size:0.6rem; color:#aaa;">${gearDef.name}</span>
+                    </div>
+                </div>
+                ${isUsed ? '<small>❌</small>' : '<small style="color:var(--c)">USAR</small>'}
+            `;
+    
+            if (!isUsed) {
+                div.onclick = function() {
+                    console.log(`Activando mecánica: ${mech.func}`);
+                    
+                    // --- AQUÍ EJECUTAS LA LÓGICA ---
+                    // Dependiendo de cómo tengas tus funciones, podría ser:
+                    // window[mech.func](me); 
+                    // O un switch simple:
+                    
+                    if(mech.func === 'THROW_GRENADE') {
+                         // Lógica de granada...
+                         alert("¡BUM! Granada lanzada");
+                    } else if (mech.func === 'USE_MEDKIT') {
+                         // Lógica de medkit...
+                         alert("Curando...");
+                    }
+    
+                    // Marcar como usado si es de un solo uso
+                    if(mech.oneUse) {
+                        me.gearUsed = true;
+                    }
+    
+                    toggleGearHUD();
+                    updateHUD();
+                };
+            }
+            
+            container.appendChild(div);
+        }
+    };
+    
+    // Helper para crear botones HTML
+    function createActionButton(label, icon, type, onClickFunc) {
+    const bar = document.getElementById('act-bar');
+    
+    const div = document.createElement('div');
+    div.className = `act-btn ${type}`;
+    div.onclick = onClickFunc;
+    
+    // CAMBIO: El Icono va primero, luego el Label
+    div.innerHTML = `
+        <div class="act-btn-icon">${icon}</div>
+        <span class="act-btn-label">${label}</span>
+    `;
+    
+    bar.appendChild(div);
+}
     
     // --- GAME INIT ---
     window.initSystem = function() {
@@ -1031,7 +1454,8 @@ function renderEditorSquad() {
             
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
-            assignSecretMission(); updateMissionDisplay(); updateHUD(); 
+            assignSecretMission(); updateMissionDisplay(); toggleCombatHUD(true); updateHUD(); 
+            
             navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>console.log("No AR"));
             startNetwork(code);
         } catch(e) { alert("ERROR DE DATOS: " + e.message); }
@@ -1219,6 +1643,12 @@ function renderEditorSquad() {
             };
     
             // --- LÓGICA DE PLOYS ---
+
+            window.toggleCommandHUD = function(show) {
+            const hud = document.getElementById('cmd-hud');
+            if (hud) hud.style.display = show ? 'flex' : 'none';
+        };
+    
             window.triggerPloy = function(type, cost) {
                 if (gameState !== 'MY_TURN' && type !== 'COVER') { 
                     // Nota: 'COVER' podría usarse en defensa (turno rival), pero simplifiquemos por ahora
@@ -1322,6 +1752,8 @@ function renderEditorSquad() {
     
         // 3. Preparar Interfaz
         setupCombatUI('ATTACKER'); // Abre el modal
+
+        if(activePloys['SHOOT_HARD']) activeCombatStats.traits.push('LETHAL_5');
         
         // BALANCED / CEASELESS (Habilitar botón de Reroll)
         // En Kill Team, Balanced permite repetir 1 dado. Ceaseless permite repetir los 1s.
@@ -1476,7 +1908,13 @@ function renderEditorSquad() {
             defHits++; // Regla de Cobertura automática (simplificada)
             logCombat("COBERTURA: +1 Bloqueo Normal"); 
         }
-    
+
+if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
+            defHits--;
+            defCrits++;
+            logCombat("COMANDO ¡A CUBIERTO!: 1 dEF convertido en Crítico", "danger");
+}
+        
         // 2. Traer datos del atacante
         let atkCrit = pendingAtkStats.crit;
         let atkNorm = pendingAtkStats.normal;
@@ -1618,179 +2056,192 @@ function renderEditorSquad() {
     }
 
     // --- UTILS ---
-   window.updateHUD = function() {
-    if(!myUnits.length) return;
+ window.updateHUD = function() {
+    // 0. SEGURIDAD: Si no hay unidades, no hacemos nada
+    if(!myUnits || !myUnits.length || myIdx < 0) return;
     
-    // Auto-selección si la unidad actual está bloqueada
-    if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit();
+    // Auto-selección si la unidad actual está bloqueada (Opcional, según tu lógica de juego)
+    if (gameState === 'MY_TURN' && typeof canSelectUnit === 'function' && !canSelectUnit(myIdx)) {
+        if(typeof autoSelectValidUnit === 'function') autoSelectValidUnit();
+    }
     
     const me = myUnits[myIdx]; 
     const en = enemyUnits[enIdx];
     
-    // 1. CABECERA Y TARJETA
-    document.getElementById('my-name').innerText = me.name;
-    const card = document.getElementById('my-card'); card.className = "card my";
-    if(me.activations === 1) card.classList.add('fatigued');
-    if(me.activations >= 2) card.classList.add('exhausted');
-    if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) card.classList.add('locked');
+    // ==========================================================
+    // 1. ACTUALIZAR LA TARJETA DEL JUGADOR (VISUAL)
+    // ==========================================================
     
+    // Nombre y Estado
+    const nameEl = document.getElementById('my-name');
+    if(nameEl) nameEl.innerText = me.name;
+
+    const card = document.getElementById('my-card');
+    if(card) {
+        card.className = "card my"; // Reset
+        if(me.activations === 1) card.classList.add('fatigued');
+        if(me.activations >= 2) card.classList.add('exhausted');
+        if (gameState === 'MY_TURN' && typeof canSelectUnit === 'function' && !canSelectUnit(myIdx)) {
+            card.classList.add('locked');
+        }
+    }
+    
+    // Texto de estado
     let statusText = "LISTO"; 
     if(me.activations === 1) statusText = "FATIGADO"; 
     if(me.activations === 2) statusText = "AGOTADO";
-    document.getElementById('my-status-text').innerText = statusText;
+    const statusEl = document.getElementById('my-status-text');
+    if(statusEl) statusEl.innerText = statusText;
     
     // Barra de Vida
-    if(globalHP[me.uid]) document.getElementById('my-hp').style.width = (globalHP[me.uid].c/globalHP[me.uid].m*100)+"%";
-    
-    // 2. MODOS DE JUEGO (Open/Hidden)
-    document.getElementById('btn-mode-open').className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
-    document.getElementById('btn-mode-hidden').className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
-    
-    const combatPanel = document.getElementById('combat-actions');
-    const opsPanel = document.getElementById('ops-actions');
-    
-    // Iconos de botones según modo de combate seleccionado
-    document.getElementById('btn-combat-mode').innerHTML = combatMode === 'ranged' ? "<span>🔫</span>" : "<span>⚔️</span>";
-    document.getElementById('btn-act').innerHTML = combatMode === 'ranged' ? "<span>DISPARAR</span>" : "<span>GOLPEAR</span>";
-
-    if(me.mode === 'hidden') { 
-        combatPanel.style.display = 'none'; opsPanel.style.display = 'grid'; 
-    } else { 
-        opsPanel.style.display = 'none'; combatPanel.style.display = 'flex'; 
+    if(globalHP[me.uid]) {
+        const hpBar = document.getElementById('my-hp');
+        if(hpBar) hpBar.style.width = (globalHP[me.uid].c / globalHP[me.uid].m * 100) + "%";
     }
+    
+    // Toggles de Modo (Engage/Conceal) - Asumimos que están en la tarjeta
+    const btnOpen = document.getElementById('btn-mode-open');
+    if(btnOpen) btnOpen.className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
+    
+    const btnHidden = document.getElementById('btn-mode-hidden');
+    if(btnHidden) btnHidden.className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
 
-    // 3. STATS LATERALES (Resumen)
-    // Buscamos el mejor valor de hit para mostrar en el resumen
+    // ==========================================================
+    // 2. STATS LATERALES (Resumen rápido)
+    // ==========================================================
     const rWep = me.weapons.find(w => w.type === 'RANGED');
     const mWep = me.weapons.find(w => w.type === 'MELEE');
     
-    document.getElementById('my-r').innerText = rWep ? rWep.hit + "+" : "-";
-    document.getElementById('my-m').innerText = mWep ? mWep.hit + "+" : "-";
-    document.getElementById('my-sv').innerText = me.stats.sv;
+    const rEl = document.getElementById('my-r');
+    if(rEl) rEl.innerText = rWep ? rWep.hit + "+" : "-";
+    
+    const mEl = document.getElementById('my-m');
+    if(mEl) mEl.innerText = mWep ? mWep.hit + "+" : "-";
+    
+    const svEl = document.getElementById('my-sv');
+    if(svEl) svEl.innerText = me.stats.sv + "+";
 
     // ==========================================================
-    // 4. VISUALIZACIÓN DE TAGS Y ARMAS (LÓGICA NUEVA)
+    // 3. VISUALIZACIÓN DE ARMAS Y TAGS (Interactiva)
     // ==========================================================
     const tagContainer = document.getElementById('my-tags'); 
-    tagContainer.innerHTML = '';
+    if(tagContainer) {
+        tagContainer.innerHTML = ''; // Limpiar
 
-    // A. KEYWORDS DE UNIDAD (Etiquetas Azules)
-    if (me.keywords && me.keywords.length > 0) {
-        let kHtml = '<div style="margin-bottom:4px; display:flex; gap:2px; flex-wrap:wrap;">';
-        me.keywords.forEach(k => {
-            // Estilo "chip" pequeño
-            kHtml += `<span style="background:rgba(0,242,255,0.1); color:var(--c); border:1px solid var(--c); font-size:0.55rem; padding:1px 3px; border-radius:2px;">${k}</span>`;
-        });
-        kHtml += '</div>';
-        tagContainer.innerHTML += kHtml;
-    }
+        // A. KEYWORDS (Etiquetas Cyan)
+        if (me.keywords && me.keywords.length > 0) {
+            let kHtml = '<div style="margin-bottom:4px; display:flex; gap:2px; flex-wrap:wrap;">';
+            me.keywords.forEach(k => {
+                kHtml += `<span class="hud-tag unit">${k}</span>`;
+            });
+            kHtml += '</div>';
+            tagContainer.innerHTML += kHtml;
+        }
 
-    // B. LISTA DE ARMAS
-    if (me.weapons && me.weapons.length > 0) {
-        me.weapons.forEach((w, idx) => {
-            // Determinar estilo (Activo vs Inactivo)
-            let isActive = false;
-            let themeColor = "#555"; // Gris por defecto
-            let icon = "🗡️";
+        // B. LISTA DE ARMAS (Clickeables para cambiar modo)
+        if (me.weapons && me.weapons.length > 0) {
+            me.weapons.forEach((w) => {
+                let isActive = false;
+                let themeColor = "#444"; 
+                let icon = "🗡️";
 
-            if (w.type === 'RANGED') {
-                icon = "🔫";
-                if (combatMode === 'ranged') {
-                    isActive = true;
-                    themeColor = "var(--c)"; // Cyan
+                // Detectar si esta es el arma activa actual
+                if (w.type === 'RANGED') {
+                    icon = "🔫";
+                    if (combatMode === 'ranged') { isActive = true; themeColor = "var(--c)"; }
+                } else if (w.type === 'MELEE') {
+                    icon = "⚔️";
+                    if (combatMode === 'melee') { isActive = true; themeColor = "var(--gold)"; }
                 }
-            } else if (w.type === 'MELEE') {
-                icon = "⚔️";
-                if (combatMode === 'melee') {
-                    isActive = true;
-                    themeColor = "var(--gold)"; // Dorado
+
+                // Estilos
+                const borderStyle = isActive 
+                    ? `border:1px solid ${themeColor}; background:rgba(20,20,20,0.8); box-shadow: inset 0 0 5px ${themeColor}; color:#fff;`
+                    : `border:1px solid #333; color:#666; opacity:0.8;`;
+
+                // Crear elemento
+                const div = document.createElement('div');
+                div.className = "tag"; 
+                div.style.cssText = `width:98%; display:block; margin-bottom:4px; cursor:pointer; padding:4px; ${borderStyle}`;
+                
+                // --- LOGICA IMPORTANTE ---
+                // Al hacer click en el arma de la tarjeta, cambiamos el modo y refrescamos la burbuja
+                div.onclick = function() { 
+                    combatMode = (w.type === 'RANGED') ? 'ranged' : 'melee';
+                    // Forzamos actualización visual
+                    updateHUD(); 
+                };
+
+                // Traits del arma
+                let traitsHtml = '';
+                if (w.traits && w.traits.length > 0) {
+                    traitsHtml = '<div style="margin-top:2px; display:flex; gap:2px;">';
+                    w.traits.forEach(t => {
+                        traitsHtml += `<span class="hud-tag weapon">${t}</span>`;
+                    });
+                    traitsHtml += '</div>';
                 }
-            }
 
-            // Estilos CSS dinámicos
-            const borderStyle = isActive 
-                ? `border:1px solid ${themeColor}; background:rgba(${w.type==='RANGED'?'0,242,255':'255,204,0'}, 0.15); box-shadow: 0 0 5px ${themeColor}; color:#fff;`
-                : `border:1px solid #333; color:#666;`;
-
-            // Renderizar Traits del arma (Etiquetas rojas pequeñas)
-            let traitsHtml = '';
-            if (w.traits && w.traits.length > 0) {
-                traitsHtml = '<div style="margin-top:2px; display:flex; gap:2px;">';
-                w.traits.forEach(t => {
-                    traitsHtml += `<span style="font-size:0.5rem; background:#300; color:var(--r); border:1px solid var(--r); padding:0 2px;">${t}</span>`;
-                });
-                traitsHtml += '</div>';
-            }
-
-            // HTML Final de la caja del arma
-            // Nota: Agregamos un onclick para cambiar el modo de combate al hacer click en el arma
-            const div = document.createElement('div');
-            div.className = "tag"; // Clase base que ya tenías
-            div.style.cssText = `width:98%; display:block; margin-bottom:4px; cursor:pointer; transition:0.2s; ${borderStyle}`;
-            div.onclick = function() { 
-                // Al hacer click, cambiamos el modo global y refrescamos
-                combatMode = (w.type === 'RANGED') ? 'ranged' : 'melee';
-                updateHUD();
-            };
-
-            div.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-weight:bold;">${icon} ${w.name}</span>
-                    <span style="font-family:monospace; font-size:0.65rem;">A:${w.atk} H:${w.hit}+ D:${w.dmg}</span>
-                </div>
-                ${traitsHtml}
-            `;
-            
-            tagContainer.appendChild(div);
-        });
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:bold; font-size:0.65rem;">${icon} ${w.name}</span>
+                        <span style="font-family:monospace; font-size:0.6rem;">A:${w.atk} H:${w.hit}+ D:${w.dmg}</span>
+                    </div>
+                    ${traitsHtml}
+                `;
+                
+                tagContainer.appendChild(div);
+            });
+        }
     }
 
-    // 5. EQUIPO / ITEMS (Legacy support + Active items)
-    // Si todavía usas 'mechanics' para items activos, lo mantenemos:
-    let showGearBtn = false; 
-    let gearBtnText = "ITEM";
-    
-    if (me.mechanics) {
-        me.mechanics.forEach(m => {
-            let css = m.type === 'ACTIVE' ? "tag active-gear" : "tag passive";
-            if(m.oneUse && me.gearUsed) css += " used";
-            else if(m.type === 'ACTIVE' && !me.gearUsed && gameState === 'MY_TURN') { 
-                showGearBtn = true; 
-                gearBtnText = m.name; 
-            }
-            // Solo dibujamos si no es un keyword que ya dibujamos arriba (evitar duplicados)
-            if (!me.keywords.includes(m.name)) {
-                tagContainer.innerHTML += `<span class="${css}" style="font-size:0.6rem; margin-right:2px;">${m.icon||'⚙️'} ${m.name}</span>`;
-            }
-        });
-    }
-
-    const btnGear = document.getElementById('btn-gear');
-    if(showGearBtn) { 
-        btnGear.style.display='block'; 
-        btnGear.querySelector('span').innerText = gearBtnText; 
-    } else { 
-        btnGear.style.display='none'; 
-    }
-
-    // 6. DATOS DEL ENEMIGO
+    // ==========================================================
+    // 4. DATOS DEL ENEMIGO
+    // ==========================================================
     if(en && globalHP[en.uid]) {
-        document.getElementById('enemy-name').innerText = en.name;
-        document.getElementById('enemy-hp').style.width = (globalHP[en.uid].c/globalHP[en.uid].m*100)+"%";
+        const enName = document.getElementById('enemy-name');
+        if(enName) enName.innerText = en.name;
+        
+        const enHp = document.getElementById('enemy-hp');
+        if(enHp) enHp.style.width = (globalHP[en.uid].c / globalHP[en.uid].m * 100) + "%";
     }
     
-    // Puntos y Rondas
-    document.getElementById('my-score').innerText = myVP;
-    document.getElementById('enemy-score').innerText = enemyVP;
-    document.getElementById('round-display').innerText = `RND ${currentRound}/${maxRounds}`;
+    // ==========================================================
+    // 5. MARCADORES GLOBALES (Top HUD)
+    // ==========================================================
+    const myScoreEl = document.getElementById('my-score');
+    if(myScoreEl) myScoreEl.innerText = myVP;
 
-    // Misión Secreta
+    const enScoreEl = document.getElementById('enemy-score');
+    if(enScoreEl) enScoreEl.innerText = enemyVP;
+
+    const rndEl = document.getElementById('round-display');
+    if(rndEl) rndEl.innerText = `RND ${currentRound}/${maxRounds}`;
+
+    // CP Display
+    const cpEl = document.getElementById('cp-display');
+    if(cpEl) cpEl.innerText = `CP: ${myCP}`;
+
+    // ==========================================================
+    // 6. SINCRONIZACIÓN FINAL
+    // ==========================================================
+    
+    // Misión Secreta (Botón superior)
     const btnSecret = document.getElementById('btn-claim-secret');
-    if (typeof secondaryActive !== 'undefined' && secondaryActive && !secretClaimed && gameState !== 'PLANNING') {
-        btnSecret.style.display = 'block';
-        btnSecret.innerText = `RECLAMAR: ${secretMission} (+2 PV)`;
-    } else if (btnSecret) { 
-        btnSecret.style.display = 'none'; 
+    if(btnSecret) {
+        if (typeof secondaryActive !== 'undefined' && secondaryActive && !secretClaimed && gameState !== 'PLANNING') {
+            btnSecret.style.display = 'block';
+            btnSecret.innerText = `RECLAMAR: ${secretMission} (+2 PV)`;
+        } else { 
+            btnSecret.style.display = 'none'; 
+        }
+    }
+
+     if(gearOpen) renderGearBubble(); // Solo renderizar si está abierta para ahorrar recursos
+
+    // ★ IMPORTANTE: Refrescar la Burbuja de Acciones para que coincida con la selección
+    if(typeof renderActionBubble === 'function') {
+        renderActionBubble();
     }
 };
 
@@ -2099,7 +2550,8 @@ window.renderStars = function(rolls, containerId) {
         isGameOver = false; myUnits = []; enemyUnits = []; globalHP = {};
         myVP = 0; enemyVP = 0; currentRound = 1;
         iAmReady = false; enemyIsReady = false;
-        resetPassButtons(); coverActive = false;
+        coverActive = false;
+        toggleCombatHUD(false);
     }
 
     function triggerGameOver(resultText, colorStr, subText) {
@@ -2216,7 +2668,9 @@ window.renderStars = function(rolls, containerId) {
                 gameState = iWonInitiative ? 'MY_TURN' : 'ENEMY_TURN'; 
                 
                 // Limpiar marcadores de listo
-                document.querySelectorAll('.ready-marker').forEach(e => e.classList.remove('show')); 
+                document.querySelectorAll('.ready-marker').forEach(e => e.classList.remove('show'));
+                toggleCommandHUD(true);
+                toggleActionBar(true);
                 
                 // --- ASIGNAR CP ---
                 // Si gané iniciativa (iWonInitiative es true), NO voy segundo (false) -> 3 CP
@@ -2243,9 +2697,14 @@ window.renderStars = function(rolls, containerId) {
         if(currentRound>=maxRounds) { checkWinCondition(); return; } 
         currentRound++; gameState='PLANNING'; iAmReady=false; enemyIsReady=false; 
         myUnits.forEach(u=>{u.activations=0;u.gearUsed=false;}); 
-        resetPassButtons(); document.getElementById('planning-controls').style.display='block'; 
+        document.getElementById('planning-controls').style.display='block'; 
         document.getElementById('turn-indicator').innerText='PLANIFICACIÓN'; 
         document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show')); 
+        // Reactivar el equipo de todas las unidades para la nueva ronda
+    myUnits.forEach(u => {
+        u.gearUsed = false; // Permitir usar items de nuevo
+        u.activations = 0;  // Resetear fatiga (si aplica)
+    });
         updateHUD(); log(`INICIO RONDA ${currentRound}`); 
     }
     function cancelCombat() { publish({type:'COMBAT_SYNC', stage:'CANCEL'}); closeCombatOverlay(); }
@@ -2254,10 +2713,10 @@ window.renderStars = function(rolls, containerId) {
     function hideAllCombatButtons() { const ids = ['btn-reroll', 'btn-reroll-def', 'btn-confirm-atk', 'btn-confirm-def', 'btn-apply-dmg', 'btn-cancel-combat', 'btn-close-combat', 'btn-cover-toggle']; ids.forEach(id => document.getElementById(id).style.display = 'none'); }
     
     // UI Helpers
-    window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; updateHUD(); } }
+    window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; renderActionBubble(); updateHUD(); } }
     window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); updateHUD(); }
     window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
-    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; updateHUD();};
+    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; renderActionBubble(); updateHUD();};
     window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
     window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
     window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
@@ -2302,9 +2761,8 @@ window.renderStars = function(rolls, containerId) {
         else if(item.func === 'USE_MEDKIT') { globalHP[me.uid].c = Math.min(globalHP[me.uid].m, globalHP[me.uid].c + 3); publish({type: 'SYNC_HP', state: globalHP}); log("MEDKIT USADO"); updateHUD(); passTurn(0); } 
         if(item.oneUse) { me.gearUsed = true; updateHUD(); } 
     }
-    window.tryPass = function(btnId) { const btn = document.getElementById(btnId); if (passConfirm === btnId) { performOp('PASAR'); resetPassButtons(); } else { resetPassButtons(); passConfirm = btnId; btn.innerText = "¿CONFIRMAR?"; btn.style.background = "var(--gold)"; btn.style.color = "#000"; } }
-    window.resetPassButtons = function() { passConfirm = null; const b1 = document.getElementById('btn-pass-open'); b1.innerText = "PASAR"; b1.style.background = "#555"; b1.style.color = "#fff"; const b2 = document.getElementById('btn-op-pass'); b2.innerText = "PASAR"; b2.style.background = "#888"; b2.style.color = "#000"; }
-    
+    window.tryPass = function(btnId) { const btn = document.getElementById(btnId); if (passConfirm === btnId) { performOp('PASAR'); } else { passConfirm = btnId; btn.innerText = "¿CONFIRMAR?"; btn.style.background = "var(--gold)"; btn.style.color = "#000"; } }
+   
     // Avanzar de Fase 1 (Movimiento) a Fase 2 (Acciones)
     window.endMovementPhase = function() {
         if (turnPhase !== 1) return;
@@ -2315,44 +2773,31 @@ window.renderStars = function(rolls, containerId) {
     
     // Función central para actualizar qué botones se ven según la fase
     window.updatePhaseUI = function() {
-        const btnEndMove = document.getElementById('btn-end-move');
-        const phaseDisplay = document.getElementById('phase-display');
-        const actionPanel = document.getElementById('combat-actions');
-        const opsPanel = document.getElementById('ops-actions');
-        
-        // Actualizar texto de fase
+    // 1. Actualizar el Texto de la Fase (Arriba)
+    const phaseDisplay = document.getElementById('phase-display');
+    if (phaseDisplay) {
         if (gameState === 'MY_TURN') {
-            phaseDisplay.innerText = PHASE_NAMES[turnPhase];
+            const names = { 1: "FASE 1: MOVIMIENTO", 2: "FASE 2: ACCIONES", 3: "FASE 3: RESOLUCIÓN" };
+            phaseDisplay.innerText = names[turnPhase] || "TU TURNO";
             phaseDisplay.style.color = (turnPhase === 3) ? "var(--r)" : "var(--c)";
         } else {
             phaseDisplay.innerText = "TURNO RIVAL";
             phaseDisplay.style.color = "#555";
         }
+    }
+
+    // 2. LIMPIEZA: Ocultar forzosamente los paneles viejos del HTML
+    // (Esto reemplaza el bloque if/else que me mostraste)
+
+    // 3. RENDERIZAR LA NUEVA BURBUJA
+    // Esta función ya tiene el "if (turnPhase === 1)... else if (turnPhase === 2)..." adentro.
+    renderActionBubble();
     
-        // Ocultar todo por defecto
-        btnEndMove.style.display = 'none';
-        actionPanel.style.display = 'none';
-        opsPanel.style.display = 'none';
-    
-        if (gameState !== 'MY_TURN') return;
-    
-        // Lógica de visualización por fase
-        if (turnPhase === 1) {
-            // FASE 1: Solo mostrar botón de terminar movimiento
-            btnEndMove.style.display = 'block';
-            
-        } else if (turnPhase === 2) {
-            // FASE 2: Mostrar paneles de acción según el modo (Open/Hidden)
-            // Usamos la lógica existente de tu unidad
-            const me = myUnits[myIdx];
-            if (document.getElementById('btn-mode-hidden').classList.contains('selected')) {
-                 opsPanel.style.display = 'grid'; // Acciones tácticas (Dash, Misión)
-            } else {
-                 actionPanel.style.display = 'flex'; // Acciones de combate
-            }
-        }
-        // FASE 3: Generalmente la UI de combate (dados) o logs toman el control
-    };
+    // 4. Asegurar que la burbuja de Comandos (CP) también se vea si es mi turno
+    if(typeof toggleCommandHUD === 'function') {
+        toggleCommandHUD(gameState === 'MY_TURN' || gameState === 'ENEMY_TURN'); 
+    }
+};
 
 
     // Verifica si la unidad tiene un keyword (Ej: hasKeyword(me, 'LEADER'))
@@ -2381,6 +2826,27 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
