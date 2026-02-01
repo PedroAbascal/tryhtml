@@ -2397,10 +2397,10 @@ window.renderStars = function(rolls, containerId) {
     function hideAllCombatButtons() { const ids = ['btn-reroll', 'btn-reroll-def', 'btn-confirm-atk', 'btn-confirm-def', 'btn-apply-dmg', 'btn-cancel-combat', 'btn-close-combat', 'btn-cover-toggle']; ids.forEach(id => document.getElementById(id).style.display = 'none'); }
     
     // UI Helpers
-    window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; renderActionBubble(); updateHUD(); } }
+    window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; refreshActiveMenu(); updateHUD(); } }
     window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); updateHUD(); }
     window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
-    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; renderActionBubble(); updateHUD();};
+    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged';refreshActiveMenu(); updateHUD();};
     window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
     window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
     window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
@@ -2475,11 +2475,8 @@ window.renderStars = function(rolls, containerId) {
 
     // 3. RENDERIZAR LA NUEVA BURBUJA
     // Esta función ya tiene el "if (turnPhase === 1)... else if (turnPhase === 2)..." adentro.
-    renderActionBubble();
-    
-    // 4. Asegurar que la burbuja de Comandos (CP) también se vea si es mi turno
-    if(typeof toggleCommandHUD === 'function') {
-        toggleCommandHUD(gameState === 'MY_TURN' || gameState === 'ENEMY_TURN'); 
+   if (typeof refreshActiveMenu === 'function') {
+        refreshActiveMenu();
     }
 };
 
@@ -2510,6 +2507,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
