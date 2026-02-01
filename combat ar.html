@@ -1910,7 +1910,7 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
     // ==========================================================
     
     // Misión Secreta (Botón superior)
-    const btnSecret = document.getElementById('btn-claim-secret');
+   const btnSecret = document.getElementById('btn-claim-secret');
     if(btnSecret) {
         if (typeof secondaryActive !== 'undefined' && secondaryActive && !secretClaimed && gameState !== 'PLANNING') {
             btnSecret.style.display = 'block';
@@ -1918,13 +1918,16 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
         } else { 
             btnSecret.style.display = 'none'; 
         }
-    }
-
-    }
+    } 
     
+    // ==========================================================
+    // 7. ACTUALIZAR BURBUJAS (Menú Unificado)
+    // ==========================================================
+    // IMPORTANTE: Esta llamada debe estar DENTRO de la función, antes de la última llave
     if (typeof refreshActiveMenu === 'function') {
         refreshActiveMenu();
     }
+
 };
 
 // --- FUNCIONES VISUALES DE DADOS (HELPER FUNCTIONS) ---
@@ -2508,6 +2511,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
