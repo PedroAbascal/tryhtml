@@ -1145,7 +1145,7 @@
                 cost: 1,
                 // Deshabilitar si: No hay AP, ya disparó, o está en melee
                 disabled: ap < 1 || me.hasShot || me.isEngaged, 
-                func: "startShooting"
+                func: "initiateCombat"
             },
             {
                 name: "COMBATE (MELEE)",
@@ -2624,4 +2624,5 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
