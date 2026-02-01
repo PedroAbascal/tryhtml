@@ -1311,10 +1311,10 @@ function renderEditorSquad() {
         // Úsalo para activar reglas de "Estacionario" (Heavy, etc)
         createActionButton("MANTENER POSICIÓN", "⚓", "combat", () => {
             // Forzamos la bandera a falso explícitamente
-            me.hasMoved = false; 
+            unit.hasMoved = false; 
             
             // Feedback visual
-            log(`${me.name} mantiene posición (Preparado para Heavy)`, "info");
+            log(`${unit.name} mantiene posición (Preparado para Heavy)`, "info");
             
             // Pasamos directo a la fase de acción
             endMovementPhase();
@@ -1332,9 +1332,9 @@ function renderEditorSquad() {
         bubbleIcon.innerText = "⚡"; 
         bubble.classList.remove('pulse');
 
-        if (me.activations < 2) {
+        if (unit.activations < 2) {
             // 1. COMBATE (Ranged / Melee)
-            if (me.mode === 'open') {
+            if (unit.mode === 'open') {
                 if (combatMode === 'ranged') {
                      createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                     const el = document.getElementById(id);
@@ -2887,6 +2887,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
