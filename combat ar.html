@@ -891,6 +891,9 @@
             phase: 'ANY' // Especial, se gestiona en combate
         }
     };
+
+    const uiState = {
+        activeMenu: null // Puede ser: 'ACT', 'GEAR', 'CMD' o null  };
     
     let selectedPloyId = null; // Cuál estás mirando
     
@@ -1144,36 +1147,6 @@ window.renderEditorSquad = function() {
     lbl.innerText = totalCost;
     lbl.style.color = (totalCost > 100) ? "var(--r)" : (totalCost === 100 ? "var(--gold)" : "#fff");
 };
-    
-function renderEditorSquad() {
-        const c = document.getElementById('squad-list'); c.innerHTML = "";
-        let totalCost = 0;
-
-        editorSquad.forEach((u, i) => {
-            totalCost += u.cost;
-            let div = document.createElement('div');
-            div.className = "unit-item";
-            // Mostramos iconos de arma según sea Rango o Melee para identificar rápido
-            const wIcon = u.stats.r_atk > 0 ? "🔫" : "⚔️";
-            
-            div.innerHTML = `
-                <div class="unit-info">
-                    <div style="color:var(--c); font-weight:bold;">${u.name} <span style="color:var(--gold)">[${u.cost} PTS]</span></div>
-                    <div style="color:#666;">${wIcon} HP:${u.stats.hp} SV:${u.stats.sv} | ${u.gear ? u.gear : 'NO GEAR'}</div>
-                </div>
-                <button class="btn btn-del" onclick="removeEditorUnit(${i})">X</button>
-            `;
-            c.appendChild(div);
-        });
-
-        // Actualizar el HTML del contador
-        const lbl = document.getElementById('total-pts');
-        lbl.innerText = totalCost;
-        
-        if(totalCost >= 100) lbl.style.color = "var(--gold)";
-        else lbl.style.color = "#fff";
-    }
-
     
     window.startNewRound = function(amISecond) {
         isPlayerTwo = amISecond; // True si vas segundo
@@ -2826,6 +2799,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
