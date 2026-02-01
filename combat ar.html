@@ -1278,15 +1278,15 @@ function renderEditorSquad() {
     // Reemplaza o llama a esto dentro de tu 'updatePhaseUI' original
 
     function updateActContent(unit) {
-        const container = document.getElementById('act-bar');
-        container.innerHTML = ''; // Limpiar previo
+    const container = document.getElementById('act-bar');
+    const bubble = document.querySelector('.act-bubble');       // <--- ESTO ARREGLA TU ERROR ACTUAL
+    const bubbleIcon = document.querySelector('.act-bubble i'); // El icono (corregido antes)
+    const phaseDisplay = document.querySelector('.act-bubble small'); // Por si tu código intenta cambiar texto
 
-        const bubbleIcon = document.querySelector('#act-hud .act-bubble i');
-    
-        if (!unit) {
-            container.innerHTML = '<div style="font-size:0.6rem; padding:5px;">NO UNIT</div>';
-            return;
-        }
+    // Limpiar menú previo
+    container.innerHTML = ''; 
+
+    if (!unit) return;
 
     // ==========================================
     // FASE 1: MOVIMIENTO
@@ -2887,6 +2887,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
