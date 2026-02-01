@@ -1222,9 +1222,10 @@ function renderEditorSquad() {
      * Función Principal: Dibuja y actualiza todo el HUD lateral
      * Llámala al inicio del turno, al seleccionar unidad o al gastar CP.
      */
-    function renderUnifiedHUD() {
-        const selectedUnit = getSelectedUnit(); // Asumo que tienes una función para obtener la unidad activa
-    
+   function renderUnifiedHUD() {
+    // CORRECCIÓN: Usar tu variable global existente
+    const selectedUnit = (typeof myUnits !== 'undefined' && typeof myIdx !== 'undefined') 
+                         ? myUnits[myIdx] : null;
         // 1. ACTUALIZAR CONTENIDO (Dibujar las opciones disponibles)
         updateActContent(selectedUnit);
         updateGearContent(selectedUnit);
@@ -1355,16 +1356,6 @@ function renderEditorSquad() {
 
     let gearOpen = false;
 
-window.toggleGearHUD = function() {
-    gearOpen = !gearOpen;
-    const bar = document.getElementById('gear-bar');
-    if (gearOpen) {
-        bar.classList.remove('hidden');
-        renderGearBubble(); // Refrescamos al abrir
-    } else {
-        bar.classList.add('hidden');
-    }
-};
 
     function updateGearContent(unit) {
     const container = document.getElementById('gear-bar'); 
@@ -2083,76 +2074,78 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
 
     // --- UTILS ---
  window.updateHUD = function() {
-    // 0. SEGURIDAD: Si no hay unidades, no hacemos nada
-    if(!myUnits || !myUnits.length || myIdx < 0) return;
-    
-    // Auto-selección si la unidad actual está bloqueada (Opcional, según tu lógica de juego)
+    // 0. SEGURIDAD: Si no hay unidades o índice inválido, abortamos para evitar errores
+    if (typeof myUnits === 'undefined' || !myUnits || myUnits.length === 0 || myIdx < 0) return;
+
+    // Auto-selección si la unidad actual está bloqueada/agotada
     if (gameState === 'MY_TURN' && typeof canSelectUnit === 'function' && !canSelectUnit(myIdx)) {
-        if(typeof autoSelectValidUnit === 'function') autoSelectValidUnit();
+        if (typeof autoSelectValidUnit === 'function') autoSelectValidUnit();
     }
-    
-    const me = myUnits[myIdx]; 
-    const en = enemyUnits[enIdx];
-    
+
+    const me = myUnits[myIdx];
+    const en = (typeof enemyUnits !== 'undefined' && typeof enIdx !== 'undefined') ? enemyUnits[enIdx] : null;
+
     // ==========================================================
     // 1. ACTUALIZAR LA TARJETA DEL JUGADOR (VISUAL)
     // ==========================================================
     
-    // Nombre y Estado
+    // Nombre
     const nameEl = document.getElementById('my-name');
-    if(nameEl) nameEl.innerText = me.name;
+    if (nameEl) nameEl.innerText = me.name;
 
+    // Estilos de la tarjeta (Fatiga/Agotamiento)
     const card = document.getElementById('my-card');
-    if(card) {
-        card.className = "card my"; // Reset
-        if(me.activations === 1) card.classList.add('fatigued');
-        if(me.activations >= 2) card.classList.add('exhausted');
+    if (card) {
+        card.className = "card my"; // Reset base
+        if (me.activations === 1) card.classList.add('fatigued');
+        if (me.activations >= 2) card.classList.add('exhausted');
+        // Si es mi turno pero no puedo usarla, se ve bloqueada
         if (gameState === 'MY_TURN' && typeof canSelectUnit === 'function' && !canSelectUnit(myIdx)) {
             card.classList.add('locked');
         }
     }
-    
+
     // Texto de estado
-    let statusText = "LISTO"; 
-    if(me.activations === 1) statusText = "FATIGADO"; 
-    if(me.activations === 2) statusText = "AGOTADO";
+    let statusText = "LISTO";
+    if (me.activations === 1) statusText = "FATIGADO";
+    if (me.activations >= 2) statusText = "AGOTADO";
     const statusEl = document.getElementById('my-status-text');
-    if(statusEl) statusEl.innerText = statusText;
-    
+    if (statusEl) statusEl.innerText = statusText;
+
     // Barra de Vida
-    if(globalHP[me.uid]) {
+    if (typeof globalHP !== 'undefined' && globalHP[me.uid]) {
         const hpBar = document.getElementById('my-hp');
-        if(hpBar) hpBar.style.width = (globalHP[me.uid].c / globalHP[me.uid].m * 100) + "%";
+        if (hpBar) hpBar.style.width = (globalHP[me.uid].c / globalHP[me.uid].m * 100) + "%";
     }
-    
-    // Toggles de Modo (Engage/Conceal) - Asumimos que están en la tarjeta
+
+    // Toggles de Modo (Engage/Conceal)
     const btnOpen = document.getElementById('btn-mode-open');
-    if(btnOpen) btnOpen.className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
-    
+    if (btnOpen) btnOpen.className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
+
     const btnHidden = document.getElementById('btn-mode-hidden');
-    if(btnHidden) btnHidden.className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
+    if (btnHidden) btnHidden.className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
 
     // ==========================================================
     // 2. STATS LATERALES (Resumen rápido)
     // ==========================================================
-    const rWep = me.weapons.find(w => w.type === 'RANGED');
-    const mWep = me.weapons.find(w => w.type === 'MELEE');
-    
+    const rWep = me.weapons ? me.weapons.find(w => w.type === 'RANGED') : null;
+    const mWep = me.weapons ? me.weapons.find(w => w.type === 'MELEE') : null;
+
     const rEl = document.getElementById('my-r');
-    if(rEl) rEl.innerText = rWep ? rWep.hit + "+" : "-";
-    
+    if (rEl) rEl.innerText = rWep ? rWep.hit + "+" : "-";
+
     const mEl = document.getElementById('my-m');
-    if(mEl) mEl.innerText = mWep ? mWep.hit + "+" : "-";
-    
+    if (mEl) mEl.innerText = mWep ? mWep.hit + "+" : "-";
+
     const svEl = document.getElementById('my-sv');
-    if(svEl) svEl.innerText = me.stats.sv + "+";
+    if (svEl) svEl.innerText = me.stats.sv + "+";
 
     // ==========================================================
     // 3. VISUALIZACIÓN DE ARMAS Y TAGS (Interactiva)
     // ==========================================================
-    const tagContainer = document.getElementById('my-tags'); 
-    if(tagContainer) {
-        tagContainer.innerHTML = ''; // Limpiar
+    const tagContainer = document.getElementById('my-tags');
+    if (tagContainer) {
+        tagContainer.innerHTML = ''; // Limpiar lista anterior
 
         // A. KEYWORDS (Etiquetas Cyan)
         if (me.keywords && me.keywords.length > 0) {
@@ -2164,14 +2157,14 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
             tagContainer.innerHTML += kHtml;
         }
 
-        // B. LISTA DE ARMAS (Clickeables para cambiar modo)
+        // B. LISTA DE ARMAS
         if (me.weapons && me.weapons.length > 0) {
             me.weapons.forEach((w) => {
                 let isActive = false;
-                let themeColor = "#444"; 
+                let themeColor = "#444";
                 let icon = "🗡️";
 
-                // Detectar si esta es el arma activa actual
+                // Detectar arma activa
                 if (w.type === 'RANGED') {
                     icon = "🔫";
                     if (combatMode === 'ranged') { isActive = true; themeColor = "var(--c)"; }
@@ -2180,25 +2173,31 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
                     if (combatMode === 'melee') { isActive = true; themeColor = "var(--gold)"; }
                 }
 
-                // Estilos
+                // Estilo dinámico (Borde brillante si está seleccionada)
                 const borderStyle = isActive 
                     ? `border:1px solid ${themeColor}; background:rgba(20,20,20,0.8); box-shadow: inset 0 0 5px ${themeColor}; color:#fff;`
                     : `border:1px solid #333; color:#666; opacity:0.8;`;
 
-                // Crear elemento
                 const div = document.createElement('div');
-                div.className = "tag"; 
+                div.className = "tag";
                 div.style.cssText = `width:98%; display:block; margin-bottom:4px; cursor:pointer; padding:4px; ${borderStyle}`;
-                
-                // --- LOGICA IMPORTANTE ---
-                // Al hacer click en el arma de la tarjeta, cambiamos el modo y refrescamos la burbuja
-                div.onclick = function() { 
+
+                // --- LÓGICA CLIC EN ARMA ---
+                div.onclick = function() {
+                    // 1. Cambiar modo de combate
                     combatMode = (w.type === 'RANGED') ? 'ranged' : 'melee';
-                    // Forzamos actualización visual
-                    updateHUD(); 
+                    
+                    // 2. MEJORA UX: Abrir automáticamente el menú de acciones ('ACT') 
+                    // para que el jugador vea el botón de "DISPARAR" inmediatamente.
+                    if(typeof uiState !== 'undefined') {
+                        uiState.activeMenu = 'ACT';
+                    }
+
+                    // 3. Actualizar toda la interfaz
+                    updateHUD();
                 };
 
-                // Traits del arma
+                // Traits del arma (tags pequeños)
                 let traitsHtml = '';
                 if (w.traits && w.traits.length > 0) {
                     traitsHtml = '<div style="margin-top:2px; display:flex; gap:2px;">';
@@ -2208,6 +2207,7 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
                     traitsHtml += '</div>';
                 }
 
+                // HTML interno del item de arma
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-weight:bold; font-size:0.65rem;">${icon} ${w.name}</span>
@@ -2215,55 +2215,61 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
                     </div>
                     ${traitsHtml}
                 `;
-                
                 tagContainer.appendChild(div);
             });
         }
     }
 
     // ==========================================================
-    // 4. DATOS DEL ENEMIGO
+    // 4. DATOS DEL ENEMIGO (Target Actual)
     // ==========================================================
-    if(en && globalHP[en.uid]) {
+    if (en && typeof globalHP !== 'undefined' && globalHP[en.uid]) {
         const enName = document.getElementById('enemy-name');
-        if(enName) enName.innerText = en.name;
-        
+        if (enName) enName.innerText = en.name;
+
         const enHp = document.getElementById('enemy-hp');
-        if(enHp) enHp.style.width = (globalHP[en.uid].c / globalHP[en.uid].m * 100) + "%";
+        if (enHp) enHp.style.width = (globalHP[en.uid].c / globalHP[en.uid].m * 100) + "%";
     }
-    
+
     // ==========================================================
     // 5. MARCADORES GLOBALES (Top HUD)
     // ==========================================================
+    // Puntos de Victoria
     const myScoreEl = document.getElementById('my-score');
-    if(myScoreEl) myScoreEl.innerText = myVP;
+    if (myScoreEl && typeof myVP !== 'undefined') myScoreEl.innerText = myVP;
 
     const enScoreEl = document.getElementById('enemy-score');
-    if(enScoreEl) enScoreEl.innerText = enemyVP;
+    if (enScoreEl && typeof enemyVP !== 'undefined') enScoreEl.innerText = enemyVP;
 
+    // Ronda
     const rndEl = document.getElementById('round-display');
-    if(rndEl) rndEl.innerText = `RND ${currentRound}/${maxRounds}`;
+    if (rndEl && typeof currentRound !== 'undefined') rndEl.innerText = `RND ${currentRound}/${maxRounds}`;
 
-    // CP Display
+    // CP (Command Points) - Actualizamos el número en la burbuja
     const cpEl = document.getElementById('cp-display');
-    if(cpEl) cpEl.innerText = `CP: ${myCP}`;
+    if (cpEl && typeof myCP !== 'undefined') cpEl.innerText = myCP; // Solo el número, el "CP" suele estar en <small>
 
     // ==========================================================
-    // 6. SINCRONIZACIÓN FINAL
+    // 6. SINCRONIZACIÓN FINAL CON EL NUEVO HUD
     // ==========================================================
     
-    // Misión Secreta (Botón superior)
+    // Misión Secreta (Botón superior especial)
     const btnSecret = document.getElementById('btn-claim-secret');
-    if(btnSecret) {
+    if (btnSecret) {
         if (typeof secondaryActive !== 'undefined' && secondaryActive && !secretClaimed && gameState !== 'PLANNING') {
             btnSecret.style.display = 'block';
             btnSecret.innerText = `RECLAMAR: ${secretMission} (+2 PV)`;
-        } else { 
-            btnSecret.style.display = 'none'; 
+        } else {
+            btnSecret.style.display = 'none';
         }
     }
 
-     renderUnifiedHUD();
+    // AQUI ESTA LA CLAVE: Llamamos al renderizador de las 3 burbujas
+    if (typeof renderUnifiedHUD === 'function') {
+        renderUnifiedHUD();
+    } else {
+        console.error("Falta la función renderUnifiedHUD() en el código.");
+    }
 };
 
 // --- FUNCIONES VISUALES DE DADOS (HELPER FUNCTIONS) ---
@@ -2731,10 +2737,10 @@ window.renderStars = function(rolls, containerId) {
     function hideAllCombatButtons() { const ids = ['btn-reroll', 'btn-reroll-def', 'btn-confirm-atk', 'btn-confirm-def', 'btn-apply-dmg', 'btn-cancel-combat', 'btn-close-combat', 'btn-cover-toggle']; ids.forEach(id => document.getElementById(id).style.display = 'none'); }
     
     // UI Helpers
-    window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; renderActionBubble(); updateHUD(); } }
+    window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; renderUnifiedHUD(); updateHUD(); } }
     window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); updateHUD(); }
     window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
-    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; renderActionBubble(); updateHUD();};
+    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; renderUnifiedHUD(); updateHUD();};
     window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
     window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
     window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
@@ -2809,7 +2815,7 @@ window.renderStars = function(rolls, containerId) {
 
     // 3. RENDERIZAR LA NUEVA BURBUJA
     // Esta función ya tiene el "if (turnPhase === 1)... else if (turnPhase === 2)..." adentro.
-    renderActionBubble();
+    renderUnifiedHUD();
     
     // 4. Asegurar que la burbuja de Comandos (CP) también se vea si es mi turno
     if(typeof toggleCommandHUD === 'function') {
@@ -2844,3 +2850,4 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
