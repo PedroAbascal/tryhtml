@@ -1280,6 +1280,8 @@ function renderEditorSquad() {
     function updateActContent(unit) {
         const container = document.getElementById('act-bar');
         container.innerHTML = ''; // Limpiar previo
+
+        const bubbleIcon = document.querySelector('#act-hud .act-bubble i');
     
         if (!unit) {
             container.innerHTML = '<div style="font-size:0.6rem; padding:5px;">NO UNIT</div>';
@@ -2885,6 +2887,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
