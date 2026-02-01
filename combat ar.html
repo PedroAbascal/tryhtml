@@ -2355,7 +2355,6 @@ window.renderStars = function(rolls, containerId) {
                 // Limpiar marcadores de listo
                 document.querySelectorAll('.ready-marker').forEach(e => e.classList.remove('show'));
                 toggleCommandHUD(true);
-                toggleActionBar(true);
                 
                 // --- ASIGNAR CP ---
                 // Si gané iniciativa (iWonInitiative es true), NO voy segundo (false) -> 3 CP
@@ -2511,6 +2510,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
