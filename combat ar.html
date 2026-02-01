@@ -520,14 +520,33 @@
         
         /* Lista desplegable de items */
         #gear-bar {
-            background: rgba(0, 0, 0, 0.9);
-            border: 1px solid #666;
-            border-radius: 8px;
-            padding: 8px;
-            min-width: 150px;
+            position: absolute;
+            left: 70px; /* A la derecha de la burbuja */
+            top: 0;
+            
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
+            background: rgba(0, 10, 20, 0.9);
+            border: 1px solid #333;
+            padding: 8px;
+            border-radius: 8px;
+            backdrop-filter: blur(4px);
+            
+            /* Animación idéntica a act-bar */
+            transform: translateX(-20px);
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1501;
+            min-width: 120px;
+        }
+        
+        #gear-bar.open {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: all;
+            display: flex !important; /* Fuerza mostrar flex */
         }
         
         .hidden { display: none !important; }
@@ -748,41 +767,30 @@
             </div>
         </div>
    
-        <div id="cmd-hud">
-        <div class="cmd-bubble" onclick="toggleCmdBar()">
-            <span id="bubble-cp-val">0</span>
-            <small>CP</small>
+        <div id="act-hud">
+    <div class="act-bubble" onclick="toggleMenu('ACT')">
+        <i class="fa fa-crosshairs"></i> </div>
+    <div id="act-bar">
         </div>
-    
-        <div id="cmd-bar">
-            </div>
-    
-        <div id="cmd-details">
-            <div id="cmd-det-title" class="cmd-title">NOMBRE</div>
-            <div id="cmd-det-cost" class="cmd-cost">COSTE: 1 CP</div>
-            <div id="cmd-det-desc" class="cmd-desc">Descripción...</div>
-            <div style="display:flex; gap:5px;">
-                <button class="btn btn-small" style="border-color:var(--g); color:var(--g);" onclick="confirmActivePloy()">ACTIVAR</button>
-                <button class="btn btn-small" style="border-color:var(--r); color:var(--r);" onclick="closeCmdDetails()">X</button>
-            </div>
-        </div>
-    </div> 
+</div>
 
-    <div id="act-hud" style="display:none;"> <div id="act-bar">
-                </div>
-        
-            <div class="act-bubble" id="main-act-bubble" onclick="toggleActionBar()">
-                <span id="act-bubble-icon">⚡</span>
-            </div>
+<div id="gear-hud">
+    <div class="gear-theme" onclick="toggleMenu('GEAR')">
+        <span>⚙️</span> 
+    </div>
+    <div id="gear-bar" class="hidden"> 
         </div>
-        
-    </div>
+</div>
 
-    <div id="gear-hud" class="hud-bubble-container">
-    <div class="cmd-bubble gear-theme" onclick="toggleGearHUD()">
-        <span>🎒</span><small>ITEM</small>
+<div id="cmd-hud">
+    <div class="cmd-bubble" onclick="toggleMenu('CMD')">
+        <span id="cp-display">0</span>
+        <small>CP</small>
     </div>
-    <div id="gear-bar" class="hud-bar hidden"></div> 
+    <div id="cmd-bar">
+        </div>
+</div>
+    
 </div>
 
 <script>
@@ -892,8 +900,8 @@
         }
     };
 
-    const uiState = {
-        activeMenu: null // Puede ser: 'ACT', 'GEAR', 'CMD' o null  };
+    // --- ESTADO GLOBAL DE LA UI ---
+    const uiState = { activeMenu: null };
     
     let selectedPloyId = null; // Cuál estás mirando
     
@@ -925,6 +933,7 @@
     let myCP = 0;
     let isPlayerTwo = false; // Cambiar a true si eres el segundo jugador
     let activePloys = {}; // Para rastrear qué habilidades están activas este turno
+
     
     // --- FORGE FUNCTIONS (LOGICA CREADOR) ---
     function openForge() {
@@ -1148,6 +1157,36 @@ window.renderEditorSquad = function() {
     lbl.style.color = (totalCost > 100) ? "var(--r)" : (totalCost === 100 ? "var(--gold)" : "#fff");
 };
     
+function renderEditorSquad() {
+        const c = document.getElementById('squad-list'); c.innerHTML = "";
+        let totalCost = 0;
+
+        editorSquad.forEach((u, i) => {
+            totalCost += u.cost;
+            let div = document.createElement('div');
+            div.className = "unit-item";
+            // Mostramos iconos de arma según sea Rango o Melee para identificar rápido
+            const wIcon = u.stats.r_atk > 0 ? "🔫" : "⚔️";
+            
+            div.innerHTML = `
+                <div class="unit-info">
+                    <div style="color:var(--c); font-weight:bold;">${u.name} <span style="color:var(--gold)">[${u.cost} PTS]</span></div>
+                    <div style="color:#666;">${wIcon} HP:${u.stats.hp} SV:${u.stats.sv} | ${u.gear ? u.gear : 'NO GEAR'}</div>
+                </div>
+                <button class="btn btn-del" onclick="removeEditorUnit(${i})">X</button>
+            `;
+            c.appendChild(div);
+        });
+
+        // Actualizar el HTML del contador
+        const lbl = document.getElementById('total-pts');
+        lbl.innerText = totalCost;
+        
+        if(totalCost >= 100) lbl.style.color = "var(--gold)";
+        else lbl.style.color = "#fff";
+    }
+
+    
     window.startNewRound = function(amISecond) {
         isPlayerTwo = amISecond; // True si vas segundo
         myCP = isPlayerTwo ? 4 : 3; // 3 CP para el primero, 4 para el segundo
@@ -1179,51 +1218,68 @@ window.renderEditorSquad = function() {
     }
 };
 
-    // --- GESTIÓN DE UI DE CP ---
-    function updateCPUI() {
-        document.getElementById('cp-display').innerText = "CP: " + myCP;
-        document.getElementById('cp-modal-display').innerText = "CP DISPONIBLES: " + myCP;
-        
-        // Ocultar botón de comando si no es mi turno (opcional)
-        const btnCmd = document.getElementById('btn-cmd');
-        if(btnCmd) btnCmd.style.display = (gameState === 'MY_TURN') ? 'block' : 'none';
-    }
+       /**
+     * Función Principal: Dibuja y actualiza todo el HUD lateral
+     * Llámala al inicio del turno, al seleccionar unidad o al gastar CP.
+     */
+    function renderUnifiedHUD() {
+        const selectedUnit = getSelectedUnit(); // Asumo que tienes una función para obtener la unidad activa
     
-    function toggleCommandMenu() {
-        const modal = document.getElementById('command-modal');
-        modal.classList.toggle('hidden');
-        updateCPUI();
+        // 1. ACTUALIZAR CONTENIDO (Dibujar las opciones disponibles)
+        updateActContent(selectedUnit);
+        updateGearContent(selectedUnit);
+        updateCmdContent(); // Esta usa los CP globales
+    
+        // 2. GESTIONAR VISIBILIDAD (Acordeón)
+        // Cerramos todo primero
+        document.getElementById('act-bar').classList.remove('open');
+        document.getElementById('gear-bar').classList.remove('open'); // Asumiendo que gear-hud tiene un hijo #gear-bar
+        document.getElementById('cmd-bar').classList.remove('open');
+        
+        // Abrimos solo el activo
+        if (uiState.activeMenu === 'ACT') {
+            document.getElementById('act-bar').classList.add('open');
+        } else if (uiState.activeMenu === 'GEAR') {
+            document.getElementById('gear-bar').classList.add('open'); // Asegúrate que tu HTML tenga este ID
+        } else if (uiState.activeMenu === 'CMD') {
+            document.getElementById('cmd-bar').classList.add('open');
+        }
+    
+        // 3. EFECTOS VISUALES EN LAS BURBUJAS (Feedback de cuál está activa)
+        // Resetear estilos
+        document.querySelector('.act-bubble').style.borderColor = 'var(--c)';
+        document.querySelector('.gear-theme').style.borderColor = '#888';
+        document.querySelector('.cmd-bubble').style.borderColor = 'var(--gold)';
+    
+        // Iluminar la activa
+        if (uiState.activeMenu === 'ACT') document.querySelector('.act-bubble').style.borderColor = '#fff';
+        if (uiState.activeMenu === 'GEAR') document.querySelector('.gear-theme').style.borderColor = '#fff';
+        if (uiState.activeMenu === 'CMD') document.querySelector('.cmd-bubble').style.borderColor = '#fff';
     }
 
-    // --- GESTIÓN DEL HUD DE ACCIONES ---
-
-    // 1. Mostrar/Ocultar la barra
-    window.toggleActionBar = function() {
-        const bar = document.getElementById('act-bar');
-        if(!bar) return;
-        bar.classList.toggle('open');
-    };
+    /** Maneja el clic en las burbujas para abrir/cerrar   */
+   
+    function toggleMenu(menuName) {
+        // Si tocas el que ya está abierto, lo cierras (null). Si no, abres el nuevo.
+        if (uiState.activeMenu === menuName) {
+            uiState.activeMenu = null;
+        } else {
+            uiState.activeMenu = menuName;
+        }    
+        renderUnifiedHUD();
+    }
     
     // 2. Función Principal: Actualiza qué botones hay en la burbuja según la FASE
     // Reemplaza o llama a esto dentro de tu 'updatePhaseUI' original
-   window.renderActionBubble = function() {
-    const hud = document.getElementById('act-hud');
-    const bar = document.getElementById('act-bar');
-    const bubbleIcon = document.getElementById('act-bubble-icon');
-    const bubble = document.getElementById('main-act-bubble');
-    
-    // Limpiar barra anterior
-    bar.innerHTML = "";
-    
-    // Si no es mi turno, ocultar
-    if (gameState !== 'MY_TURN') {
-        hud.style.display = 'none';
-        return;
-    } else {
-        hud.style.display = 'flex';
-    }
 
-    const me = myUnits[myIdx];
+    function updateActContent(unit) {
+        const container = document.getElementById('act-bar');
+        container.innerHTML = ''; // Limpiar previo
+    
+        if (!unit) {
+            container.innerHTML = '<div style="font-size:0.6rem; padding:5px;">NO UNIT</div>';
+            return;
+        }
 
     // ==========================================
     // FASE 1: MOVIMIENTO
@@ -1310,12 +1366,11 @@ window.toggleGearHUD = function() {
     }
 };
 
-    window.renderGearBubble = function() {
-        const container = document.getElementById('gear-bar');
-        if (!container) return;
-        container.innerHTML = ''; 
+    function updateGearContent(unit) {
+    const container = document.getElementById('gear-bar'); 
+    container.innerHTML = ''; 
     
-        const me = myUnits[myIdx];
+    if (!unit || !unit.loadout) return;
         
         // Validar si la unidad tiene equipo asignado
         if (!me.gear || me.gear === "Nada") {
@@ -1379,8 +1434,6 @@ window.toggleGearHUD = function() {
                     if(mech.oneUse) {
                         me.gearUsed = true;
                     }
-    
-                    toggleGearHUD();
                     updateHUD();
                 };
             }
@@ -2210,12 +2263,7 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
         }
     }
 
-     if(gearOpen) renderGearBubble(); // Solo renderizar si está abierta para ahorrar recursos
-
-    // ★ IMPORTANTE: Refrescar la Burbuja de Acciones para que coincida con la selección
-    if(typeof renderActionBubble === 'function') {
-        renderActionBubble();
-    }
+     renderUnifiedHUD();
 };
 
 // --- FUNCIONES VISUALES DE DADOS (HELPER FUNCTIONS) ---
@@ -2357,11 +2405,8 @@ window.renderStars = function(rolls, containerId) {
     }
 
 
-    // --- GESTIÓN DE LA INTERFAZ DE COMANDOS ---
-    
-    // 1. Abrir/Cerrar la barra
-    window.toggleCmdBar = function() {
-        const bar = document.getElementById('cmd-bar');
+   function updateCmdContent() {
+        const container = document.getElementById('cmd-bar');
         const details = document.getElementById('cmd-details');
         
         // Si ya está abierto, cerrar todo
@@ -2799,39 +2844,3 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
