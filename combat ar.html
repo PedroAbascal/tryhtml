@@ -939,8 +939,12 @@
     function openForge() {
         document.getElementById('lobby-screen').classList.add('hidden');
         document.getElementById('creator-screen').classList.remove('hidden');
-        toggleCommandHUD(false);
-        toggleActionBar(false);
+
+        const hudIds = ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'];
+        hudIds.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.style.display = 'none'; 
+        });
         
         initForgeSelects();
         renderEditorSquad();
@@ -1471,6 +1475,12 @@ function renderEditorSquad() {
             
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
+
+            const hudIds = ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'];
+            hudIds.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.style.display = ''; // Quitar el 'none' para que el CSS decida (flex/block)
+            });
             assignSecretMission(); updateMissionDisplay(); toggleCombatHUD(true); updateHUD(); 
             
             navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>console.log("No AR"));
@@ -2850,4 +2860,5 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
