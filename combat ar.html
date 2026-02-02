@@ -1603,7 +1603,7 @@ function renderEditorSquad() {
         const d = JSON.parse(msg.payloadString);
         if(d.sender === MY_ID) return;
 
-        f (msg.type === 'SYNC_SCORE') {
+        if (msg.type === 'SYNC_SCORE') {
             console.log("Enemigo anotó VP:", msg.vp);
             
             // 1. Actualizar variable global (si la usas)
@@ -3107,6 +3107,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
