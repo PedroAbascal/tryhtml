@@ -788,7 +788,21 @@
         <small>CP</small>
     </div>
     <div id="cmd-bar">
-    <div id="ploy-list" style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom: 8px;"></div>
+        <div id="ploy-list" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div>
+    
+        <div id="cmd-details" style="display:none; margin-top:10px; border-top:1px solid #333; padding-top:5px;">
+            <div style="display:flex; justify-content:space-between; color:var(--gold); font-weight:bold;">
+                <span id="ploy-name">NOMBRE</span>
+                <small id="ploy-cost">0 CP</small>
+            </div>
+            <div id="ploy-desc" style="font-size:0.7rem; color:#ccc; margin:5px 0; min-height:40px;">
+                Descripción de la táctica...
+            </div>
+            <button id="btn-use-ploy" style="width:100%; background:var(--gold); border:none; padding:8px; font-weight:bold; border-radius:4px;">
+                ACTIVAR ESTRATAGEMA
+            </button>
+        </div>
+    </div>
 
     <div id="cmd-details" style="display:none; border-top: 1px solid #444; padding-top: 5px; margin-top: 5px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -1210,33 +1224,7 @@ function renderEditorSquad() {
         log(`=== NUEVA RONDA: ${myCP} CP GENERADOS ===`);
     };
 
-        // Función maestra para mostrar/ocultar la interfaz de combate
-    function toggleCombatHUD(show) {
-        const displayStyle = show ? 'flex' : 'none'; // Flex para que mantengan su alineación
-        
-        // 1. Burbuja de Comandos (CP/Ploys)
-        const cmdHud = document.getElementById('cmd-hud');
-        if (cmdHud) cmdHud.style.display = displayStyle;
-    
-        // 2. Burbuja de Acciones (Rayo)
-        const actHud = document.getElementById('act-hud');
-        if (actHud) actHud.style.display = displayStyle;
-    
-        // 3. NUEVA: Burbuja de Equipo (Mochila)
-        const gearHud = document.getElementById('gear-hud');
-        if (gearHud) gearHud.style.display = displayStyle;
-
-        if (typeof gearOpen !== 'undefined' && gearOpen) {
-        if (typeof renderGearBubble === 'function') {
-
-        setGameHUDVisibility(true);
-            
-        }
-    }
-};
-
-       /**
-     * Función Principal: Dibuja y actualiza todo el HUD lateral
+     /* Función Principal: Dibuja y actualiza todo el HUD lateral
      * Llámala al inicio del turno, al seleccionar unidad o al gastar CP.
      */
    function renderUnifiedHUD() {
@@ -1404,9 +1392,6 @@ function renderEditorSquad() {
             if(bubbleIcon) bubbleIcon.innerText = "🎲"; 
         }
     };
-
-    let gearOpen = false;
-
 
     function updateGearContent(unit) {
     const container = document.getElementById('gear-bar'); 
@@ -2590,28 +2575,46 @@ window.renderStars = function(rolls, containerId) {
     }
     
     // 3. Mostrar detalles al hacer clic en icono
-    window.selectPloy = function(id, element) {
-        // Quitar selección visual previa
-        document.querySelectorAll('.ploy-icon').forEach(e => e.classList.remove('selected'));
-        element.classList.add('selected');
-        
-        selectedPloyId = id;
-        const ploy = PLOYS_DB[id];
-        const details = document.getElementById('cmd-details');
-        
-        // Llenar datos
-        document.getElementById('cmd-det-title').innerText = ploy.name;
-        document.getElementById('cmd-det-cost').innerText = `COSTE: ${ploy.cost} CP`;
-        
-        // Validar color del coste en el detalle
-        const costLabel = document.getElementById('cmd-det-cost');
-        if(myCP >= ploy.cost) costLabel.style.color = "var(--g)";
-        else costLabel.style.color = "var(--r)";
+    window.selectPloy = function(idx) {
+        const ploy = myPloys[idx];
+        if (!ploy) return;
     
-        document.getElementById('cmd-det-desc').innerText = ploy.desc;
+        console.log("Seleccionado:", ploy.name);
+    
+        // Referencias a los elementos del HTML
+        const nameEl = document.getElementById('ploy-name');
+        const descEl = document.getElementById('ploy-desc');
+        const costEl = document.getElementById('ploy-cost');
+        const btn = document.getElementById('btn-use-ploy');
+        const detailsPanel = document.getElementById('cmd-details');
+    
+        // 1. Intentar actualizar la interfaz (Solo si existe)
+        if (nameEl) nameEl.innerText = ploy.name;
+        if (descEl) descEl.innerText = ploy.desc;
+        if (costEl) costEl.innerText = ploy.cost + " CP";
         
-        // Mostrar panel
-        details.style.display = 'block';
+        // Mostrar el panel de detalles
+        if (detailsPanel) {
+            detailsPanel.style.display = 'block';
+        } else {
+            // Fallback si no has puesto el HTML aún
+            alert(`${ploy.name} (${ploy.cost} CP)\n\n${ploy.desc}`);
+        }
+    
+        // 2. Configurar el botón de "USAR"
+        if (btn) {
+            btn.onclick = function() {
+                if (myCP >= ploy.cost) {
+                    // Aquí iría tu lógica de gastar CP
+                    performOp('PLOY', idx); 
+                    // Ocultar panel tras usar
+                    if(detailsPanel) detailsPanel.style.display = 'none';
+                    console.log("Ploy activado");
+                } else {
+                    alert("No tienes suficientes CP");
+                }
+            };
+        }
     };
     
     window.closeCmdDetails = function() {
@@ -2690,7 +2693,7 @@ window.renderStars = function(rolls, containerId) {
         myVP = 0; enemyVP = 0; currentRound = 1;
         iAmReady = false; enemyIsReady = false;
         coverActive = false;
-        toggleCombatHUD(false);
+        setGameHUDVisibility(false);
     }
 
     function triggerGameOver(resultText, colorStr, subText) {
@@ -2968,6 +2971,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
