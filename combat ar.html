@@ -273,6 +273,7 @@
         
         /* La Burbuja Principal */
         .cmd-bubble {
+            display: none;
             width: 50px;
             height: 50px;
             background: #000;
@@ -374,6 +375,7 @@
 
         /* --- HUD DE ACCIONES (BURBUJA DERECHA) --- */
         #act-hud {
+            display: none;
             position: fixed;
             left: 0;
             /* La otra burbuja está al 50%, esta la ponemos 60px más abajo */
@@ -511,7 +513,7 @@
             transition: transform 0.2s;
         }
         
-        .gear-theme:active { transform: scale(0.95); }
+        .gear-theme:active { transform: scale(0.75); }
         
         /* Lista desplegable de items */
         #gear-bar {
@@ -1308,7 +1310,7 @@ function renderEditorSquad() {
 
         ['act-hud', 'gear-hud', 'cmd-hud'].forEach(id => {
                 const el = document.getElementById(id);
-                if(el) el.style.display = 'none';
+                if(el) el.style.display = '';
             });
         
         bubbleIcon.innerText = "🦶"; 
@@ -1518,14 +1520,15 @@ function renderEditorSquad() {
             });
             myUnits.forEach(u => { globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
             
-            document.getElementById('lobby-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
-
-            const hudIds = ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'];
-            hudIds.forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.style.display = ''; // Quitar el 'none' para que el CSS decida (flex/block)
-            });
+            // Ocultar pantallas de menú
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('forge-screen').classList.add('hidden');
+        
+            // MOSTRAR HUD
+            document.getElementById('act-hud').style.display = 'flex'; // Forzar
+            document.getElementById('gear-hud').style.display = 'flex';
+            document.getElementById('cmd-hud').style.display = 'flex';
+            
             assignSecretMission(); updateMissionDisplay(); toggleCombatHUD(true); updateHUD(); 
             
             navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>console.log("No AR"));
@@ -2913,6 +2916,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
