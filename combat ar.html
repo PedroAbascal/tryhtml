@@ -1329,83 +1329,81 @@ function renderEditorSquad() {
     // Reemplaza o llama a esto dentro de tu 'updatePhaseUI' original
 
     function updateActContent(unit) {
-    const container = document.getElementById('act-bar');
-    const bubble = document.querySelector('.act-bubble');       // <--- ESTO ARREGLA TU ERROR ACTUAL
-    const bubbleIcon = document.querySelector('.act-bubble i'); // El icono (corregido antes)
-    const phaseDisplay = document.querySelector('.act-bubble small'); // Por si tu código intenta cambiar texto
-
-    // Limpiar menú previo
-    container.innerHTML = ''; 
-
-    if (!unit) return;
-
-    // ==========================================
-    // FASE 1: MOVIMIENTO
-    // ==========================================
-    if (turnPhase === 1) {
-
-        setGameHUDVisibility(true);
-        
-        bubbleIcon.innerText = "🦶"; 
-        bubble.classList.add('pulse'); 
-
-        // OPCIÓN A: CONFIRMAR MOVIMIENTO
-        // Úsalo después de haber arrastrado la miniatura
-        createActionButton("TERMINAR MOVER", "✅", "move", () => {
-            // Asumimos que si das clic aquí, la unidad "se movió"
-            // (La lógica de movimiento real ya habrá puesto hasMoved=true al soltar la mini)
-            endMovementPhase();
-            setGameHUDVisibility(true);
-        })
-        
-        // OPCIÓN B: NO MOVER (NUEVO)
-        // Úsalo para activar reglas de "Estacionario" (Heavy, etc)
-        createActionButton("MANTENER POSICIÓN", "⚓", "combat", () => {
-            // Forzamos la bandera a falso explícitamente
-            unit.hasMoved = false; 
-            // Feedback visual
-            log(`${unit.name} mantiene posición (Preparado para Heavy)`, "info");
-            // Pasamos directo a la fase de acción
-            endMovementPhase(); setGameHUDVisibility(true);
-        })
+        const container = document.getElementById('act-bar');
+        const bubble = document.querySelector('.act-bubble');
+        const bubbleIcon = document.querySelector('.act-bubble i');
+        const phaseDisplay = document.querySelector('.act-bubble small');
     
-    // ==========================================
-    // FASE 2: ACCIONES
-    // ==========================================
-    else if (turnPhase === 2) {
-        bubbleIcon.innerText = "⚡"; 
-        bubble.classList.remove('pulse');
-
-        if (unit.activations < 2) {
-            // 1. COMBATE (Ranged / Melee)
-            if (unit.mode === 'open') {
-                if (combatMode === 'ranged') {
-                     createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); setGameHUDVisibility(true); });
+        // Limpiar menú previo
+        container.innerHTML = ''; 
+    
+        if (!unit) return;
+    
+        // ==========================================
+        // FASE 1: MOVIMIENTO
+        // ==========================================
+        if (turnPhase === 1) {
+    
+            if(typeof setGameHUDVisibility === 'function') setGameHUDVisibility(true);
+            
+            if(bubbleIcon) bubbleIcon.innerText = "🦶"; 
+            if(bubble) bubble.classList.add('pulse'); 
+    
+            // OPCIÓN A: CONFIRMAR MOVIMIENTO
+            createActionButton("TERMINAR MOVER", "✅", "move", () => {
+                if(typeof endMovementPhase === 'function') endMovementPhase();
+                if(typeof setGameHUDVisibility === 'function') setGameHUDVisibility(true);
+            });
+            
+            // OPCIÓN B: NO MOVER
+            createActionButton("MANTENER POSICIÓN", "⚓", "combat", () => {
+                unit.hasMoved = false; 
+                console.log(`${unit.name} mantiene posición`);
+                if(typeof endMovementPhase === 'function') endMovementPhase(); 
+                if(typeof setGameHUDVisibility === 'function') setGameHUDVisibility(true);
+            });
+        
+        } // <--- ¡AQUÍ FALTABA ESTA LLAVE! (Cierre de Fase 1)
+    
+        // ==========================================
+        // FASE 2: ACCIONES
+        // ==========================================
+        else if (turnPhase === 2) {
+            if(bubbleIcon) bubbleIcon.innerText = "⚡"; 
+            if(bubble) bubble.classList.remove('pulse');
+    
+            if (unit.activations < 2) {
+                // 1. COMBATE (Ranged / Melee)
+                if (unit.mode === 'open') {
+                    // Asumimos que combatMode está definido globalmente o por defecto es ranged
+                    if (typeof combatMode !== 'undefined' && combatMode === 'ranged') {
+                         createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); setGameHUDVisibility(true); });
+                    } else {
+                         createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); setGameHUDVisibility(true); });
+                    }
                 } else {
-                     createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); setGameHUDVisibility(true); });
+                    // Si está en Hidden, permitimos Melee (emboscada)
+                    createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); setGameHUDVisibility(true); });
                 }
-            } else {
-                // Si está en Hidden, permitimos Melee (emboscada) pero no disparo
-                createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); setGameHUDVisibility(true); });
-            }
-
-            // 2. DASH (Mover extra)
-            // Dash cuenta como movimiento, ojo con Heavy si disparas después
-            createActionButton("DASH (3\")", "💨", "move", () => { performOp('DASH'); setGameHUDVisibility(true); });
-
-            // 3. MISIÓN
-            createActionButton("MISIÓN / OBJ", "🚩", "mission", () => { performOp('MISION');  setGameHUDVisibility(true); });
-        }
-
-        // 4. PASAR TURNO
-        createActionButton("PASAR TURNO", "⏭️", "normal", () => { performOp('PASAR'); setGameHUDVisibility(true); });
-    } 
     
-    // FASE 3
-    else if (turnPhase === 3) {
-        bubbleIcon.innerText = "🎲"; 
-    }
-};
+                // 2. DASH
+                createActionButton("DASH (3\")", "💨", "move", () => { performOp('DASH'); setGameHUDVisibility(true); });
+    
+                // 3. MISIÓN
+                createActionButton("MISIÓN / OBJ", "🚩", "mission", () => { performOp('MISION');  setGameHUDVisibility(true); });
+            }
+    
+            // 4. PASAR TURNO
+            createActionButton("PASAR TURNO", "⏭️", "normal", () => { performOp('PASAR'); setGameHUDVisibility(true); });
+        } 
+        
+        // ==========================================
+        // FASE 3
+        // ==========================================
+        else if (turnPhase === 3) {
+            if(bubbleIcon) bubbleIcon.innerText = "🎲"; 
+        }
+    };
 
     let gearOpen = false;
 
@@ -2970,6 +2968,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
