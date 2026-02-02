@@ -3095,8 +3095,26 @@ window.renderStars = function(rolls, containerId) {
     window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); updateHUD(); }
 
     
-    window.nextEnemyUnit = () => { const currentEnemy = enemyUnits[enemyIdx]; if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateEnemyCard(currentEnemy); updateHUD(); }
+    window.nextEnemyUnit = function() {
+        // 1. Seguridad: Si no hay enemigos, no hacemos nada
+        if (!enemyUnits || enemyUnits.length === 0) return;
+    
+        // 2. Calcular el siguiente índice (Usando 'enIdx')
+        enIdx = (enIdx + 1) % enemyUnits.length;
+    
+        // 3. Obtener la unidad con el NUEVO índice
+        const currentEnemy = enemyUnits[enIdx];
+    
+        // 4. Actualizar la tarjeta visual
+        updateEnemyCard(currentEnemy);
+        
+        // (Opcional) Si usas updateHUD para otras cosas, déjalo, si no, puedes quitarlo
+        if(typeof updateHUD === 'function') updateHUD(); 
+        
+        console.log(`Rival cambiado a: ${currentEnemy.name} (Índice: ${enIdx})`);
+    };
 
+    
     function updateEnemyCard(unit) {
         const card = document.getElementById('en-card');
     
@@ -3304,6 +3322,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
