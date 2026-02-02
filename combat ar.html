@@ -1575,7 +1575,7 @@ function renderEditorSquad() {
         // 6. Mostrar HUD (Burbujas)
         ['act-hud', 'gear-hud', 'cmd-hud'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.style.display = 'flex';
+            if (el) el.style.display = '';
         });
         
         // 7. Iniciar Lógica
@@ -2978,6 +2978,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
