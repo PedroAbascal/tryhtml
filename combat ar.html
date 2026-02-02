@@ -3181,7 +3181,7 @@ window.renderStars = function(rolls, containerId) {
         } else if (op === 'MISION') {
             myVP++;
             document.getElementById('my-score').innerText = myVP;
-            publish({type:'SYNC_SCORE', id:MY_ID, vp:myVP});
+            publish({type:'SCORE_UPDATE', id:MY_ID, vp:myVP});
             log("MISION CUMPLIDA (+1 VP)");
             publish({type:'OP_ACTION', opType: 'MISION'});
             resolvePhase("MISION"); 
@@ -3304,6 +3304,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
