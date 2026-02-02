@@ -1242,41 +1242,58 @@ function renderEditorSquad() {
      * Llámala al inicio del turno, al seleccionar unidad o al gastar CP.
      */
    function renderUnifiedHUD() {
-    // CORRECCIÓN: Usar tu variable global existente
-    const selectedUnit = (typeof myUnits !== 'undefined' && typeof myIdx !== 'undefined') 
-                         ? myUnits[myIdx] : null;
-        // 1. ACTUALIZAR CONTENIDO (Dibujar las opciones disponibles)
-        updateActContent(selectedUnit);
-        updateGearContent(selectedUnit);
-        updateCmdContent(); // Esta usa los CP globales
-    
-        // 2. GESTIONAR VISIBILIDAD (Acordeón)
-        // Cerramos todo primero
-        document.getElementById('act-bar').classList.remove('open');
-        document.getElementById('gear-bar').classList.remove('open'); // Asumiendo que gear-hud tiene un hijo #gear-bar
-        document.getElementById('cmd-bar').classList.remove('open');
-        
-        // Abrimos solo el activo
-        if (uiState.activeMenu === 'ACT') {
-            document.getElementById('act-bar').classList.add('open');
-        } else if (uiState.activeMenu === 'GEAR') {
-            document.getElementById('gear-bar').classList.add('open'); // Asegúrate que tu HTML tenga este ID
-        } else if (uiState.activeMenu === 'CMD') {
-            document.getElementById('cmd-bar').classList.add('open');
+    // Seguridad: Definir unidad
+    const selectedUnit = (typeof myUnits !== 'undefined' && typeof myIdx !== 'undefined' && myIdx >= 0) 
+                         ? myUnits[myIdx] : null; 
+
+    // 1. ACTUALIZAR CONTENIDO
+    if (typeof updateActContent === 'function') updateActContent(selectedUnit);
+    if (typeof updateGearContent === 'function') updateGearContent(selectedUnit);
+    if (typeof updateCmdContent === 'function') updateCmdContent();
+
+    // 2. GESTIONAR VISIBILIDAD (AQUÍ ESTABA EL ERROR)
+    // Definimos los IDs que vamos a manipular
+    const menus = {
+        'ACT': 'act-bar',
+        'GEAR': 'gear-bar',
+        'CMD': 'cmd-bar'
+    };
+
+    // Primero cerramos TODOS (con chequeo de seguridad)
+    Object.values(menus).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.remove('open'); // Solo si existe, quitamos la clase
+        } else {
+            console.warn(`Falta el elemento HTML con id: ${id}`);
         }
-    
-        // 3. EFECTOS VISUALES EN LAS BURBUJAS (Feedback de cuál está activa)
-        // Resetear estilos
-        document.querySelector('.act-bubble').style.borderColor = 'var(--c)';
-        document.querySelector('.gear-theme').style.borderColor = '#888';
-        document.querySelector('.cmd-bubble').style.borderColor = 'var(--gold)';
-    
-        // Iluminar la activa
-        if (uiState.activeMenu === 'ACT') document.querySelector('.act-bubble').style.borderColor = '#fff';
-        if (uiState.activeMenu === 'GEAR') document.querySelector('.gear-theme').style.borderColor = '#fff';
-        if (uiState.activeMenu === 'CMD') document.querySelector('.cmd-bubble').style.borderColor = '#fff';
+    });
+
+    // Luego abrimos SOLO el activo
+    if (uiState.activeMenu && menus[uiState.activeMenu]) {
+        const activeId = menus[uiState.activeMenu];
+        const activeEl = document.getElementById(activeId);
+        if (activeEl) {
+            activeEl.classList.add('open');
+        }
     }
 
+    // 3. EFECTOS VISUALES (Bordes iluminados)
+    // Reseteamos colores
+    const actBubble = document.querySelector('.act-bubble');
+    const gearBubble = document.querySelector('.gear-theme');
+    const cmdBubble = document.querySelector('.cmd-bubble');
+
+    // Usamos ?.style para que no falle si falta alguno
+    if(actBubble) actBubble.style.borderColor = 'var(--c)';
+    if(gearBubble) gearBubble.style.borderColor = '#888';
+    if(cmdBubble) cmdBubble.style.borderColor = 'var(--gold)';
+
+    // Iluminar activo
+    if (uiState.activeMenu === 'ACT' && actBubble) actBubble.style.borderColor = '#fff';
+    if (uiState.activeMenu === 'GEAR' && gearBubble) gearBubble.style.borderColor = '#fff';
+    if (uiState.activeMenu === 'CMD' && cmdBubble) cmdBubble.style.borderColor = '#fff';
+}
     /** Maneja el clic en las burbujas para abrir/cerrar   */
    
     function toggleMenu(menuName) {
@@ -1636,11 +1653,10 @@ function renderEditorSquad() {
         gameState = 'MY_TURN';
         turnPhase = 1; // Iniciar en Fase 1
         log("=== TU TURNO: FASE DE MOVIMIENTO ===");
-            ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
-            const el = document.getElementById(id);
+                ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {const el = document.getElementById(id);
             if(el) {
                 el.style.display = 'flex'; // O 'block', según tu diseño
-                //el.classList.remove('hidden'); // Por si usas clases utilitarias
+                el.classList.remove('hidden'); // Por si usas clases utilitarias
             }
         });
         updatePhaseUI();
@@ -2916,6 +2932,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
