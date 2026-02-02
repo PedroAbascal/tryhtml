@@ -2515,63 +2515,129 @@ window.renderStars = function(rolls, containerId) {
     }
 
 
-   window.updateCmdContent = function() {
-    // 1. Ocultar detalles previos para evitar que se queden flotando
-    const details = document.getElementById('cmd-details');
-    if (details) details.style.display = 'none';
-
-    // 2. Llamar a la función que dibuja los iconos (Ploys)
-    if (typeof renderPloyIcons === 'function') {
-        renderPloyIcons();
-    }
-};
+      function updateCmdContent() {
+        const container = document.getElementById('ploy-list');
+        const cpDisplay = document.querySelector('.cmd-bubble small');
+        const detailsPanel = document.getElementById('cmd-details'); 
     
-    // 2. Dibujar iconos según el contexto
-    function renderPloyIcons() {
-        const container = document.getElementById('cmd-bar');
-        container.innerHTML = "";
+        // 1. Actualizar CP visuales
+        if (cpDisplay) cpDisplay.innerText = (typeof myCP !== 'undefined' ? myCP : 0) + " CP";
         
-        // Filtramos qué ploys mostrar
-        for (let key in PLOYS_DB) {
-            const ploy = PLOYS_DB[key];
-            
-            // FILTRO DE CONTEXTO: ¿Es válido en esta fase?
-            // Si es 'ANY' siempre sale (ej: Reroll).
-            // Si no, debe coincidir con turnPhase.
-            // Además, REROLL suele ser reactivo, tal vez quieras mostrarlo siempre en combate.
-            let isVisible = false;
-            
-            if (ploy.phase === 'ANY') isVisible = true;
-            else if (ploy.phase === turnPhase) isVisible = true;
-            
-            // Si no es mi turno, generalmente solo puedo usar defensivos o rerolls
-            if (gameState !== 'MY_TURN' && key !== 'TAKE_COVER' && key !== 'REROLL') isVisible = false;
+        if (!container) return;
+        container.innerHTML = ''; // Limpiar iconos viejos
     
-            if (!isVisible) continue;
+        // 2. FILTRAR SEGÚN TU DB
+        // Convertimos el objeto en array [clave, valor] para recorrerlo
+        const validPloys = Object.entries(PLOYS_DB).filter(([id, data]) => {
+            // La condición mágica:
+            // Coincide la fase NUMÉRICA exactamenete (1, 2, 3)
+            // O es una táctica universal ('ANY')
+            return data.phase === turnPhase || data.phase === 'ANY';
+        });
     
-            // Crear elemento
+        // Si no hay nada para esta fase, ocultamos el panel de detalles para que no estorbe
+        if (validPloys.length === 0) {
+            container.innerHTML = '<div style="font-size:0.6rem; color:#555; padding:5px;">Sin acciones</div>';
+            if(detailsPanel) detailsPanel.style.display = 'none';
+            return;
+        }
+    
+        // 3. GENERAR ICONOS
+        validPloys.forEach(([id, ploy]) => {
             const div = document.createElement('div');
             div.className = "ploy-icon";
-            div.innerText = ploy.icon;
             
-            // Estado: ¿Me alcanza el dinero?
-            if (myCP >= ploy.cost) {
-                div.classList.add('affordable');
-                div.onclick = () => selectPloy(key, div);
-            } else {
-                div.classList.add('expensive');
-                // Opcional: Permitir click para ver qué hace aunque no puedas pagarlo
-                 div.onclick = () => selectPloy(key, div);
-            }
+            // Estilo: Si tienes iconos texto (🏃), ajusta el fontSize.
+            div.style.cssText = `
+                width:36px; height:36px; 
+                background:rgba(20,20,20,0.8); 
+                border:1px solid #444; 
+                border-radius:6px;
+                display:flex; align-items:center; justify-content:center; 
+                cursor:pointer; font-size:1.4rem; 
+                margin:2px; transition:0.2s;
+            `;
+            
+            // Icono
+            div.innerText = ploy.icon || "★"; 
+            
+            // Evento Click: Pasamos el ID (ej: 'RUSH')
+            div.onclick = function() {
+                window.selectPloy(id); 
+                
+                // Efecto visual de "Seleccionado"
+                document.querySelectorAll('.ploy-icon').forEach(el => {
+                    el.style.borderColor = '#444';
+                    el.style.transform = 'scale(1)';
+                });
+                div.style.borderColor = 'var(--gold)';
+                div.style.transform = 'scale(1.1)';
+            };
             
             container.appendChild(div);
-        }
-        
-        // Mensaje si no hay nada disponible
-        if (container.children.length === 0) {
-            container.innerHTML = "<div style='font-size:0.5rem; color:#555; padding:2px;'>N/A</div>";
-        }
+        });
     }
+    
+    // 2. Dibujar iconos según el contexto
+    window.selectPloy = function(ployID) {
+        // Buscar directamente en tu constante
+        const ploy = PLOYS_DB[ployID];
+        
+        if (!ploy) return; // Seguridad
+    
+        // Referencias HTML
+        const detailPanel = document.getElementById('cmd-details');
+        const nameEl = document.getElementById('ploy-name');
+        const descEl = document.getElementById('ploy-desc');
+        const costEl = document.getElementById('ploy-cost');
+        const btn = document.getElementById('btn-use-ploy');
+    
+        // Rellenar Datos
+        if (detailPanel) {
+            detailPanel.style.display = 'block'; // Mostrar panel
+            
+            if (nameEl) nameEl.innerText = ploy.name;
+            if (descEl) descEl.innerHTML = ploy.desc; // innerHTML por si quieres poner negritas
+            if (costEl) costEl.innerText = ploy.cost + " CP";
+            
+            // Configurar Botón ACTIVAR
+            if (btn) {
+                // Limpiamos eventos previos clonando o reasignando
+                btn.onclick = null; 
+                
+                btn.onclick = function() {
+                    // Validación de Coste
+                    if (myCP >= ploy.cost) {
+                        
+                        // 1. Pagar coste
+                        myCP -= ploy.cost;
+                        updateCmdContent(); // Refrescar contador visual
+                        
+                        console.log(`ACTIVADO: ${ploy.name} (${ployID})`);
+    
+                        // 2. Ejecutar efecto
+                        // Aquí llamamos a tu gestor de operaciones
+                        performOp('PLOY', ployID); 
+    
+                        // 3. Feedback y cierre
+                        detailPanel.style.display = 'none'; // Ocultar panel tras usar
+                        
+                        // Opcional: Sonido o mensaje flotante
+                        // playSound('ui_confirm');
+                        
+                    } else {
+                        // Feedback visual de error
+                        btn.style.background = 'var(--r)';
+                        btn.innerText = "FALTAN CP";
+                        setTimeout(() => {
+                            btn.style.background = 'var(--gold)';
+                            btn.innerText = "ACTIVAR";
+                        }, 1000);
+                    }
+                };
+            }
+        }
+    };
     
     // 3. Mostrar detalles al hacer clic en icono
     window.selectPloy = function(idx) {
@@ -2865,34 +2931,76 @@ window.renderStars = function(rolls, containerId) {
     window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
     window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
     
-    window.performOp = function(op) {
-    if(gameState !== 'MY_TURN') return;
+    // Aceptamos 'payload' (datos extra), necesario para saber QUÉ estratagema es
+    window.performOp = function(op, payload) {
+        
+        if(gameState !== 'MY_TURN') return;
+        
+        // 1. CORRECCIÓN DEL BLOQUEO DE FASE
+        // Añadimos "&& op !== 'PLOY'" para permitir usar tácticas en Fase 1 (como Rush)
+        if(turnPhase !== 2 && op !== 'PASAR' && op !== 'PLOY') { 
+            log("¡DEBES TERMINAR EL MOVIMIENTO PRIMERO!"); 
+            return; 
+        }
     
-    // Bloqueo: Solo permitir en Fase 2 (o Fase 1 si es 'PASAR' turno completo sin mover)
-    if(turnPhase !== 2 && op !== 'PASAR') { 
-        log("¡DEBES TERMINAR EL MOVIMIENTO PRIMERO!"); 
-        return; 
-    }
-
-    const me = myUnits[myIdx];
-
-    if(op === 'DASH') {
-        // Ejecutar Dash
-        log("DASH REALIZADO (MUEVE 3\")");
-        publish({type:'OP_ACTION', opType: 'DASH'});
-        resolvePhase("DASH"); // Ir a Fase 3
-        
-    } else if (op === 'MISION') {
-        // Ejecutar Misión
-        myVP++;
-        document.getElementById('my-score').innerText = myVP;
-        publish({type:'SYNC_SCORE', id:MY_ID, vp:myVP});
-        log("MISION CUMPLIDA (+1 VP)");
-        publish({type:'OP_ACTION', opType: 'MISION'});
-        resolvePhase("MISION"); // Ir a Fase 3
-        
+        const me = myUnits[myIdx];
+    
+        // --- DASH ---
+        if(op === 'DASH') {
+            log("DASH REALIZADO (MUEVE 3\")");
+            publish({type:'OP_ACTION', opType: 'DASH'});
+            resolvePhase("DASH"); 
+            
+        // --- MISIÓN ---
+        } else if (op === 'MISION') {
+            myVP++;
+            document.getElementById('my-score').innerText = myVP;
+            publish({type:'SYNC_SCORE', id:MY_ID, vp:myVP});
+            log("MISION CUMPLIDA (+1 VP)");
+            publish({type:'OP_ACTION', opType: 'MISION'});
+            resolvePhase("MISION"); 
+            
+        // --- NUEVO: ESTRATAGEMAS (PLOYS) ---
+        } else if (op === 'PLOY') {
+            const ployID = payload; // Ej: 'RUSH', 'SHOOT_HARD'
+    
+            // A. Notificar a la red y al log
+            log(`TACTICA ACTIVADA: ${ployID}`, "combat");
+            publish({type:'OP_ACTION', opType: 'PLOY', id: ployID});
+    
+            // B. Ejecutar el efecto real en el juego
+            switch(ployID) {
+                case 'RUSH':
+                    // Sumamos 2 al movimiento base de la unidad actual
+                    // Asegúrate de que stats.m sea un número
+                    me.stats.m = parseInt(me.stats.m) + 2;
+                    log(`>> ${me.name} gana +2" de Movimiento.`);
+                    break;
+    
+                case 'SHOOT_HARD':
+                    // Creamos una "regla temporal" o flag
+                    if(!me.tempRules) me.tempRules = [];
+                    me.tempRules.push('LETHAL_5');
+                    log(">> Armas mejoradas (Lethal 5+)");
+                    break;
+    
+                case 'TAKE_COVER':
+                    if(!me.tempRules) me.tempRules = [];
+                    me.tempRules.push('BETTER_COVER');
+                    log(">> Defensa mejorada en cobertura");
+                    break;
+                    
+                case 'REROLL':
+                    // Lógica especial (quizás solo un flag para usar después)
+                    alert("Elige un dado para repetir en tu próxima tirada.");
+                    break;
+            }
+    
+            // NOTA: Normalmente usar una estratagema NO termina la fase, 
+            // así que no llamamos a resolvePhase() aquí, permitiendo que el jugador siga jugando.
+    
+        // --- PASAR TURNO ---
         } else if (op === 'PASAR') {
-            // Pasar turno cancela acciones restantes
             passTurn(0);
         }
     };
@@ -2970,6 +3078,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
