@@ -1603,6 +1603,23 @@ function renderEditorSquad() {
         const d = JSON.parse(msg.payloadString);
         if(d.sender === MY_ID) return;
 
+        f (msg.type === 'SYNC_SCORE') {
+            console.log("Enemigo anotó VP:", msg.vp);
+            
+            // 1. Actualizar variable global (si la usas)
+            if (typeof enemyVP !== 'undefined') enemyVP = msg.vp;
+
+            // 2. Actualizar la pantalla
+            const enemyScoreEl = document.getElementById('enemy-score');
+            if (enemyScoreEl) {
+                enemyScoreEl.innerText = msg.vp;
+                
+                // Opcional: Efecto visual para notar el cambio
+                enemyScoreEl.style.color = 'var(--r)'; // Rojo
+                setTimeout(() => enemyScoreEl.style.color = 'white', 1000);
+            }
+        }
+
         if(d.type === 'JOIN_REQ') {
             if(!enemyUnits.length) {
                 enemyUnits = d.squad; initialEnemyCount = enemyUnits.length;
@@ -3090,6 +3107,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
