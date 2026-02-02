@@ -1235,7 +1235,7 @@ function renderEditorSquad() {
 
         ['act-hud', 'gear-hud', 'cmd-hud'].forEach(id => {
                 const el = document.getElementById(id);
-                if(el) el.style.display = '';
+                if(el) el.style.display = 'flex';
             });
             
         }
@@ -1332,7 +1332,7 @@ function renderEditorSquad() {
 
         ['act-hud', 'gear-hud', 'cmd-hud'].forEach(id => {
                 const el = document.getElementById(id);
-                if(el) el.style.display = '';
+                if(el) el.style.display = 'flex';
             });
         
         bubbleIcon.innerText = "🦶"; 
@@ -1346,7 +1346,7 @@ function renderEditorSquad() {
             endMovementPhase();
             ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                 const el = document.getElementById(id);
-                if(el) el.style.display = ''; // Forzar oculto
+                if(el) el.style.display = 'flex'; // Forzar oculto
             });
         });
         
@@ -1363,7 +1363,7 @@ function renderEditorSquad() {
             endMovementPhase();
             ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
                 const el = document.getElementById(id);
-                if(el) el.style.display = ''; // Forzar oculto
+                if(el) el.style.display = 'flex'; // Forzar oculto
             });
         });
     } 
@@ -1575,7 +1575,7 @@ function renderEditorSquad() {
         // 6. Mostrar HUD (Burbujas)
         ['act-hud', 'gear-hud', 'cmd-hud'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.style.display = '';
+            if (el) el.style.display = 'flex';
         });
         
         // 7. Iniciar Lógica
@@ -1699,10 +1699,6 @@ function renderEditorSquad() {
         gameState = 'MY_TURN';
         turnPhase = 1; // Iniciar en Fase 1
         log("=== TU TURNO: FASE DE MOVIMIENTO ===");
-                ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {const el = document.getElementById(id);
-            if(el) {
-                el.style.display = 'flex'; // O 'block', según tu diseño
-                el.classList.remove('hidden'); // Por si usas clases utilitarias
             }
         });
         updatePhaseUI();
@@ -2978,6 +2974,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
