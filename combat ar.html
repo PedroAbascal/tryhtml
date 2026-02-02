@@ -261,6 +261,144 @@
             border-color: var(--r);
         }
 
+        #en-card.card.enemy {
+            position: fixed;
+            top: 60px; /* Debajo de la brújula/marcador */
+            left: 50%;
+            transform: translateX(-50%); /* Centrado exacto */
+            
+            width: auto;      /* Se adapta al contenido */
+            min-width: 220px; /* Tamaño mínimo */
+            max-width: 90%;
+            margin: 0;
+            padding: 8px 16px;
+            
+            display: flex;
+            flex-direction: column; /* Mantenemos estructura interna */
+            gap: 0;
+            
+            background: rgba(15, 15, 15, 0.9); /* Fondo oscuro semitransparente */
+            border: 1px solid var(--r);
+            border-radius: 50px; /* Bordes redondos estilo moderno */
+            box-shadow: 0 4px 15px rgba(255, 0, 85, 0.2);
+            
+            z-index: 100;
+            cursor: pointer; /* Indicar que es clicable */
+            transition: 0.3s all ease;
+        }
+        
+        /* 2. El Div interno que agrupa texto y stats */
+        #en-card > div:first-child {
+            display: flex;
+            flex-direction: row; /* Ponemos todo en línea horizontal */
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            gap: 12px;
+        }
+        
+        /* 3. Cabecera "RIVAL" y Icono */
+        #en-card > div:first-child > div:first-child {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* Ocultamos la palabra "RIVAL" para ahorrar espacio */
+        #en-card > div:first-child > div:first-child span:first-child {
+            display: none; 
+        }
+        
+        /* El Icono de modo (❓/⚔️) lo hacemos más grande */
+        #en-mode-icon {
+            font-size: 1.4rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--r);
+        }
+        
+        /* 4. Nombre del Enemigo */
+        #enemy-name {
+            font-size: 1rem !important; /* Forzamos tamaño */
+            color: white;
+            text-shadow: 0 0 5px var(--r);
+            white-space: nowrap;
+            margin: 0 !important;
+            text-align: left;
+            flex-grow: 1; /* Ocupa el espacio disponible */
+        }
+        
+        /* 5. Ocultar cosas que no queremos en modo minimalista */
+        #en-tags { display: none; } /* Adiós tags */
+        
+        /* 6. Grid de Stats: Solo mostramos la Salvación (SV) */
+        .stat-grid {
+            display: flex;
+            margin: 0;
+            background: none;
+            padding: 0;
+            border: none;
+        }
+        
+        /* Ocultamos RNG (1ro) y MEL (2do) */
+        .stat-box:nth-child(1), 
+        .stat-box:nth-child(2) {
+            display: none;
+        }
+        
+        /* Estilizamos SV (3ro) */
+        .stat-box:nth-child(3) {
+            background: transparent;
+            border: none;
+            border-left: 1px solid #444;
+            padding: 0 0 0 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: auto;
+        }
+        .stat-box:nth-child(3) .stat-val {
+            font-size: 1.1rem;
+            color: #fff;
+        }
+        .stat-box:nth-child(3) .stat-label {
+            font-size: 0.6rem;
+            color: #888;
+        }
+        
+        /* 7. Barra de Vida (HP): Ahora es una línea fina abajo */
+        .hp-bar {
+            margin-top: 5px;
+            height: 4px; /* Muy fina */
+            background: #333;
+            width: 100%;
+            border-radius: 2px;
+            overflow: hidden;
+            border: none; /* Quitamos borde viejo */
+        }
+        #enemy-hp {
+            height: 100%;
+            transition: width 0.3s;
+        }
+        
+        /* 8. Marcador de "LISTO" (Si se usa) */
+        #en-ready-mark {
+            font-size: 0.7rem;
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: var(--g);
+            color: black;
+            padding: 2px 8px;
+            border-radius: 10px;
+            /* Solo se ve si tiene la clase active, manejado por JS */
+        }
+        
 
         /* --- HUD DE COMANDOS (BURBUJA) --- */
         #cmd-hud {
@@ -3115,6 +3253,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
