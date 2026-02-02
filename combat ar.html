@@ -3093,8 +3093,66 @@ window.renderStars = function(rolls, containerId) {
     // UI Helpers
     window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; renderUnifiedHUD(); updateHUD(); } }
     window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); updateHUD(); }
-    window.nextEnemyUnit = () => { if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateHUD(); }
+
+    
+    window.nextEnemyUnit = () => { const currentEnemy = enemyUnits[enemyIdx]; if(enemyUnits.length) enIdx=(enIdx+1)%enemyUnits.length; updateEnemyCard(currentEnemy); updateHUD(); }
+
+    function updateEnemyCard(unit) {
+        const card = document.getElementById('en-card');
+    
+        // 1. Si no hay enemigo seleccionado, ocultamos la tarjeta
+        if (!unit) {
+            card.style.display = 'none';
+            return;
+        }
+    
+        // Si hay enemigo, la mostramos (el CSS se encarga del diseño píldora)
+        card.style.display = 'flex';
+    
+        // 2. NOMBRE (ID: enemy-name)
+        const nameEl = document.getElementById('enemy-name');
+        if (nameEl) nameEl.innerText = unit.name || "ENEMIGO";
+    
+        // 3. ORDEN / ICONO (ID: en-mode-icon)
+        // Aquí traducimos el texto "ENGAGE" a un icono
+        const iconEl = document.getElementById('en-mode-icon');
+        if (iconEl) {
+            if (unit.order === 'ENGAGE') {
+                iconEl.innerText = "⚔️"; // Espadas cruzadas
+                iconEl.style.borderColor = "var(--r)";
+            } else if (unit.order === 'CONCEAL') {
+                iconEl.innerText = "🛡️"; // Escudo
+                iconEl.style.borderColor = "#00f2ff"; // Azul cian
+            } else {
+                iconEl.innerText = "❓";
+                iconEl.style.borderColor = "#555";
+            }
+        }
+    
+        // 4. SALVACIÓN (ID: en-sv)
+        // El CSS oculta RNG y MEL, pero muestra este.
+        const svEl = document.getElementById('en-sv');
+        if (svEl) {
+            // Aseguramos que tenga el "+" al final
+            let svValue = unit.stats && unit.stats.sv ? unit.stats.sv : "-";
+            if (svValue !== "-" && !String(svValue).includes("+")) {
+                svValue += "+";
+            }
+            svEl.innerText = svValue;
+        }
+    
+        // 5. VIDA (ID: enemy-hp)
+        // Calculamos el ancho de la barrita
+        const hpBar = document.getElementById('enemy-hp');
+        if (hpBar && unit.stats) {
+            const hpPercent = (unit.w / unit.stats.w) * 100;
+            hpBar.style.width = hpPercent + "%";
+        }
+    }
+    
     window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; renderUnifiedHUD(); updateHUD();};
+
+    
     window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
     window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
     window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
@@ -3246,6 +3304,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
