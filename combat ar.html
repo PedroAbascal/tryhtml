@@ -265,10 +265,7 @@
             top: 50%;
             transform: translateY(-50%);
             /* Z-INDEX MUY ALTO: Para estar encima del dice-overlay (que suele ser 1000) */
-            z-index: 2000; 
-            
-            display: none; /* <--- IMPORTANTE: Oculto por defecto (Lobby/Creador) */
-            
+            z-index: 2000;             
             align-items: flex-start;
             gap: 10px;
             padding-left: 5px;
@@ -382,8 +379,6 @@
             /* La otra burbuja está al 50%, esta la ponemos 60px más abajo */
             top: calc(50% + 65px); 
             transform: translateY(-50%);
-            display: none; 
-            
             z-index: 1500;
             /* display: flex; /* Contenedor principal */
             align-items: flex-start; /* Alinear arriba */
@@ -492,8 +487,6 @@
             /* La otra burbuja está al 50%, esta la ponemos 60px más abajo */
             top: calc(50% - 65px); 
             transform: translateY(-50%);
-            display: none; 
-            
             z-index: 1500;
             /* display: flex; /* Contenedor principal */
             align-items: flex-start; /* Alinear arriba */
@@ -1640,6 +1633,13 @@ function renderEditorSquad() {
         gameState = 'MY_TURN';
         turnPhase = 1; // Iniciar en Fase 1
         log("=== TU TURNO: FASE DE MOVIMIENTO ===");
+            ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.style.display = 'flex'; // O 'block', según tu diseño
+                el.classList.remove('hidden'); // Por si usas clases utilitarias
+            }
+        });
         updatePhaseUI();
     }
 
@@ -2913,6 +2913,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
