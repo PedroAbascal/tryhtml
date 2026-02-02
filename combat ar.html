@@ -960,9 +960,14 @@
         renderEditorSquad();
     }
     
-    function closeForge() {
-        document.getElementById('creator-screen').classList.add('hidden');
-        document.getElementById('lobby-screen').classList.remove('hidden');
+    function closeForge() { // O closeCreator()
+    // Ocultar Creador
+    const creator = document.getElementById('creator-screen'); // <--- CORREGIDO
+    if(creator) creator.classList.add('hidden');
+    
+    // Mostrar Lobby
+    const lobby = document.getElementById('lobby-screen');
+    if(lobby) lobby.classList.remove('hidden');
     }
 
     function initForgeSelects() {
@@ -1519,39 +1524,80 @@ function renderEditorSquad() {
 }
     
     // --- GAME INIT ---
-    window.initSystem = function() {
-        MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
-        const json = document.getElementById('json-input').value;
-        const code = document.getElementById('room-id').value.trim().toUpperCase();
-        maxRounds = parseInt(document.getElementById('round-select').value, 10);
-        primaryMission = document.getElementById('primary-mission').value;
-        secondaryActive = (document.getElementById('secondary-toggle').value === "SI");
+   window.initSystem = function() {
+    // 1. Generar ID Único
+    MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
+    
+    // 2. Referencias del HTML
+    const jsonInput = document.getElementById('json-input');
+    const codeInput = document.getElementById('room-id');
+    const roundSelect = document.getElementById('round-select');
+    
+    // Valores por defecto
+    const json = jsonInput ? jsonInput.value : "";
+    const code = codeInput ? codeInput.value.trim().toUpperCase() : "TEST-ROOM";
+    maxRounds = roundSelect ? parseInt(roundSelect.value, 10) : 4;
+    
+    const pMissionEl = document.getElementById('primary-mission');
+    const sToggleEl = document.getElementById('secondary-toggle');
+    primaryMission = pMissionEl ? pMissionEl.value : "ANNIHILATION";
+    secondaryActive = (sToggleEl && sToggleEl.value === "SI");
+    
+    try {
+        // 3. Procesar JSON
+        const parsed = JSON.parse(json);
+        if(!parsed.squad) throw new Error("Falta 'squad' en JSON.");
         
-        try {
-            const parsed = JSON.parse(json);
-            if(!parsed.squad) throw new Error("Falta 'squad' en JSON.");
-            myUnits = parsed.squad.map(u => {
-                const unit = { ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', activations: 0, gearUsed: false, mechanics: [] };
-                if(u.gear && MECHANICS_DB[u.gear]) unit.mechanics.push(MECHANICS_DB[u.gear]);
-                return unit;
-            });
-            myUnits.forEach(u => { globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
-            
-            // Ocultar pantallas de menú
-            document.getElementById('lobby-screen').classList.add('hidden');
-            document.getElementById('creator-screen').classList.add('hidden');
+        myUnits = parsed.squad.map(u => {
+            const unit = { ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', activations: 0, gearUsed: false, mechanics: [] };
+            if(u.gear && typeof MECHANICS_DB !== 'undefined' && MECHANICS_DB[u.gear]) {
+                unit.mechanics.push(MECHANICS_DB[u.gear]);
+            }
+            return unit;
+        });
         
-            //MOSTRAR HUD
-            document.getElementById('act-hud').style.display = 'flex'; // Forzar
-            document.getElementById('gear-hud').style.display = 'flex';
-            document.getElementById('cmd-hud').style.display = 'flex';
+        // 4. Inicializar HP
+        if (typeof globalHP === 'undefined') window.globalHP = {};
+        myUnits.forEach(u => { globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
+        
+        // --- GESTIÓN DE PANTALLAS (AQUÍ ESTÁ EL CAMBIO) ---
+        // 5. Ocultar Menús y MOSTRAR PANTALLA DE JUEGO
+        const lobby = document.getElementById('lobby-screen');
+        const creator = document.getElementById('creator-screen');
+        const game = document.getElementById('game-screen'); // <--- NUEVA REFERENCIA
+        
+        if (lobby) lobby.classList.add('hidden');
+        if (creator) creator.classList.add('hidden');
+        
+        // ¡IMPORTANTE! Mostrar la capa del juego
+        if (game) game.classList.remove('hidden'); 
+
+        // 6. Mostrar HUD (Burbujas)
+        ['act-hud', 'gear-hud', 'cmd-hud'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'flex';
+        });
+        
+        // 7. Iniciar Lógica
+        if (typeof assignSecretMission === 'function') assignSecretMission(); 
+        if (typeof updateMissionDisplay === 'function') updateMissionDisplay();  
+        if (typeof updateHUD === 'function') updateHUD(); 
+        
+        // 8. Cámara y Red
+        navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+            .then(s => {
+                const vid = document.getElementById('ar-feed');
+                if(vid) vid.srcObject = s;
+            })
+            .catch(e => console.log("AR no disponible"));
             
-            assignSecretMission(); updateMissionDisplay();  toggleCombatHUD(true);  updateHUD(); 
-            
-            navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>console.log("No AR"));
-            startNetwork(code);
-        } catch(e) { alert("ERROR DE DATOS: " + e.message); }
+        if (typeof startNetwork === 'function') startNetwork(code);
+
+    } catch(e) { 
+        console.error(e);
+        alert("ERROR DE DATOS: " + e.message); 
     }
+}
 
     function removeEditorUnit(index) {
         // Borra 1 elemento en la posición 'index'
@@ -2932,6 +2978,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
