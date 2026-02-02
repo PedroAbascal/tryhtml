@@ -790,7 +790,20 @@
         <small>CP</small>
     </div>
     <div id="cmd-bar">
+    <div id="ploy-list" style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom: 8px;"></div>
+
+    <div id="cmd-details" style="display:none; border-top: 1px solid #444; padding-top: 5px; margin-top: 5px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span id="ploy-name" style="font-weight:bold; color:var(--gold); font-size:0.8rem;">NOMBRE</span>
+            <small id="ploy-cost" style="color:#fff;">1 CP</small>
         </div>
+        <div id="ploy-desc" style="font-size:0.65rem; color:#ccc; margin: 4px 0;">Descripción...</div>
+        
+        <button id="btn-use-ploy" style="width:100%; background:var(--gold); color:#000; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">
+            ACTIVAR
+        </button>
+    </div>
+</div>
 </div>
     
 </div>
@@ -2889,6 +2902,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
