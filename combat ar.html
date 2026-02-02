@@ -263,28 +263,22 @@
 
         #en-card.card.enemy {
             position: fixed;
-            top: 60px; /* Debajo de la brújula/marcador */
-            left: 50%;
-            transform: translateX(-50%); /* Centrado exacto */
-            
-            width: auto;      /* Se adapta al contenido */
-            min-width: 220px; /* Tamaño mínimo */
-            max-width: 90%;
+            left: 52%;
+            min-width: 100px;
+            max-width: 45%;
             margin: 0;
-            padding: 8px 16px;
-            
+            padding: 8px;
             display: flex;
-            flex-direction: column; /* Mantenemos estructura interna */
+            flex-direction: column;
             gap: 0;
-            
-            background: rgba(15, 15, 15, 0.9); /* Fondo oscuro semitransparente */
+            background: rgb(255 76 162 / 21%);
             border: 1px solid var(--r);
-            border-radius: 50px; /* Bordes redondos estilo moderno */
-            box-shadow: 0 4px 15px rgba(255, 0, 85, 0.2);
-            
+            border-radius: 10px;
             z-index: 100;
-            cursor: pointer; /* Indicar que es clicable */
+            cursor: pointer;
             transition: 0.3s all ease;
+            align-content: flex-end;
+            justify-content: center;
         }
         
         /* 2. El Div interno que agrupa texto y stats */
@@ -3253,6 +3247,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
