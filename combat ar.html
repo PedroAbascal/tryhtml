@@ -954,10 +954,7 @@
         document.getElementById('lobby-screen').classList.add('hidden');
         document.getElementById('creator-screen').classList.remove('hidden');
 
-        setGameHUDVisibility(false);
-        
-        initForgeSelects();
-        renderEditorSquad();
+        setGameHUDVisibility(false); initForgeSelects(); renderEditorSquad();
     }
     
     function closeForge() { // O closeCreator()
@@ -1235,8 +1232,6 @@ function renderEditorSquad() {
 
         setGameHUDVisibility(true);
             
-            });
-            
         }
     }
 };
@@ -1362,7 +1357,6 @@ function renderEditorSquad() {
             // (La lógica de movimiento real ya habrá puesto hasMoved=true al soltar la mini)
             endMovementPhase();
             setGameHUDVisibility(true);
-            });
         });
         
         // OPCIÓN B: NO MOVER (NUEVO)
@@ -1377,8 +1371,6 @@ function renderEditorSquad() {
             // Pasamos directo a la fase de acción
             endMovementPhase();
             setGameHUDVisibility(true);
-            });
-        });
     } 
     
     // ==========================================
@@ -2982,6 +2974,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
