@@ -2640,45 +2640,57 @@ window.renderStars = function(rolls, containerId) {
     };
     
     // 3. Mostrar detalles al hacer clic en icono
-    window.selectPloy = function(idx) {
-        const ploy = myPloys[idx];
-        if (!ploy) return;
+    window.selectPloy = function(ployID) {
+        
+        const ploy = PLOYS_DB[ployID];
+        
+        // Si no existe el ID (por error), salimos para no romper nada
+        if (!ploy) {
+            console.error("Error: Ploy ID no encontrado en DB:", ployID);
+            return;
+        }
     
-        console.log("Seleccionado:", ploy.name);
-    
-        // Referencias a los elementos del HTML
+        // --- RESTO DE LA LÓGICA DE VISUALIZACIÓN ---
+        const detailPanel = document.getElementById('cmd-details');
         const nameEl = document.getElementById('ploy-name');
         const descEl = document.getElementById('ploy-desc');
         const costEl = document.getElementById('ploy-cost');
         const btn = document.getElementById('btn-use-ploy');
-        const detailsPanel = document.getElementById('cmd-details');
     
-        // 1. Intentar actualizar la interfaz (Solo si existe)
-        if (nameEl) nameEl.innerText = ploy.name;
-        if (descEl) descEl.innerText = ploy.desc;
-        if (costEl) costEl.innerText = ploy.cost + " CP";
-        
-        // Mostrar el panel de detalles
-        if (detailsPanel) {
-            detailsPanel.style.display = 'block';
-        } else {
-            // Fallback si no has puesto el HTML aún
-            alert(`${ploy.name} (${ploy.cost} CP)\n\n${ploy.desc}`);
-        }
+        if (detailPanel) {
+            detailPanel.style.display = 'block'; 
+            
+            if (nameEl) nameEl.innerText = ploy.name;
+            if (descEl) descEl.innerHTML = ploy.desc;
+            if (costEl) costEl.innerText = ploy.cost + " CP";
+            
+            if (btn) {
+                btn.onclick = null; // Limpiar clic anterior
+                
+                btn.onclick = function() {
+                    if (myCP >= ploy.cost) {
+                        // 1. Cobrar
+                        myCP -= ploy.cost;
+                        updateCmdContent(); 
+                        
+                        // 2. Ejecutar (Pasando el ID 'RUSH', 'SHOOT_HARD', etc)
+                        performOp('PLOY', ployID); 
     
-        // 2. Configurar el botón de "USAR"
-        if (btn) {
-            btn.onclick = function() {
-                if (myCP >= ploy.cost) {
-                    // Aquí iría tu lógica de gastar CP
-                    performOp('PLOY', idx); 
-                    // Ocultar panel tras usar
-                    if(detailsPanel) detailsPanel.style.display = 'none';
-                    console.log("Ploy activado");
-                } else {
-                    alert("No tienes suficientes CP");
-                }
-            };
+                        // 3. Cerrar
+                        detailPanel.style.display = 'none';
+                        
+                    } else {
+                        // Feedback visual de error
+                        const originalText = btn.innerText;
+                        btn.style.background = 'var(--r)';
+                        btn.innerText = "FALTAN CP";
+                        setTimeout(() => {
+                            btn.style.background = 'var(--gold)';
+                            btn.innerText = originalText;
+                        }, 1000);
+                    }
+                };
+            }
         }
     };
     
@@ -3078,6 +3090,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
