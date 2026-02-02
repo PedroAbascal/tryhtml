@@ -1546,7 +1546,7 @@ function renderEditorSquad() {
             //document.getElementById('gear-hud').style.display = 'flex';
             //document.getElementById('cmd-hud').style.display = 'flex';
             
-            assignSecretMission(); updateMissionDisplay();  toggleCombatHUD(true); // updateHUD(); 
+            assignSecretMission(); updateMissionDisplay();  toggleCombatHUD(true);  updateHUD(); 
             
             navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>document.getElementById('ar-feed').srcObject=s).catch(e=>console.log("No AR"));
             startNetwork(code);
@@ -2932,6 +2932,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
