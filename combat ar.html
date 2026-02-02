@@ -1232,7 +1232,12 @@ function renderEditorSquad() {
 
         if (typeof gearOpen !== 'undefined' && gearOpen) {
         if (typeof renderGearBubble === 'function') {
-            renderGearBubble();
+
+        ['act-hud', 'gear-hud', 'cmd-hud'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.style.display = '';
+            });
+            
         }
     }
 };
@@ -1307,6 +1312,12 @@ function renderEditorSquad() {
     // FASE 1: MOVIMIENTO
     // ==========================================
     if (turnPhase === 1) {
+
+        ['act-hud', 'gear-hud', 'cmd-hud'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.style.display = 'none';
+            });
+        
         bubbleIcon.innerText = "🦶"; 
         bubble.classList.add('pulse'); 
 
@@ -2902,6 +2913,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
