@@ -233,6 +233,10 @@
             margin-bottom: 5px;
             min-height: 15px; /* Evita saltos si está vacío */
         }
+
+        .hud-visible {
+            display: flex !important;
+        }
         
         /* Estilo de la etiqueta individual */
         .hud-tag {
@@ -265,7 +269,7 @@
             left: 0;
             top: 50%;
             transform: translateY(-50%);
-            /* Z-INDEX MUY ALTO: Para estar encima del dice-overlay (que suele ser 1000) */
+            flex-direction: column;
             z-index: 2000;             
             align-items: flex-start;
             gap: 10px;
@@ -378,7 +382,7 @@
             display: none;
             position: fixed;
             left: 0;
-            /* La otra burbuja está al 50%, esta la ponemos 60px más abajo */
+            flex-direction: column;
             top: calc(50% + 65px); 
             transform: translateY(-50%);
             z-index: 1500;
@@ -486,7 +490,7 @@
             display: none;
             position: fixed;
             left: 0;
-            /* La otra burbuja está al 50%, esta la ponemos 60px más abajo */
+            flex-direction: column;
             top: calc(50% - 65px); 
             transform: translateY(-50%);
             z-index: 1500;
@@ -502,8 +506,8 @@
             border: 2px solid #888;
             color: white;
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             display: flex;
             flex-direction: column;
@@ -513,7 +517,7 @@
             transition: transform 0.2s;
         }
         
-        .gear-theme:active { transform: scale(0.75); }
+        .gear-theme:active { transform: scale(0.95); }
         
         /* Lista desplegable de items */
         #gear-bar {
@@ -950,11 +954,7 @@
         document.getElementById('lobby-screen').classList.add('hidden');
         document.getElementById('creator-screen').classList.remove('hidden');
 
-        const hudIds = ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'];
-        hudIds.forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.style.display = 'none'; 
-        });
+        setGameHUDVisibility(false);
         
         initForgeSelects();
         renderEditorSquad();
@@ -1233,9 +1233,8 @@ function renderEditorSquad() {
         if (typeof gearOpen !== 'undefined' && gearOpen) {
         if (typeof renderGearBubble === 'function') {
 
-        ['act-hud', 'gear-hud', 'cmd-hud'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.style.display = 'flex';
+        setGameHUDVisibility(true);
+            
             });
             
         }
@@ -1301,6 +1300,27 @@ function renderEditorSquad() {
 }
     /** Maneja el clic en las burbujas para abrir/cerrar   */
    
+    // --- GESTOR CENTRAL DE HUD ---
+    window.setGameHUDVisibility = function(isVisible) {
+        const huds = ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'];
+        
+        huds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                if (isVisible) {
+                    // Mostrar: Quitamos 'hidden' (si existe) y forzamos flex
+                    el.classList.remove('hidden');
+                    el.classList.add('hud-visible'); // Usamos la clase del Paso 1
+                    el.style.display = ''; // Limpiamos estilos en línea antiguos
+                } else {
+                    // Ocultar
+                    el.classList.remove('hud-visible');
+                    el.style.display = 'none'; 
+                }
+            }
+        });
+    };
+    
     function toggleMenu(menuName) {
         // Si tocas el que ya está abierto, lo cierras (null). Si no, abres el nuevo.
         if (uiState.activeMenu === menuName) {
@@ -1330,10 +1350,7 @@ function renderEditorSquad() {
     // ==========================================
     if (turnPhase === 1) {
 
-        ['act-hud', 'gear-hud', 'cmd-hud'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.style.display = 'flex';
-            });
+        setGameHUDVisibility(true);
         
         bubbleIcon.innerText = "🦶"; 
         bubble.classList.add('pulse'); 
@@ -1344,9 +1361,7 @@ function renderEditorSquad() {
             // Asumimos que si das clic aquí, la unidad "se movió"
             // (La lógica de movimiento real ya habrá puesto hasMoved=true al soltar la mini)
             endMovementPhase();
-            ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.style.display = 'flex'; // Forzar oculto
+            setGameHUDVisibility(true);
             });
         });
         
@@ -1361,9 +1376,7 @@ function renderEditorSquad() {
             
             // Pasamos directo a la fase de acción
             endMovementPhase();
-            ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.style.display = 'flex'; // Forzar oculto
+            setGameHUDVisibility(true);
             });
         });
     } 
@@ -1379,46 +1392,25 @@ function renderEditorSquad() {
             // 1. COMBATE (Ranged / Melee)
             if (unit.mode === 'open') {
                 if (combatMode === 'ranged') {
-                     createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if(el) el.style.display = ''; // Forzar oculto
-                });  });
+                     createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); setGameHUDVisibility(true); });
                 } else {
-                     createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); [ 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if(el) el.style.display = ''; // Forzar oculto
-                });  });
+                     createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); setGameHUDVisibility(true); });
                 }
             } else {
                 // Si está en Hidden, permitimos Melee (emboscada) pero no disparo
-                createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); [ 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if(el) el.style.display = ''; // Forzar oculto
-                });  });
+                createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); setGameHUDVisibility(true); });
             }
 
             // 2. DASH (Mover extra)
             // Dash cuenta como movimiento, ojo con Heavy si disparas después
-            createActionButton("DASH (3\")", "💨", "move", () => { 
-                performOp('DASH'); 
-                ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if(el) el.style.display = ''; // Forzar oculto
-                }); 
-            });
+            createActionButton("DASH (3\")", "💨", "move", () => { performOp('DASH'); setGameHUDVisibility(true); });
 
             // 3. MISIÓN
-            createActionButton("MISIÓN / OBJ", "🚩", "mission", () => { performOp('MISION');  [ 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if(el) el.style.display = ''; // Forzar oculto
-                });  });
+            createActionButton("MISIÓN / OBJ", "🚩", "mission", () => { performOp('MISION');  setGameHUDVisibility(true); });
         }
 
         // 4. PASAR TURNO
-        createActionButton("PASAR TURNO", "⏭️", "normal", () => { performOp('PASAR'); [ 'act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if(el) el.style.display = ''; // Forzar oculto
-                });  });
+        createActionButton("PASAR TURNO", "⏭️", "normal", () => { performOp('PASAR'); setGameHUDVisibility(true); });
     } 
     
     // FASE 3
@@ -1568,15 +1560,13 @@ function renderEditorSquad() {
         
         if (lobby) lobby.classList.add('hidden');
         if (creator) creator.classList.add('hidden');
+        if (game) game.classList.remove('hidden');
         
         // ¡IMPORTANTE! Mostrar la capa del juego
         if (game) game.classList.remove('hidden'); 
 
         // 6. Mostrar HUD (Burbujas)
-        ['act-hud', 'gear-hud', 'cmd-hud'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = 'flex';
-        });
+        setGameHUDVisibility(true);
         
         // 7. Iniciar Lógica
         if (typeof assignSecretMission === 'function') assignSecretMission(); 
@@ -2834,10 +2824,7 @@ window.renderStars = function(rolls, containerId) {
                 // Limpiar marcadores de listo
                 document.querySelectorAll('.ready-marker').forEach(e => e.classList.remove('show'));
                 
-                ['act-hud', 'gear-hud', 'cmd-hud', 'turn-indicator'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if(el) el.style.display = ''; // Quitar 'none' para que se vea
-                });
+                setGameHUDVisibility(true);
                 
                 // Forzar actualización visual inmediata
                 updateHUD();
@@ -2995,6 +2982,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
