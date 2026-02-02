@@ -685,7 +685,7 @@
     <div id="game-screen" class="screen transparent hidden">
         <div class="hud-top">
             <div class="top-row">
-                <div class="score-board">YO: <span id="my-score">0</span> | RIV: <span id="enemy-score">0</span></div>
+                <div class="score-board">YO: <span id="my-score">0</span> | RIVAL: <span id="enemy-score">0</span></div>
                 <div class="turn-badge planning" id="turn-indicator">PLANIFICACIÓN</div>
             </div>
             <div class="top-row">
@@ -1604,19 +1604,27 @@ function renderEditorSquad() {
         if(d.sender === MY_ID) return;
 
         if (msg.type === 'SYNC_SCORE') {
-            console.log("Enemigo anotó VP:", msg.vp);
             
-            // 1. Actualizar variable global (si la usas)
-            if (typeof enemyVP !== 'undefined') enemyVP = msg.vp;
+            console.log("🎯 UPDATE SCORE RECIBIDO:", msg); // <--- MIRA LA CONSOLA
+            
+            // 1. Actualizar variable global
+            enemyVP = msg.vp;
 
-            // 2. Actualizar la pantalla
-            const enemyScoreEl = document.getElementById('enemy-score');
-            if (enemyScoreEl) {
-                enemyScoreEl.innerText = msg.vp;
+            // 2. Actualizar el HTML (Buscamos por ID 'enemy-score')
+            const scoreEl = document.getElementById('enemy-score');
+            
+            if (scoreEl) {
+                scoreEl.innerText = msg.vp;
                 
-                // Opcional: Efecto visual para notar el cambio
-                enemyScoreEl.style.color = 'var(--r)'; // Rojo
-                setTimeout(() => enemyScoreEl.style.color = 'white', 1000);
+                // Efecto visual (parpadeo rojo) para confirmar que funciona
+                scoreEl.style.color = '#ff0055'; 
+                scoreEl.style.fontSize = '1.2em';
+                setTimeout(() => {
+                    scoreEl.style.color = 'inherit';
+                    scoreEl.style.fontSize = 'inherit';
+                }, 500);
+            } else {
+                console.error("❌ ERROR: No encuentro el elemento <span id='enemy-score'>");
             }
         }
 
@@ -3107,6 +3115,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
