@@ -3136,6 +3136,8 @@ window.renderStars = function(rolls, containerId) {
             
         const order = unit.mode; 
 
+        console.log(`Unidad: ${unit.name} | Orden leída: "${order}" | ${unit.mode}`); // <--- MIRA LA CONSOLA
+
         // B. Comparar
         if (order === 'open') {
             iconEl.innerText = "⚔️"; 
@@ -3327,6 +3329,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
