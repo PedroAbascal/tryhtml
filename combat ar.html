@@ -3133,17 +3133,28 @@ window.renderStars = function(rolls, containerId) {
         // Aquí traducimos el texto "ENGAGE" a un icono
         const iconEl = document.getElementById('en-mode-icon');
         if (iconEl) {
-            if (unit.order === 'ENGAGE') {
-                iconEl.innerText = "⚔️"; // Espadas cruzadas
-                iconEl.style.borderColor = "var(--r)";
-            } else if (unit.order === 'CONCEAL') {
-                iconEl.innerText = "🛡️"; // Escudo
-                iconEl.style.borderColor = "#00f2ff"; // Azul cian
-            } else {
-                iconEl.innerText = "❓";
-                iconEl.style.borderColor = "#555";
-            }
+        // A. Obtener la orden y convertirla a MAYÚSCULAS para evitar errores
+        // Si no existe, usamos una cadena vacía ""
+        const rawOrder = unit.order || ""; 
+        const order = rawOrder.toUpperCase(); 
+
+        console.log(`Unidad: ${unit.name} | Orden leída: "${order}"`); // <--- MIRA LA CONSOLA
+
+        // B. Comparar
+        if (order === 'ENGAGE' || order === 'ATAQUE') {
+            iconEl.innerText = "⚔️"; 
+            iconEl.style.borderColor = "var(--r)";
+            
+        } else if (order === 'CONCEAL' || order === 'OCULTO') {
+            iconEl.innerText = "🛡️"; 
+            iconEl.style.borderColor = "#00f2ff"; 
+            
+        } else {
+            // Si llega aquí es que order es undefined, null o vacío
+            iconEl.innerText = "❓";
+            iconEl.style.borderColor = "#555";
         }
+    }
     
         // 4. SALVACIÓN (ID: en-sv)
         // El CSS oculta RNG y MEL, pero muestra este.
@@ -3320,6 +3331,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
