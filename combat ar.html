@@ -1528,7 +1528,7 @@ function renderEditorSquad() {
     if (!unit || !unit.loadout) return;
         
         // Validar si la unidad tiene equipo asignado
-        if (!me.gear || me.gear === "Nada") {
+        if (!unit.gear || unit.gear === "Nada") {
             container.innerHTML = '<div style="color:#777; font-size:0.7rem; padding:4px;">Sin Equipo</div>';
             return;
         }
@@ -1536,11 +1536,11 @@ function renderEditorSquad() {
         // 1. BUSCAR EL EQUIPO EN LA DB POR NOMBRE
         // Recorremos GEAR_DB buscando qué objeto tiene name === me.gear
         // Nota: Object.values convierte el objeto en un array para poder buscar
-        const gearDef = Object.values(GEAR_DB).find(item => item.name === me.gear);
+        const gearDef = Object.values(GEAR_DB).find(item => item.name === unit.gear);
     
         // Si no encontramos la definición o no tiene mecánica vinculada, salimos
         if (!gearDef || !gearDef.mechanicRef) {
-            console.log("Equipo encontrado pero sin mecánica vinculada:", me.gear);
+            console.log("Equipo encontrado pero sin mecánica vinculada:", unit.gear);
             return;
         }
     
@@ -1587,7 +1587,7 @@ function renderEditorSquad() {
     
                     // Marcar como usado si es de un solo uso
                     if(mech.oneUse) {
-                        me.gearUsed = true;
+                        unit.gearUsed = true;
                     }
                     updateHUD();
                 };
@@ -3113,47 +3113,39 @@ window.renderStars = function(rolls, containerId) {
     };
 
     
-    function updateEnemyCard(unit) {
-        const card = document.getElementById('en-card');
-    
-        // 1. Si no hay enemigo seleccionado, ocultamos la tarjeta
-        if (!unit) {
-            card.style.display = 'none';
-            return;
-        }
-    
-        // Si hay enemigo, la mostramos (el CSS se encarga del diseño píldora)
-        card.style.display = 'flex';
-    
-        // 2. NOMBRE (ID: enemy-name)
-        const nameEl = document.getElementById('enemy-name');
-        if (nameEl) nameEl.innerText = unit.name || "ENEMIGO";
-    
-        // 3. ORDEN / ICONO (ID: en-mode-icon)
-        // Aquí traducimos el texto "ENGAGE" a un icono
-        const iconEl = document.getElementById('en-mode-icon');
-        if (iconEl) {
+            function updateEnemyCard(unit) {
+                const card = document.getElementById('en-card');
+                // 1. Si no hay enemigo seleccionado, ocultamos la tarjeta
+                if (!unit) {
+                    card.style.display = 'none';
+                    return;
+                }
+                // Si hay enemigo, la mostramos (el CSS se encarga del diseño píldora)
+                card.style.display = 'flex';
+                // 2. NOMBRE (ID: enemy-name)
+                const nameEl = document.getElementById('enemy-name');
+                if (nameEl) nameEl.innerText = unit.name || "ENEMIGO";
+                // 3. ORDEN / ICONO (ID: en-mode-icon)
+                // Aquí traducimos el texto "ENGAGE" a un icono
+                const iconEl = document.getElementById('en-mode-icon');
+                if (iconEl) {  
+                const order = unit.mode; 
+                // B. Comparar
+                if (order === 'open') {
+                    iconEl.innerText = "⚔️"; 
+                    iconEl.style.borderColor = "var(--r)";
+                    
+                } else if (order === 'hidden') {
+                    iconEl.innerText = "🛡️"; 
+                    iconEl.style.borderColor = "#00f2ff"; 
+                    
+                } else {
+                    // Si llega aquí es que order es undefined, null o vacío
+                    iconEl.innerText = "❓";
+                    iconEl.style.borderColor = "#555";
+                }
+            }
             
-        const order = unit.mode; 
-
-        console.log(`Unidad: ${unit.name} | Orden leída: "${order}" | ${unit.mode}`); // <--- MIRA LA CONSOLA
-
-        // B. Comparar
-        if (order === 'open') {
-            iconEl.innerText = "⚔️"; 
-            iconEl.style.borderColor = "var(--r)";
-            
-        } else if (order === 'hidden') {
-            iconEl.innerText = "🛡️"; 
-            iconEl.style.borderColor = "#00f2ff"; 
-            
-        } else {
-            // Si llega aquí es que order es undefined, null o vacío
-            iconEl.innerText = "❓";
-            iconEl.style.borderColor = "#555";
-        }
-    }
-    
         // 4. SALVACIÓN (ID: en-sv)
         // El CSS oculta RNG y MEL, pero muestra este.
         const svEl = document.getElementById('en-sv');
@@ -3175,9 +3167,7 @@ window.renderStars = function(rolls, containerId) {
         }
     }
     
-    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; renderUnifiedHUD(); updateHUD();};
-
-    
+    window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; renderUnifiedHUD(); updateHUD(); };
     window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
     window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
     window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
@@ -3329,6 +3319,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
