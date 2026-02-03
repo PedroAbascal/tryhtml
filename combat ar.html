@@ -1530,6 +1530,7 @@ function renderEditorSquad() {
         // Validar si la unidad tiene equipo asignado
         if (!unit.gear || unit.gear === "Nada") {
             container.innerHTML = '<div style="color:#777; font-size:0.7rem; padding:4px;">Sin Equipo</div>';
+            console.log("Equipo = ", unit.gear);
             return;
         }
     
@@ -3319,6 +3320,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
