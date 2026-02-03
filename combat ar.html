@@ -2364,13 +2364,12 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
     if (gameState === 'MY_TURN' && typeof canSelectUnit === 'function' && !canSelectUnit(myIdx)) {
         if (typeof autoSelectValidUnit === 'function') autoSelectValidUnit();
     }
-
-    const currentAP = (me.ap !== undefined) ? me.ap : (stats.apl || 2);
-    const maxAP = stats.apl || 2;
      
     const me = myUnits[myIdx];
     const en = (typeof enemyUnits !== 'undefined' && typeof enIdx !== 'undefined') ? enemyUnits[enIdx] : null;
 
+    const currentAP = (me.ap !== undefined) ? me.ap : (stats.apl || 2);
+    const maxAP = stats.apl || 2;
     // ==========================================================
     // 1. ACTUALIZAR LA TARJETA DEL JUGADOR (VISUAL)
     // ==========================================================
@@ -3393,6 +3392,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
