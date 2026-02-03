@@ -1363,7 +1363,6 @@ function renderEditorSquad() {
     // 1. ACTUALIZAR CONTENIDO
     if (typeof updateActContent === 'function') updateActContent(selectedUnit);
     if (typeof updateGearContent === 'function') updateGearContent(selectedUnit);
-       log(selectedUnit);
     if (typeof updateCmdContent === 'function') updateCmdContent();
 
     // 2. GESTIONAR VISIBILIDAD (AQUÍ ESTABA EL ERROR)
@@ -1522,82 +1521,106 @@ function renderEditorSquad() {
         }
     };
 
-    function updateGearContent(unit) {
-    const container = document.getElementById('gear-bar'); 
-    container.innerHTML = ''; 
-    
-    if (!unit || !unit.loadout) return;
+        function updateGearContent(unit) {
+        console.log("--- DEBUG GEAR START ---");
         
-        // Validar si la unidad tiene equipo asignado
+        // 1. Verificar Contenedor HTML
+        const container = document.getElementById('gear-bar'); 
+        if (!container) {
+            console.error("❌ Error: No existe el elemento <div id='gear-bar'> en tu HTML");
+            return;
+        }
+        container.innerHTML = ''; // Limpiar
+        
+        // 2. Verificar Unidad
+        if (!unit) {
+            console.warn("⚠️ No se recibió ninguna unidad en la función.");
+            return;
+        }
+        console.log("Unidad recibida:", unit.name);
+    
+        // --- CORRECCIÓN IMPORTANTE ---
+        // Quitamos la comprobación de unit.loadout que causaba el fallo
+        // Verificamos directamente unit.gear
+        
         if (!unit.gear || unit.gear === "Nada") {
+            console.log("ℹ️ La unidad no tiene equipo asignado.");
             container.innerHTML = '<div style="color:#777; font-size:0.7rem; padding:4px;">Sin Equipo</div>';
-            console.log("Equipo = ", unit.gear);
+            return;
+        }
+        console.log("Equipo a buscar:", unit.gear);
+    
+        // 3. Verificar Bases de Datos
+        if (typeof GEAR_DB === 'undefined' || typeof MECHANICS_DB === 'undefined') {
+            console.error("❌ Error: GEAR_DB o MECHANICS_DB no están definidas.");
             return;
         }
     
-        // 1. BUSCAR EL EQUIPO EN LA DB POR NOMBRE
-        // Recorremos GEAR_DB buscando qué objeto tiene name === me.gear
-        // Nota: Object.values convierte el objeto en un array para poder buscar
+        // 4. Buscar el objeto en la DB
+        // Buscamos qué objeto de la DB tiene el 'name' igual a unit.gear
         const gearDef = Object.values(GEAR_DB).find(item => item.name === unit.gear);
     
-        // Si no encontramos la definición o no tiene mecánica vinculada, salimos
-        if (!gearDef || !gearDef.mechanicRef) {
-            console.log("Equipo encontrado pero sin mecánica vinculada:", unit.gear);
+        if (!gearDef) {
+            console.error(`❌ Error: No se encontró '${unit.gear}' en GEAR_DB.`);
+            container.innerHTML = `<div style="color:red; font-size:0.7rem;">Error DB: ${unit.gear}</div>`;
             return;
         }
     
-        // 2. OBTENER LA MECÁNICA REAL
-        const mechanicId = gearDef.mechanicRef; // ej: "grenade"
-        const mech = MECHANICS_DB[mechanicId];  // Obtenemos los datos finales
+        if (!gearDef.mechanicRef) {
+            console.log("El equipo existe pero no tiene mecánica activa.");
+            container.innerHTML = `<div style="padding:5px; color:#aaa">${unit.gear}</div>`;
+            return;
+        }
+    
+        // 5. Renderizar Mecánica
+        const mechanicId = gearDef.mechanicRef;
+        const mech = MECHANICS_DB[mechanicId];
+        console.log("Mecánica encontrada:", mech);
     
         if (mech && mech.type === 'ACTIVE') {
-            
             const div = document.createElement('div');
             
-            // Verificamos si ya se usó (usando la variable gearUsed de la unidad)
-            const isUsed = (mech.oneUse && me.gearUsed);
+            // Usamos unit.gearUsed
+            const isUsed = (mech.oneUse && unit.gearUsed);
     
             div.className = isUsed ? "gear-item used" : "gear-item";
             
+            // Estilos inline para asegurar que se vea
+            div.style.cssText = "background:rgba(50,50,50,0.9); border:1px solid #777; border-radius:4px; padding:6px; margin-top:5px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; width:100%; box-sizing:border-box;";
+    
             div.innerHTML = `
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span style="font-size:1.2rem;">${mech.icon || '📦'}</span>
-                    <div style="display:flex; flex-direction:column;">
-                        <span style="font-weight:bold; color:white;">${mech.name}</span>
+                    <div style="display:flex; flex-direction:column; line-height:1;">
+                        <span style="font-weight:bold; color:white; font-size:0.8rem;">${mech.name}</span>
                         <span style="font-size:0.6rem; color:#aaa;">${gearDef.name}</span>
                     </div>
                 </div>
-                ${isUsed ? '<small>❌</small>' : '<small style="color:var(--c)">USAR</small>'}
+                ${isUsed ? '<small>❌</small>' : '<small style="color:#00f2ff; font-weight:bold;">USAR</small>'}
             `;
     
             if (!isUsed) {
                 div.onclick = function() {
-                    console.log(`Activando mecánica: ${mech.func}`);
+                    console.log(`Activando: ${mech.func}`);
                     
-                    // --- AQUÍ EJECUTAS LA LÓGICA ---
-                    // Dependiendo de cómo tengas tus funciones, podría ser:
-                    // window[mech.func](me); 
-                    // O un switch simple:
-                    
+                    // Ejecutar lógica según el nombre de la función
                     if(mech.func === 'THROW_GRENADE') {
-                         // Lógica de granada...
-                         alert("¡BUM! Granada lanzada");
+                         alert("💥 ¡GRANADA LANZADA!");
                     } else if (mech.func === 'USE_MEDKIT') {
-                         // Lógica de medkit...
-                         alert("Curando...");
+                         alert("❤️ CURANDO...");
                     }
     
-                    // Marcar como usado si es de un solo uso
                     if(mech.oneUse) {
                         unit.gearUsed = true;
+                        updateGearContent(unit); // Recargar para mostrar como usado
                     }
-                    updateHUD();
                 };
             }
             
             container.appendChild(div);
+            console.log("✅ Botón de equipo añadido al DOM");
         }
-    };
+    }
     
     // Helper para crear botones HTML
     function createActionButton(label, icon, type, onClickFunc) {
@@ -3321,6 +3344,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
