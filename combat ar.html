@@ -1467,6 +1467,7 @@ function renderEditorSquad() {
     
             // OPCIÓN A: CONFIRMAR MOVIMIENTO
             createActionButton("TERMINAR MOVER", "✅", "move", () => {
+                if (!trySpendAP(1)) return;
                 if(typeof endMovementPhase === 'function') endMovementPhase();
                 if(typeof setGameHUDVisibility === 'function') setGameHUDVisibility(true);
             });
@@ -1599,8 +1600,10 @@ function renderEditorSquad() {
                     
                     // Ejecutar lógica según el nombre de la función
                     if(mech.func === 'THROW_GRENADE') {
+                        if (!trySpendAP(1)) return;
                          alert("💥 ¡GRANADA LANZADA!");
                     } else if (mech.func === 'USE_MEDKIT') {
+                        if (!trySpendAP(1)) return;
                          alert("❤️ CURANDO...");
                     }
     
@@ -1668,6 +1671,8 @@ function renderEditorSquad() {
         // 4. Inicializar HP
         if (typeof globalHP === 'undefined') window.globalHP = {};
         myUnits.forEach(u => { globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
+
+        resetUnitAP()
         
         // --- GESTIÓN DE PANTALLAS (AQUÍ ESTÁ EL CAMBIO) ---
         // 5. Ocultar Menús y MOSTRAR PANTALLA DE JUEGO
@@ -2072,6 +2077,8 @@ function renderEditorSquad() {
     // --- COMBAT LOGIC ---
     function initiateCombat() {
         if(gameState !== 'MY_TURN') return;
+        if (!trySpendAP(1)) return;
+        
         const me = myUnits[myIdx];
         if(me.activations >= 2) { log("UNIDAD AGOTADA"); return; }
         if(me.mode !== 'open') { log("ERROR: REQUIERE ORDEN DE ATAQUE", "danger"); return; }
@@ -2358,6 +2365,9 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
         if (typeof autoSelectValidUnit === 'function') autoSelectValidUnit();
     }
 
+    const currentAP = (me.ap !== undefined) ? me.ap : (stats.apl || 2);
+    const maxAP = stats.apl || 2;
+     
     const me = myUnits[myIdx];
     const en = (typeof enemyUnits !== 'undefined' && typeof enIdx !== 'undefined') ? enemyUnits[enIdx] : null;
 
@@ -2416,6 +2426,19 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
     const svEl = document.getElementById('my-sv');
     if (svEl) svEl.innerText = me.stats.sv;
 
+
+    const aplEl = document.getElementById('g-apl');
+    if (aplEl) {
+        // Cambiar color si está a 0 para alertar
+        if (currentAP === 0) {
+            aplEl.style.color = 'var(--r)'; // Rojo
+            aplEl.innerText = "0";
+        } else {
+            aplEl.style.color = 'var(--c)'; // Cian/Blanco
+            aplEl.innerText = `${currentAP}/${maxAP}`;
+        }
+    }
+     
     // ==========================================================
     // 3. VISUALIZACIÓN DE ARMAS Y TAGS (Interactiva)
     // ==========================================================
@@ -2928,6 +2951,37 @@ window.renderStars = function(rolls, containerId) {
         }
     };
 
+
+    function resetUnitAP() {
+        // Recorre todas mis unidades y restablece sus AP
+        myUnits.forEach(u => {
+            // Si stats.apl no está definido, usamos 2 por defecto
+            const maxAP = (u.stats && u.stats.apl) ? u.stats.apl : 2;
+            u.ap = maxAP; // 'ap' será la variable dinámica actual
+            u.maxAP = maxAP;
+        });
+        console.log("🔄 AP Restablecidos para todas las unidades.");
+        updateHUD(); // Refrescar pantalla
+    }
+
+    function trySpendAP(cost) {
+        const me = myUnits[myIdx];
+    
+        // Validación de seguridad
+        if (typeof me.ap === 'undefined') {
+            me.ap = me.stats.apl || 2; // Auto-corrección si faltaba
+        }
+    
+        if (me.ap >= cost) {
+            me.ap -= cost;
+            updateHUD(); // Actualizar visualmente inmediatamente
+            return true; // Éxito
+        } else {
+            // Feedback visual (Vibración o Alerta)
+            alert(`⛔ NO TIENES SUFICIENTES APL (Necesitas ${cost}, tienes ${me.ap})`);
+            return false; // Fallo
+        }
+    }
     
 
     function returnToLobby() {
@@ -3206,12 +3260,14 @@ window.renderStars = function(rolls, containerId) {
     
         // --- DASH ---
         if(op === 'DASH') {
+            if (!trySpendAP(1)) return;
             log("DASH REALIZADO (MUEVE 3\")");
             publish({type:'OP_ACTION', opType: 'DASH'});
             resolvePhase("DASH"); 
             
         // --- MISIÓN ---
         } else if (op === 'MISION') {
+            if (!trySpendAP(1)) return;
             myVP++;
             document.getElementById('my-score').innerText = myVP;
             publish({type:'SCORE_UPDATE', id:MY_ID, vp:myVP});
@@ -3337,6 +3393,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
