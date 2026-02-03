@@ -3133,19 +3133,15 @@ window.renderStars = function(rolls, containerId) {
         // Aquí traducimos el texto "ENGAGE" a un icono
         const iconEl = document.getElementById('en-mode-icon');
         if (iconEl) {
-        // A. Obtener la orden y convertirla a MAYÚSCULAS para evitar errores
-        // Si no existe, usamos una cadena vacía ""
-        const rawOrder = unit.mode || ""; 
-        const order = rawMode.toUpperCase(); 
-
-        console.log(`Unidad: ${unit.name} | Orden leída: "${order}"`); // <--- MIRA LA CONSOLA
+            
+        const order = unit.mode; 
 
         // B. Comparar
-        if (order === 'OPEN' || order === 'ATAQUE') {
+        if (order === 'open') {
             iconEl.innerText = "⚔️"; 
             iconEl.style.borderColor = "var(--r)";
             
-        } else if (order === 'HIDDEN' || order === 'OCULTO') {
+        } else if (order === 'hidden') {
             iconEl.innerText = "🛡️"; 
             iconEl.style.borderColor = "#00f2ff"; 
             
@@ -3331,6 +3327,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
