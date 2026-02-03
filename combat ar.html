@@ -1363,6 +1363,7 @@ function renderEditorSquad() {
     // 1. ACTUALIZAR CONTENIDO
     if (typeof updateActContent === 'function') updateActContent(selectedUnit);
     if (typeof updateGearContent === 'function') updateGearContent(selectedUnit);
+       log(selectedUnit);
     if (typeof updateCmdContent === 'function') updateCmdContent();
 
     // 2. GESTIONAR VISIBILIDAD (AQUÍ ESTABA EL ERROR)
@@ -3320,6 +3321,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
