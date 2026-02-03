@@ -1527,14 +1527,12 @@ function renderEditorSquad() {
         // 1. Verificar Contenedor HTML
         const container = document.getElementById('gear-bar'); 
         if (!container) {
-            console.error("❌ Error: No existe el elemento <div id='gear-bar'> en tu HTML");
             return;
         }
         container.innerHTML = ''; // Limpiar
         
         // 2. Verificar Unidad
         if (!unit) {
-            console.warn("⚠️ No se recibió ninguna unidad en la función.");
             return;
         }
         console.log("Unidad recibida:", unit.name);
@@ -1544,7 +1542,6 @@ function renderEditorSquad() {
         // Verificamos directamente unit.gear
         
         if (!unit.gear || unit.gear === "Nada") {
-            console.log("ℹ️ La unidad no tiene equipo asignado.");
             container.innerHTML = '<div style="color:#777; font-size:0.7rem; padding:4px;">Sin Equipo</div>';
             return;
         }
@@ -1567,7 +1564,6 @@ function renderEditorSquad() {
         }
     
         if (!gearDef.mechanicRef) {
-            console.log("El equipo existe pero no tiene mecánica activa.");
             container.innerHTML = `<div style="padding:5px; color:#aaa">${unit.gear}</div>`;
             return;
         }
@@ -1575,7 +1571,6 @@ function renderEditorSquad() {
         // 5. Renderizar Mecánica
         const mechanicId = gearDef.mechanicRef;
         const mech = MECHANICS_DB[mechanicId];
-        console.log("Mecánica encontrada:", mech);
     
         if (mech && mech.type === 'ACTIVE') {
             const div = document.createElement('div');
@@ -1601,7 +1596,6 @@ function renderEditorSquad() {
     
             if (!isUsed) {
                 div.onclick = function() {
-                    console.log(`Activando: ${mech.func}`);
                     
                     // Ejecutar lógica según el nombre de la función
                     if(mech.func === 'THROW_GRENADE') {
@@ -1618,7 +1612,6 @@ function renderEditorSquad() {
             }
             
             container.appendChild(div);
-            console.log("✅ Botón de equipo añadido al DOM");
         }
     }
     
@@ -3344,6 +3337,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
