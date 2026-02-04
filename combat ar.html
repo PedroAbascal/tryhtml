@@ -2369,10 +2369,7 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
     const currentAP = (me.ap !== undefined) ? me.ap : (stats.apl || 2);
     const maxAP = stats.apl || 2;
 
-    let apColor = '#00f2ff'; // Azul por defecto
-       if (curAP < maxAP_local) apColor = '#ffcc00'; // Naranja si gastó algo
-       if (curAP <= 0) apColor = '#ff4444'; // Rojo si está vacío
-        
+    let apColor = '#00f2ff'; let currentAP ='ffcc00' ; let maxAP = 'ff4444';        
 
     // 3. ACTUALIZAR HUD SUPERIOR / TARJETA
     const nameEl = document.getElementById('my-name') || document.getElementById('unit-name');
@@ -3394,6 +3391,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
