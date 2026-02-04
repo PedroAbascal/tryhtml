@@ -3113,32 +3113,7 @@ window.renderStars = function(rolls, containerId) {
     function logCombat(msg) { const log = document.getElementById('combat-log-visual'); log.innerHTML += `<div class="log-line">> ${msg}</div>`; log.scrollTop = log.scrollHeight; }
     function log(t, type='info') { const c = document.getElementById('combat-log'); while(c.children.length>=6) c.lastChild.remove(); const el = document.createElement('div'); el.innerText = `> ${t}`; el.className = `log-entry ${type}`; c.prepend(el); setTimeout(()=>el.remove(), 10000); }
     
-    function publish(p) {
-        // 1. Si no existe el cliente, no hacemos nada
-        if (!client) return;
-    
-        p.sender = MY_ID;
-    
-        // 2. INTENTAMOS enviar (Try)
-        try {
-            // Nota: Si usas Paho estándar, a veces requiere crear un objeto Message primero.
-            // Pero si te funcionaba antes, mantenemos tu sintaxis, solo la protegemos.
-            
-            // Verificamos si hay conexión antes de enviar (si la librería lo permite)
-            if (client.isConnected && !client.isConnected()) {
-                 throw new Error("Cliente desconectado");
-            }
-    
-            client.send(TOPIC, JSON.stringify(p));
-    
-        } catch (e) {
-            // 3. SI FALLA (Catch): Atrapamos el error para que el juego NO se congele
-            console.warn("⚠️ Fallo al publicar (MQTT desconectado):", e.message);
-            
-            // Aquí podrías poner un aviso visual si quieres
-            // document.getElementById('connection-status').innerText = "OFFLINE";
-        }
-    }
+     function publish(p) { if(client){ p.sender=MY_ID; client.send(TOPIC, JSON.stringify(p)); } }
     
     function resetRound() { 
         if(isGameOver) return; 
@@ -3393,6 +3368,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
