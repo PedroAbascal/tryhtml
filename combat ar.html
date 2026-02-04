@@ -2962,7 +2962,7 @@ window.renderStars = function(rolls, containerId) {
         document.getElementById('game-screen').classList.add('hidden');
         document.getElementById('lobby-screen').classList.remove('hidden');
         document.getElementById('dice-overlay').style.display = 'none';
-        document.getElementById('combat-log').innerHTML = "";
+        document.getElementById('combat-log').style.display = 'none';
         isGameOver = false; myUnits = []; enemyUnits = []; globalHP = {};
         myVP = 0; enemyVP = 0; currentRound = 1;
         iAmReady = false; enemyIsReady = false;
@@ -3364,6 +3364,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
