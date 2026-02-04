@@ -2369,6 +2369,11 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
     const currentAP = (me.ap !== undefined) ? me.ap : (stats.apl || 2);
     const maxAP = stats.apl || 2;
 
+    let apColor = '#00f2ff'; // Azul por defecto
+       if (curAP < maxAP_local) apColor = '#ffcc00'; // Naranja si gastó algo
+       if (curAP <= 0) apColor = '#ff4444'; // Rojo si está vacío
+        
+
     // 3. ACTUALIZAR HUD SUPERIOR / TARJETA
     const nameEl = document.getElementById('my-name') || document.getElementById('unit-name');
     if (nameEl) nameEl.innerText = me.name || "OPERATIVO";
@@ -2383,6 +2388,7 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
             typeof canSelectUnit === 'function' && !canSelectUnit(myIdx)) {
             card.classList.add('locked');
         }
+
             nameEl.innerHTML = `
                 ${me.name} 
                 <span style="font-size:0.7em; color:${apColor}; margin-left:8px; border:1px solid ${apColor}; padding:1px 4px; border-radius:4px;">
@@ -3388,6 +3394,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
