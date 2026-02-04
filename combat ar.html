@@ -1863,47 +1863,35 @@ function renderEditorSquad() {
 };
 
     function resolvePhase(actionType) {
-        turnPhase = 3;
-        updatePhaseUI();
-        log("RESOLVIENDO: " + actionType + "...");
+        // 1. Feedback visual inmediato
+        log("✅ ACCIÓN: " + actionType);
         
-        // Pequeña pausa para que el jugador vea el resultado antes de pasar turno automáticamente
-        // O puedes mostrar un botón de "FIN DE TURNO" aquí si prefieres manual.
-        setTimeout(() => {
-            log("TURNO COMPLETADO.");
-            passTurn(0);
-            }, 1500);
-        }
-        
-        window.log = function(msg, type = 'NORMAL') {
-            const area = document.getElementById('main-log-area');
-            if (!area) return;
-        
-            // Crear elemento
-            const div = document.createElement('div');
-            div.classList.add('log-entry');
-            div.innerHTML = `> ${msg}`; // Agregamos el > por estilo consola
-        
-            // Asignar clase según tipo (reutilizando tu lógica de colores)
-            if (type === 'COMBAT' || type === 'DANGER') div.classList.add('danger');
-            else if (type === 'GOLD' || type === 'SUCCESS') div.classList.add('success');
-            else if (type === 'CMD') div.classList.add('cmd');
-        
-            // Insertar al principio (arriba) o final (abajo)
-            area.appendChild(div);
-        
-            // AUTO-LIMPIEZA: Eliminar logs viejos para no saturar la pantalla
-            // Desaparece a los 5 segundos
+        // 2. Actualizamos HUD para ver el gasto de AP
+        updateHUD();
+    
+        const me = myUnits[myIdx];
+    
+        // 3. LÓGICA DE DECISIÓN (El cerebro del APL)
+        if (me.ap > 0) {
+            // --- A) AÚN QUEDAN PUNTOS ---
+            // No pasamos turno. Solo avisamos.
+            console.log(`Puntos restantes: ${me.ap}. Puedes realizar otra acción.`);
+            
+            // Opcional: Feedback visual rápido
+            // document.getElementById('status-msg').innerText = "SELECCIONA OTRA ACCIÓN";
+    
+        } else {
+            // --- B) SE ACABARON LOS PUNTOS ---
+            // Aquí sí mantenemos el pequeño retraso (delay) para que sea elegante
+            // antes de cerrar el turno.
+            console.log("0 APL. Finalizando activación...");
+            
             setTimeout(() => {
-                div.style.opacity = '0';
-                setTimeout(() => div.remove(), 500); // Esperar a que termine la transición css
-            }, 5000);
-        
-            // Mantener máximo 6 logs en pantalla para evitar desborde
-            if (area.children.length > 6) {
-                area.removeChild(area.firstChild);
-            }
-        };
+                log("🛑 ACTIVACIÓN COMPLETADA.");
+                passTurn(0); // Ahora sí pasamos el turno
+            }, 1000); // 1 segundo de pausa para leer
+        }
+    }
 
             // Función simplificada de Daño Flotante
             window.showDamage = function(targetId, amount, isCrit) {
@@ -2114,6 +2102,7 @@ function renderEditorSquad() {
     }
 
     window.confirmAttack = function() {
+        if (!trySpendAP(1)) return;
         hideAllCombatButtons();
         document.getElementById('btn-cancel-combat').style.display = 'inline-block';
         
@@ -2156,6 +2145,7 @@ function renderEditorSquad() {
             }, 
             uName: myUnits[myIdx].name 
         });
+        
     };
 
     window.startDefenseSequence = function(incomingHits, enemyRolls) {
@@ -2321,6 +2311,7 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
         applyDamage(finalDmg);
         publish({type: 'COMBAT_SYNC', stage: 'RESOLVED', rolls: defRolls, finalDmg: finalDmg});
         closeCombatOverlay();
+        resolvePhase("COMBATE");
     }
 
     function handleCombatSync(d) {
@@ -2392,6 +2383,12 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
             typeof canSelectUnit === 'function' && !canSelectUnit(myIdx)) {
             card.classList.add('locked');
         }
+            nameEl.innerHTML = `
+                ${me.name} 
+                <span style="font-size:0.7em; color:${apColor}; margin-left:8px; border:1px solid ${apColor}; padding:1px 4px; border-radius:4px;">
+                    APL: ${currentAP}/${maxAP}
+                </span>
+            `;
     }
 
     // Texto de estado
@@ -3240,7 +3237,7 @@ window.renderStars = function(rolls, containerId) {
     window.switchMode=()=>{combatMode=combatMode==='ranged'?'melee':'ranged'; renderUnifiedHUD(); updateHUD(); };
     window.toggleCover = function() { coverActive = !coverActive; const btn = document.getElementById('btn-cover-toggle'); if(coverActive) { btn.classList.add('active'); btn.innerHTML = "🛡️ COBERTURA: +1 ÉXITO"; } else { btn.classList.remove('active'); btn.innerText = "COBERTURA: NO"; } }
     window.tryClaimSecret = function() { if(!secondaryActive || !secretMission || secretClaimed || gameState === 'PLANNING') return; const btn = document.getElementById('btn-claim-secret'); btn.innerText = "ESPERANDO..."; btn.style.opacity = "0.5"; publish({type: 'REQ_SECRET', missionName: secretMission}); }
-    window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }
+    window.confirmRequest = function() { document.getElementById('confirm-modal').classList.remove('show'); if(!pendingRequest) return; if(pendingRequest.type === 'REQ_SECRET') { publish({type: 'ACK_SECRET'}); log(`Secreta rival aceptada.`); } pendingRequest = null; }    
     
     // Aceptamos 'payload' (datos extra), necesario para saber QUÉ estratagema es
     window.performOp = function(op, payload) {
@@ -3391,6 +3388,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
