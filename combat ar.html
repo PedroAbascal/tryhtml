@@ -1750,9 +1750,30 @@ function renderEditorSquad() {
     }
 
     // --- NETWORK HANDLER ---
+
+    function getCleanSquad() {
+        return myUnits.map(u => ({
+            uid: u.uid,
+            name: u.name,
+            stats: u.stats,
+            ap: u.ap, // Importante para sincronizar APL
+            // Agrega aquí solo lo que necesites, evita enviar 'u' entero si tiene basura
+        }));
+    }
+
+    
     function onMessage(msg) {
+        
         if(isGameOver) return;
-        const d = JSON.parse(msg.payloadString);
+        
+        let d;
+        try {
+            d = JSON.parse(msg.payloadString);
+        } catch (e) {
+            console.error("❌ JSON Corrupto recibido:", msg.payloadString);
+            return;
+        }
+    
         if(d.sender === MY_ID) return;
 
         if (msg.type === 'SYNC_SCORE') {
@@ -1783,31 +1804,22 @@ function renderEditorSquad() {
         if(d.type === 'JOIN_REQ') {
             if(!enemyUnits.length) {
                 enemyUnits = d.squad; initialEnemyCount = enemyUnits.length;
-                publish({type: 'JOIN_ACK', squad: myUnits, rounds: maxRounds, pMission: primaryMission, secActive: secondaryActive});
-                enemyUnits.forEach(u => { if(!globalHP[u.uid] && u.stats) globalHP[u.uid] = {c:parseInt(u.stats.hp)||1, m:parseInt(u.stats.hp)||1}; });
-                const btn = document.getElementById('btn-ready');
-                btn.disabled = false; btn.querySelector('span').innerText = "CONFIRMAR ÓRDENES";
-                btn.style.background = "var(--c)"; btn.style.color = "#000";
-                updateHUD(); log(`RIVAL CONECTADO.`);
-            }
+                
+                // USA LA VERSIÓN LIMPIA AQUÍ
+                const cleanSquad = getCleanSquad(); 
+                publish({
+                    type: 'JOIN_ACK', 
+                    squad: cleanSquad, // <--- CAMBIO
+                    rounds: maxRounds, 
+                    pMission: primaryMission, 
+                    secActive: secondaryActive
+                });
+                
+                else if(d.type === 'READY') {
+                    enemyUnits = d.squad; enemyIsReady = true; enemyInitRoll = d.roll;
+                    document.getElementById('en-ready-mark').classList.add('show'); checkStartRound();
         }
-        else if(d.type === 'JOIN_ACK') {
-            if(!enemyUnits.length) {
-                enemyUnits = d.squad; initialEnemyCount = enemyUnits.length;
-                maxRounds = d.rounds;
-                if(d.pMission) primaryMission = d.pMission;
-                if(typeof d.secActive !== 'undefined') { secondaryActive = d.secActive; assignSecretMission(); }
-                enemyUnits.forEach(u => { if(!globalHP[u.uid] && u.stats) globalHP[u.uid] = {c:parseInt(u.stats.hp)||1, m:parseInt(u.stats.hp)||1}; });
-                const btn = document.getElementById('btn-ready');
-                btn.disabled = false; btn.querySelector('span').innerText = "CONFIRMAR ÓRDENES";
-                btn.style.background = "var(--c)"; btn.style.color = "#000";
-                updateMissionDisplay(); updateHUD(); log(`REGLAS SINCRONIZADAS.`);
-            }
-        }
-        else if(d.type === 'READY') {
-            enemyUnits = d.squad; enemyIsReady = true; enemyInitRoll = d.roll;
-            document.getElementById('en-ready-mark').classList.add('show'); checkStartRound();
-        }
+                
         else if(d.type === 'COMBAT_SYNC') { handleCombatSync(d); }
         else if(d.type === 'SCORE_UPDATE') { enemyVP = d.vp; updateHUD(); }
         else if(d.type === 'SYNC_SQUAD') { enemyUnits = d.squad; updateHUD(); }
@@ -1827,9 +1839,21 @@ function renderEditorSquad() {
             log(`RIVAL USA ${d.gearName}: ${d.desc}`);
             if(d.dmg) { applyDamage(d.dmg); log(`RECIBES ${d.dmg} DAÑO`, 'danger'); }
         }
-        else if(d.type === 'OP_ACTION') { if(gameState!=='PLANNING'){ log(`RIVAL: ${d.opType}`); setTurn('MY_TURN', 0); } }
-        else if(d.type === 'CHANGE_TURN') { if(gameState!=='PLANNING') setTurn('MY_TURN', d.passes || 0);  }
-        else if(d.type === 'ROUND_OVER') resetRound();
+        
+        if(d.type === 'OP_ACTION') { 
+            if(gameState !== 'PLANNING') {
+                log(`RIVAL: ${d.opType}`);
+                updateHUD(); // Para ver reflejados los cambios del enemigo
+            } 
+        }
+            else if(d.type === 'CHANGE_TURN') { if(gameState!=='PLANNING') setTurn('MY_TURN', d.passes || 0);  }
+            else if(d.type === 'ROUND_OVER') resetRound();
+    }
+            else if(d.type === 'CHANGE_TURN') { 
+            if(gameState !== 'PLANNING') {
+                console.log("🔄 Cambio de turno recibido.");
+                setTurn('MY_TURN', d.passes || 0);  
+        }
     }
 
    window.startMyTurnPhases = function() {
@@ -3376,6 +3400,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
