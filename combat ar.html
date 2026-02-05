@@ -1804,7 +1804,6 @@ function renderEditorSquad() {
         if(d.type === 'JOIN_REQ') {
             if(!enemyUnits.length) {
                 enemyUnits = d.squad; initialEnemyCount = enemyUnits.length;
-                
                 // USA LA VERSIÓN LIMPIA AQUÍ
                 const cleanSquad = getCleanSquad(); 
                 publish({
@@ -1849,13 +1848,14 @@ function renderEditorSquad() {
         }
             else if(d.type === 'CHANGE_TURN') { if(gameState!=='PLANNING') setTurn('MY_TURN', d.passes || 0);  }
             else if(d.type === 'ROUND_OVER') resetRound();
-    }
             else if(d.type === 'CHANGE_TURN') { 
             if(gameState !== 'PLANNING') {
                 console.log("🔄 Cambio de turno recibido.");
                 setTurn('MY_TURN', d.passes || 0);  
+            }
         }
     }
+           
 
    window.startMyTurnPhases = function() {
     // 1. Configurar Estado
@@ -3401,6 +3401,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
