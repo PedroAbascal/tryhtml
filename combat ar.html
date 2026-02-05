@@ -1523,39 +1523,21 @@ function renderEditorSquad() {
     };
 
         function updateGearContent(unit) {
-        console.log("--- DEBUG GEAR START ---");
-        
-        // 1. Verificar Contenedor HTML
+      
         const container = document.getElementById('gear-bar'); 
-        if (!container) {
-            return;
-        }
+       
         container.innerHTML = ''; // Limpiar
-        
-        // 2. Verificar Unidad
-        if (!unit) {
-            return;
-        }
-        console.log("Unidad recibida:", unit.name);
-    
-        // --- CORRECCIÓN IMPORTANTE ---
-        // Quitamos la comprobación de unit.loadout que causaba el fallo
-        // Verificamos directamente unit.gear
         
         if (!unit.gear || unit.gear === "Nada") {
             container.innerHTML = '<div style="color:#777; font-size:0.7rem; padding:4px;">Sin Equipo</div>';
             return;
         }
-        console.log("Equipo a buscar:", unit.gear);
-    
-        // 3. Verificar Bases de Datos
+        
         if (typeof GEAR_DB === 'undefined' || typeof MECHANICS_DB === 'undefined') {
             console.error("❌ Error: GEAR_DB o MECHANICS_DB no están definidas.");
             return;
         }
     
-        // 4. Buscar el objeto en la DB
-        // Buscamos qué objeto de la DB tiene el 'name' igual a unit.gear
         const gearDef = Object.values(GEAR_DB).find(item => item.name === unit.gear);
     
         if (!gearDef) {
@@ -1609,7 +1591,7 @@ function renderEditorSquad() {
     
                     if(mech.oneUse) {
                         unit.gearUsed = true;
-                        updateGearContent(unit); // Recargar para mostrar como usado
+                       // updateGearContent(unit); // Recargar para mostrar como usado
                     }
                 };
             }
@@ -3418,6 +3400,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
