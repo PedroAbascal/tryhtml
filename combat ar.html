@@ -1813,13 +1813,14 @@ function renderEditorSquad() {
                     rounds: maxRounds, 
                     pMission: primaryMission, 
                     secActive: secondaryActive
-                });
-                
-                else if(d.type === 'READY') {
-                    enemyUnits = d.squad; enemyIsReady = true; enemyInitRoll = d.roll;
-                    document.getElementById('en-ready-mark').classList.add('show'); checkStartRound();
+                }); 
+            }
         }
-                
+
+        else if(d.type === 'READY') {
+            enemyUnits = d.squad; enemyIsReady = true; enemyInitRoll = d.roll;
+            document.getElementById('en-ready-mark').classList.add('show'); checkStartRound(); }
+                    
         else if(d.type === 'COMBAT_SYNC') { handleCombatSync(d); }
         else if(d.type === 'SCORE_UPDATE') { enemyVP = d.vp; updateHUD(); }
         else if(d.type === 'SYNC_SQUAD') { enemyUnits = d.squad; updateHUD(); }
@@ -3400,6 +3401,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
