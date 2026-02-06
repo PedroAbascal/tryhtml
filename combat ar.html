@@ -3126,32 +3126,38 @@ window.renderStars = function(rolls, containerId) {
         else container.innerText = primaryMission;
     }
    
-    function commitPlanning() { 
-        if(gameState !== 'PLANNING') return; 
-        
-        if(enemyUnits.length === 0) { 
-            log("ESPERANDO RIVAL..."); 
-            return; 
-        }
-        
-        iAmReady = true; 
-        myInitRoll = Math.ceil(Math.random()*100); 
-        
-        document.getElementById('planning-controls').style.display = 'none'; 
-        document.getElementById('my-ready-mark').classList.add('show'); 
-        
-        // --- AQUÍ ESTABA EL ERROR ---
-        // Usamos getCleanSquad() en lugar de myUnits
-        const cleanSquad = (typeof getCleanSquad === 'function') ? getCleanSquad() : myUnits;
-    
-        publish({
-            type: 'READY', 
-            squad: cleanSquad, // <--- ESTO SOLUCIONA LA DESCONEXIÓN
-            roll: myInitRoll
-        }); 
-        
-        checkStartRound(); 
-    }
+    function commitPlanning() {
+    if (gameState !== 'PLANNING') return;
+    if (enemyUnits.length === 0) { log("ESPERANDO RIVAL..."); return; }
+
+    iAmReady = true;
+    myInitRoll = Math.ceil(Math.random() * 100);
+
+    document.getElementById('planning-controls').style.display = 'none';
+    document.getElementById('my-ready-mark').classList.add('show');
+
+    // 1. LIMPIEZA DE DATOS (CRÍTICO PARA EVITAR DESCONEXIÓN)
+    // Creamos una copia ligera de la escuadra solo con lo necesario
+    const cleanSquad = myUnits.map(u => {
+        return {
+            uid: u.uid,
+            name: u.name,
+            stats: u.stats,  // Asegúrate de que stats no tenga cosas raras dentro
+            ap: u.ap || (u.stats ? u.stats.apl : 2) // Enviamos el APL
+        };
+    });
+
+    console.log("📤 Enviando escuadra optimizada:", cleanSquad); // Debug para ver qué enviamos
+
+    // 2. ENVIAMOS LA VERSIÓN LIMPIA
+    publish({
+        type: 'READY',
+        squad: cleanSquad, // <--- AQUÍ ESTABA EL PROBLEMA (Antes ponías myUnits)
+        roll: myInitRoll
+    });
+
+    checkStartRound();
+}
    
 
         window.checkStartRound = function() { 
@@ -3471,6 +3477,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
