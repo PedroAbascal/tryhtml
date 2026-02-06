@@ -2369,7 +2369,7 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
         applyDamage(finalDmg);
         publish({type: 'COMBAT_SYNC', stage: 'RESOLVED', rolls: defRolls, finalDmg: finalDmg});
         closeCombatOverlay();
-        resolvePhase("COMBATE");
+        // resolvePhase("COMBATE");
     }
 
     function handleCombatSync(d) {
@@ -3504,6 +3504,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
