@@ -3226,35 +3226,28 @@ window.renderStars = function(rolls, containerId) {
     function log(t, type='info') { const c = document.getElementById('combat-log'); while(c.children.length>=6) c.lastChild.remove(); const el = document.createElement('div'); el.innerText = `> ${t}`; el.className = `log-entry ${type}`; c.prepend(el); setTimeout(()=>el.remove(), 10000); }
     
     function publish(data) {
-    // 1. Verificar si existe el cliente
-    if (!client) {
-        console.error("❌ Error Fatal: El cliente MQTT no existe.");
+    if (!client || !client.isConnected()) {
+        console.error("⚠️ No hay conexión para enviar datos.");
         return;
     }
 
-    // 2. Verificar estado de conexión
-    if (!client.isConnected()) {
-        console.error("⚠️ Intento de publicar sin conexión. Ignorando mensaje:", data.type);
-        // Opcional: Mostrar aviso en pantalla
-        log("Error de red: No estás conectado.", "danger");
-        return;
+    // --- CORRECCIÓN CRÍTICA: FIRMAR EL MENSAJE ---
+    // Si el dato no tiene remitente, le ponemos mi ID automáticamente.
+    if (!data.sender) {
+        data.sender = MY_ID; 
     }
+    // ---------------------------------------------
 
-    // 3. Empaquetado seguro
     try {
         const payload = JSON.stringify(data);
         const message = new Paho.MQTT.Message(payload);
-        message.destinationName = TOPIC; // Asegúrate de usar tu variable de Topic
-        
-        // QoS 1 asegura que el mensaje llegue
+        message.destinationName = TOPIC;
         message.qos = 1; 
-        
+
         client.send(message);
-        console.log(`📡 Enviado: ${data.type}`);
-        
+        console.log(`📡 Enviado: ${data.type}`); // Log limpio
     } catch (e) {
-        console.error("🔥 EXCEPCIÓN AL PUBLICAR:", e);
-        log("Error crítico al enviar datos.", "danger");
+        console.error("🔥 Error al publicar:", e);
     }
 }
     
@@ -3511,6 +3504,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
