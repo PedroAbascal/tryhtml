@@ -3127,37 +3127,65 @@ window.renderStars = function(rolls, containerId) {
     }
    
     function commitPlanning() {
-    if (gameState !== 'PLANNING') return;
-    if (enemyUnits.length === 0) { log("ESPERANDO RIVAL..."); return; }
-
-    iAmReady = true;
-    myInitRoll = Math.ceil(Math.random() * 100);
-
-    document.getElementById('planning-controls').style.display = 'none';
-    document.getElementById('my-ready-mark').classList.add('show');
-
-    // 1. LIMPIEZA DE DATOS (CRÍTICO PARA EVITAR DESCONEXIÓN)
-    // Creamos una copia ligera de la escuadra solo con lo necesario
-    const cleanSquad = myUnits.map(u => {
-        return {
-            uid: u.uid,
-            name: u.name,
-            stats: u.stats,  // Asegúrate de que stats no tenga cosas raras dentro
-            ap: u.ap || (u.stats ? u.stats.apl : 2) // Enviamos el APL
-        };
-    });
-
-    console.log("📤 Enviando escuadra optimizada:", cleanSquad); // Debug para ver qué enviamos
-
-    // 2. ENVIAMOS LA VERSIÓN LIMPIA
-    publish({
-        type: 'READY',
-        squad: cleanSquad, // <--- AQUÍ ESTABA EL PROBLEMA (Antes ponías myUnits)
-        roll: myInitRoll
-    });
-
-    checkStartRound();
-}
+        if (gameState !== 'PLANNING') return;
+        if (enemyUnits.length === 0) { log("ESPERANDO RIVAL..."); return; }
+    
+        // Validación de conexión
+        if (!client || !client.isConnected()) {
+            alert("⚠️ Conexión perdida. Reconectando...");
+            connectMQTT(); 
+            return;
+        }
+    
+        iAmReady = true;
+        myInitRoll = Math.ceil(Math.random() * 100);
+    
+        document.getElementById('planning-controls').style.display = 'none';
+        document.getElementById('my-ready-mark').classList.add('show');
+    
+        // --- LIMPIEZA DE DATOS (AHORA CON GEAR) ---
+        const cleanSquad = myUnits.map(u => {
+            
+            // TRUCO DE SEGURIDAD PARA EL GEAR:
+            // Si u.gear es un objeto (ej: {name: "Granada", daño: 3}), extraemos solo el nombre.
+            // Si es un texto simple ("Granada"), lo dejamos tal cual.
+            let safeGear = "Ninguno";
+            if (u.gear) {
+                if (typeof u.gear === 'object') {
+                    safeGear = u.gear.name || u.gear.id || "Equipo Desconocido";
+                } else {
+                    safeGear = u.gear; // Es texto, está bien.
+                }
+            }
+    
+            return {
+                uid: u.uid,
+                name: u.name,
+                ap: (typeof u.ap !== 'undefined') ? u.ap : 2,
+                gear: safeGear, // <--- AQUÍ ESTÁ LA CLAVE PARA QUE NO FALLE
+                stats: {
+                    hp: u.stats.hp || 1,
+                    move: u.stats.move || 6,
+                    df: u.stats.df || 3,
+                    sv: u.stats.sv || 6,
+                    apl: u.stats.apl || 2,
+                    // Agrega ataque si lo necesitas para validaciones
+                    r_atk: u.stats.r_atk || 0, 
+                    m_atk: u.stats.m_atk || 0
+                }
+            };
+        });
+    
+        console.log("📤 Enviando escuadra (Con Gear saneado):", cleanSquad);
+    
+        publish({
+            type: 'READY',
+            squad: cleanSquad,
+            roll: myInitRoll
+        });
+    
+        checkStartRound();
+    }
    
 
         window.checkStartRound = function() { 
@@ -3197,32 +3225,38 @@ window.renderStars = function(rolls, containerId) {
     function logCombat(msg) { const log = document.getElementById('combat-log-visual'); log.innerHTML += `<div class="log-line">> ${msg}</div>`; log.scrollTop = log.scrollHeight; }
     function log(t, type='info') { const c = document.getElementById('combat-log'); while(c.children.length>=6) c.lastChild.remove(); const el = document.createElement('div'); el.innerText = `> ${t}`; el.className = `log-entry ${type}`; c.prepend(el); setTimeout(()=>el.remove(), 10000); }
     
-    function publish(p) {
-        // 1. Si no existe el cliente, no hacemos nada
-        if (!client) return;
-    
-        p.sender = MY_ID;
-    
-        // 2. INTENTAMOS enviar (Try)
-        try {
-            // Nota: Si usas Paho estándar, a veces requiere crear un objeto Message primero.
-            // Pero si te funcionaba antes, mantenemos tu sintaxis, solo la protegemos.
-            
-            // Verificamos si hay conexión antes de enviar (si la librería lo permite)
-            if (client.isConnected && !client.isConnected()) {
-                 throw new Error("Cliente desconectado");
-            }
-    
-            client.send(TOPIC, JSON.stringify(p));
-    
-        } catch (e) {
-            // 3. SI FALLA (Catch): Atrapamos el error para que el juego NO se congele
-            console.warn("⚠️ Fallo al publicar (MQTT desconectado):", e.message);
-            
-            // Aquí podrías poner un aviso visual si quieres
-            // document.getElementById('connection-status').innerText = "OFFLINE";
-        }
+    function publish(data) {
+    // 1. Verificar si existe el cliente
+    if (!client) {
+        console.error("❌ Error Fatal: El cliente MQTT no existe.");
+        return;
     }
+
+    // 2. Verificar estado de conexión
+    if (!client.isConnected()) {
+        console.error("⚠️ Intento de publicar sin conexión. Ignorando mensaje:", data.type);
+        // Opcional: Mostrar aviso en pantalla
+        log("Error de red: No estás conectado.", "danger");
+        return;
+    }
+
+    // 3. Empaquetado seguro
+    try {
+        const payload = JSON.stringify(data);
+        const message = new Paho.MQTT.Message(payload);
+        message.destinationName = TOPIC_NAME; // Asegúrate de usar tu variable de Topic
+        
+        // QoS 1 asegura que el mensaje llegue
+        message.qos = 1; 
+        
+        client.send(message);
+        console.log(`📡 Enviado: ${data.type}`);
+        
+    } catch (e) {
+        console.error("🔥 EXCEPCIÓN AL PUBLICAR:", e);
+        log("Error crítico al enviar datos.", "danger");
+    }
+}
     
     function resetRound() { 
         if(isGameOver) return; 
@@ -3477,6 +3511,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
