@@ -3260,11 +3260,11 @@ window.renderStars = function(rolls, containerId) {
         document.getElementById('turn-indicator').innerText='PLANIFICACIÓN'; 
         document.querySelectorAll('.ready-marker').forEach(e=>e.classList.remove('show')); 
         // Reactivar el equipo de todas las unidades para la nueva ronda
-    myUnits.forEach(u => {
-        u.gearUsed = false; // Permitir usar items de nuevo
-        u.activations = 0;  // Resetear fatiga (si aplica)
-    });
-        updateHUD(); log(`INICIO RONDA ${currentRound}`); 
+        myUnits.forEach(u => {
+            u.gearUsed = false; // Permitir usar items de nuevo
+            u.activations = 0;  // Resetear fatiga (si aplica)
+        });
+        resetUnitAP(); updateHUD(); log(`INICIO RONDA ${currentRound}`); 
     }
     function cancelCombat() { publish({type:'COMBAT_SYNC', stage:'CANCEL'}); closeCombatOverlay(); }
     function endCombatTurn() { document.getElementById('dice-overlay').style.display = 'none'; passTurn(0); }
@@ -3504,6 +3504,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
