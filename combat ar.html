@@ -3223,7 +3223,7 @@ window.renderStars = function(rolls, containerId) {
     }
     function syncVisuals(stage, rollsData) { publish({ type: 'COMBAT_SYNC', stage: stage, rolls: rollsData, uName: myUnits[myIdx].name }); }
     function logCombat(msg) { const log = document.getElementById('combat-log-visual'); log.innerHTML += `<div class="log-line">> ${msg}</div>`; log.scrollTop = log.scrollHeight; }
-    function log(t, type='info') { const c = document.getElementById('combat-log'); while(c.children.length>=6) c.lastChild.remove(); const el = document.createElement('div'); el.innerText = `> ${t}`; el.className = `log-entry ${type}`; c.prepend(el); setTimeout(()=>el.remove(), 10000); }
+    function log(t, type='info') { const c = document.getElementById('combat-log-visual'); while(c.children.length>=6) c.lastChild.remove(); const el = document.createElement('div'); el.innerText = `> ${t}`; el.className = `log-entry ${type}`; c.prepend(el); setTimeout(()=>el.remove(), 10000); }
     
     function publish(data) {
     if (!client || !client.isConnected()) {
@@ -3504,6 +3504,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
