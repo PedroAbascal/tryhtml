@@ -3125,12 +3125,32 @@ window.renderStars = function(rolls, containerId) {
         else if (secondaryActive) container.innerHTML = `${primaryMission} <span style="color:#666">|</span> SEC: ???`;
         else container.innerText = primaryMission;
     }
+   
     function commitPlanning() { 
         if(gameState !== 'PLANNING') return; 
-        if(enemyUnits.length === 0) { log("ESPERANDO RIVAL..."); return; }
-        iAmReady = true; myInitRoll = Math.ceil(Math.random()*100); 
-        document.getElementById('planning-controls').style.display = 'none'; document.getElementById('my-ready-mark').classList.add('show'); 
-        publish({type: 'READY', squad: myUnits, roll: myInitRoll}); checkStartRound(); 
+        
+        if(enemyUnits.length === 0) { 
+            log("ESPERANDO RIVAL..."); 
+            return; 
+        }
+        
+        iAmReady = true; 
+        myInitRoll = Math.ceil(Math.random()*100); 
+        
+        document.getElementById('planning-controls').style.display = 'none'; 
+        document.getElementById('my-ready-mark').classList.add('show'); 
+        
+        // --- AQUÍ ESTABA EL ERROR ---
+        // Usamos getCleanSquad() en lugar de myUnits
+        const cleanSquad = (typeof getCleanSquad === 'function') ? getCleanSquad() : myUnits;
+    
+        publish({
+            type: 'READY', 
+            squad: cleanSquad, // <--- ESTO SOLUCIONA LA DESCONEXIÓN
+            roll: myInitRoll
+        }); 
+        
+        checkStartRound(); 
     }
    
 
@@ -3451,6 +3471,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
