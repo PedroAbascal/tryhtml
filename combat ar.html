@@ -1784,19 +1784,70 @@ function renderEditorSquad() {
         }
 
         if(d.type === 'JOIN_REQ') {
-            if(!enemyUnits.length) {
-                enemyUnits = d.squad; initialEnemyCount = enemyUnits.length;
-                // USA LA VERSIÓN LIMPIA AQUÍ
-                const cleanSquad = getCleanSquad(); 
-                publish({
-                    type: 'JOIN_ACK', 
-                    squad: cleanSquad, // <--- CAMBIO
-                    rounds: maxRounds, 
-                    pMission: primaryMission, 
-                    secActive: secondaryActive
-                }); 
+        if(!enemyUnits.length) {
+            enemyUnits = d.squad; 
+            initialEnemyCount = enemyUnits.length;
+            
+            // Enviamos nuestra escuadra limpia de vuelta
+            // (Asegúrate de tener la función getCleanSquad definida abajo)
+            const cleanSquad = (typeof getCleanSquad === 'function') ? getCleanSquad() : myUnits;
+            
+            publish({
+                type: 'JOIN_ACK', 
+                squad: cleanSquad, 
+                rounds: maxRounds, 
+                pMission: primaryMission, 
+                secActive: secondaryActive
+            }); 
+            
+            // Actualizamos UI
+            enemyUnits.forEach(u => { 
+                if(!globalHP[u.uid] && u.stats) globalHP[u.uid] = {c:parseInt(u.stats.hp)||1, m:parseInt(u.stats.hp)||1}; 
+            });
+            const btn = document.getElementById('btn-ready');
+            if(btn) {
+                btn.disabled = false; 
+                btn.querySelector('span').innerText = "CONFIRMAR ÓRDENES";
+                btn.style.background = "var(--c)"; 
+                btn.style.color = "#000";
             }
+            updateHUD(); 
+            log(`RIVAL CONECTADO.`);
         }
+    }
+
+    // --- BLOQUE 3: CONFIRMACIÓN (El Invitado recibe al Host) ---
+    // ¡ESTE ES EL QUE TE FALTABA!
+    else if(d.type === 'JOIN_ACK') {
+        if(!enemyUnits.length) {
+            console.log("✅ Conectado con el Host. Recibiendo datos...");
+            enemyUnits = d.squad; 
+            initialEnemyCount = enemyUnits.length;
+            maxRounds = d.rounds;
+            
+            if(d.pMission) primaryMission = d.pMission;
+            if(typeof d.secActive !== 'undefined') { 
+                secondaryActive = d.secActive; 
+                // Si tienes la función assignSecretMission, úsala aquí
+                if(typeof assignSecretMission === 'function') assignSecretMission(); 
+            }
+
+            enemyUnits.forEach(u => { 
+                if(!globalHP[u.uid] && u.stats) globalHP[u.uid] = {c:parseInt(u.stats.hp)||1, m:parseInt(u.stats.hp)||1}; 
+            });
+
+            const btn = document.getElementById('btn-ready');
+            if(btn) {
+                btn.disabled = false; 
+                btn.querySelector('span').innerText = "CONFIRMAR ÓRDENES";
+                btn.style.background = "var(--c)"; 
+                btn.style.color = "#000";
+            }
+            updateMissionDisplay(); 
+            updateHUD(); 
+            log(`REGLAS SINCRONIZADAS.`);
+        }
+    }
 
         else if(d.type === 'READY') {
             enemyUnits = d.squad; enemyIsReady = true; enemyInitRoll = d.roll;
@@ -3400,6 +3451,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
