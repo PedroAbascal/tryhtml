@@ -3244,7 +3244,7 @@ window.renderStars = function(rolls, containerId) {
     try {
         const payload = JSON.stringify(data);
         const message = new Paho.MQTT.Message(payload);
-        message.destinationName = TOPIC_NAME; // Asegúrate de usar tu variable de Topic
+        message.destinationName = TOPIC; // Asegúrate de usar tu variable de Topic
         
         // QoS 1 asegura que el mensaje llegue
         message.qos = 1; 
@@ -3511,6 +3511,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
