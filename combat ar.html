@@ -1652,7 +1652,7 @@ function renderEditorSquad() {
         
         // 4. Inicializar HP
         if (typeof globalHP === 'undefined') window.globalHP = {};
-        myUnits.forEach(u => { globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
+        mys.forEach(u => { globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
 
         resetUnitAP()
         
@@ -3108,14 +3108,38 @@ window.renderStars = function(rolls, containerId) {
         const enemyHasReady = opponents.some(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
         return !!enemyHasReady; 
     }
-    function canSelectUnit(index) { if (!myUnits[index]) return false; return canUnitAct(myUnits[index], myUnits, enemyUnits); }
+    function canSelectUnit(index) { if (!myUnits[index]) return false; return canUnitAct(myUnits[index], myUnits, enemyUnits); if (myUnits[myIdx]) {
+        tryApplyReactionBonus(myUnits[myIdx]); // <--- APLICAR BONO
+        updateHUD();
+    } }
     function autoSelectValidUnit() {
         if (canSelectUnit(myIdx)) return;
         const freshIdx = myUnits.findIndex(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
         if (freshIdx !== -1) { myIdx = freshIdx; return; }
         const tiredIdx = myUnits.findIndex((u, i) => canSelectUnit(i));
         if (tiredIdx !== -1) myIdx = tiredIdx;
+        if (myUnits[myIdx]) {
+        tryApplyReactionBonus(myUnits[myIdx]); // <--- APLICAR BONO
+        updateHUD();
     }
+    }
+    // Función auxiliar para aplicar el bono de forma segura
+function tryApplyReactionBonus(unit) {
+    // 1. Si la unidad es "fresca" (0 activaciones), no necesita bono. Salimos.
+    if (unit.activations === 0) return;
+
+    // 2. Si ya recibió el bono en este turno, no se lo damos otra vez.
+    if (unit.hasReactionBonus) return;
+
+    // 3. APLICAMOS EL BONO
+    // (Solo llegamos aquí si unit.activations > 0 y canSelectUnit dijo TRUE)
+    unit.ap += 1;
+    unit.hasReactionBonus = true; // Marca importante para no repetir
+    
+    // Feedback visual para el jugador
+    log(`⚡ ${unit.name} reacciona (+1 AP)`);
+    // showFloatingText(unit.x, unit.y, "+1 AP", "#00ff00");
+}
     function executeSecretClaim() { secretClaimed = true; myVP += 2; log(`SECRETA ACEPTADA (+2 PV)`); document.getElementById('btn-claim-secret').style.display = 'none'; publish({type: 'SCORE_UPDATE', vp: myVP}); updateHUD(); }
     function showConfirmModal(text, reqData) { pendingRequest = reqData; const modal = document.getElementById('confirm-modal'); document.getElementById('modal-msg').innerText = text; modal.classList.add('show'); }
     function assignSecretMission() { if(secondaryActive) secretMission = SECRET_POOL[Math.floor(Math.random()*SECRET_POOL.length)]; else secretMission = null; }
@@ -3504,6 +3528,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
