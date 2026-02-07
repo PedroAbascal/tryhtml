@@ -1652,7 +1652,7 @@ function renderEditorSquad() {
         
         // 4. Inicializar HP
         if (typeof globalHP === 'undefined') window.globalHP = {};
-        mys.forEach(u => { globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
+        myUnits.forEach(u => { globalHP[u.uid] = {c:parseInt(u.stats.hp), m:parseInt(u.stats.hp)}; });
 
         resetUnitAP()
         
@@ -3108,7 +3108,8 @@ window.renderStars = function(rolls, containerId) {
         const enemyHasReady = opponents.some(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
         return !!enemyHasReady; 
     }
-   function canSelectUnit(index) { if (!myUnits[index]) return false; return canUnitAct(myUnits[index], myUnits, enemyUnits); }
+   function canSelectUnit(index) { if (!myUnits[index]) return false; return canUnitAct(myUnits[index], myUnits, enemyUnits); myIdx = index;
+    const u = myUnits[myIdx]; tryApplyReactionBonus(u); }
     
     function autoSelectValidUnit() {
         if (canSelectUnit(myIdx)) return;
@@ -3531,6 +3532,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
