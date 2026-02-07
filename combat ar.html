@@ -3108,21 +3108,23 @@ window.renderStars = function(rolls, containerId) {
         const enemyHasReady = opponents.some(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
         return !!enemyHasReady; 
     }
-    function canSelectUnit(index) { if (!myUnits[index]) return false; return canUnitAct(myUnits[index], myUnits, enemyUnits); if (myUnits[myIdx]) {
-        tryApplyReactionBonus(myUnits[myIdx]); // <--- APLICAR BONO
-        updateHUD();
-    } }
+   function canSelectUnit(index) { if (!myUnits[index]) return false; return canUnitAct(myUnits[index], myUnits, enemyUnits); }
+    
     function autoSelectValidUnit() {
         if (canSelectUnit(myIdx)) return;
         const freshIdx = myUnits.findIndex(u => u.activations === 0 && globalHP[u.uid] && globalHP[u.uid].c > 0);
         if (freshIdx !== -1) { myIdx = freshIdx; return; }
         const tiredIdx = myUnits.findIndex((u, i) => canSelectUnit(i));
         if (tiredIdx !== -1) myIdx = tiredIdx;
+
         if (myUnits[myIdx]) {
         tryApplyReactionBonus(myUnits[myIdx]); // <--- APLICAR BONO
         updateHUD();
     }
     }
+
+
+    
     // Función auxiliar para aplicar el bono de forma segura
 function tryApplyReactionBonus(unit) {
     // 1. Si la unidad es "fresca" (0 activaciones), no necesita bono. Salimos.
@@ -3140,6 +3142,7 @@ function tryApplyReactionBonus(unit) {
     log(`⚡ ${unit.name} reacciona (+1 AP)`);
     // showFloatingText(unit.x, unit.y, "+1 AP", "#00ff00");
 }
+    
     function executeSecretClaim() { secretClaimed = true; myVP += 2; log(`SECRETA ACEPTADA (+2 PV)`); document.getElementById('btn-claim-secret').style.display = 'none'; publish({type: 'SCORE_UPDATE', vp: myVP}); updateHUD(); }
     function showConfirmModal(text, reqData) { pendingRequest = reqData; const modal = document.getElementById('confirm-modal'); document.getElementById('modal-msg').innerText = text; modal.classList.add('show'); }
     function assignSecretMission() { if(secondaryActive) secretMission = SECRET_POOL[Math.floor(Math.random()*SECRET_POOL.length)]; else secretMission = null; }
@@ -3528,6 +3531,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
