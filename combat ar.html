@@ -3267,7 +3267,7 @@ window.renderStars = function(rolls, containerId) {
         resetUnitAP(); updateHUD(); log(`INICIO RONDA ${currentRound}`); 
     }
     function cancelCombat() { publish({type:'COMBAT_SYNC', stage:'CANCEL'}); closeCombatOverlay(); }
-    function endCombatTurn() { document.getElementById('dice-overlay').style.display = 'none'; passTurn(0); }
+    function endCombatTurn() { document.getElementById('dice-overlay').style.display = 'none'; }
     function closeCombatOverlay() { document.getElementById('dice-overlay').style.display = 'none'; }
     function hideAllCombatButtons() { const ids = ['btn-reroll', 'btn-reroll-def', 'btn-confirm-atk', 'btn-confirm-def', 'btn-apply-dmg', 'btn-cancel-combat', 'btn-close-combat', 'btn-cover-toggle']; ids.forEach(id => document.getElementById(id).style.display = 'none'); }
     
@@ -3504,6 +3504,7 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
 
 
