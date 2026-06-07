@@ -297,6 +297,26 @@
             gap: 5px;
         }
         
+        /* Avatares WYSIWYG */
+        .unit-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: 2px solid var(--c);
+            object-fit: cover;
+            background: #222;
+        }
+        .forge-avatar-preview {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px dashed #888;
+            object-fit: cover;
+            display: flex; align-items: center; justify-content: center;
+            color: #888; font-size: 0.6rem; cursor: pointer;
+            background: #111;
+        }
+
         /* Ocultamos la palabra "RIVAL" para ahorrar espacio */
         #en-card > div:first-child > div:first-child span:first-child {
             display: none; 
@@ -764,8 +784,12 @@
         <div class="box">
             <div class="forge-grid">
                 <div>
-                    <div class="forge-label">NOMBRE</div>
-                    <input type="text" id="u-name" placeholder="Ej: Sargento Ray">
+                    <div class="forge-label">NOMBRE Y FOTO</div>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="u-name" placeholder="Ej: Sargento Ray" style="flex:1;">
+                        <input type="file" id="u-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="processPhoto(this)">
+                        <div id="u-photo-preview" class="forge-avatar-preview" onclick="document.getElementById('u-photo-input').click()">📷 FOTO</div>
+                    </div>
                 </div>
                 <div class="input-group">
                 <label>PEANA (BASE)</label>
@@ -880,7 +904,10 @@
                 <div class="card my" onclick="nextMyUnit()" id="my-card" style="flex: 1.5;">
                     <div>
                         <div style="display:flex; justify-content:space-between; font-size:0.6rem;"><span>YO</span> <span id="my-status-text" style="color:var(--gold)"></span></div>
-                        <div id="my-name" style="font-weight:bold; font-size:1.1rem;">---</div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <img id="my-avatar" class="unit-avatar" src="" style="display:none;">
+                            <div id="my-name" style="font-weight:bold; font-size:1.1rem;">---</div>
+                        </div>
                         <div class="tags-container" id="my-tags"></div>
                         <div class="stat-grid">
                             <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="my-sv">--</span></div>
@@ -898,7 +925,10 @@
                 <div class="card enemy" onclick="nextEnemyUnit()" id="en-card" style="flex: 0.8;">
                     <div>
                         <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)"><span>RIVAL</span> <span id="en-mode-icon">❓</span></div>
-                        <div id="enemy-name" style="font-weight:bold; font-size:0.9rem;">ESPERANDO...</div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <img id="en-avatar" class="unit-avatar" src="" style="display:none; border-color:var(--r);">
+                            <div id="enemy-name" style="font-weight:bold; font-size:0.9rem;">ESPERANDO...</div>
+                        </div>
                         <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:0.8rem; color:#ccc;">
                             <span>APL: <b id="en-ap">0/0</b></span>
                             <span>HP: <b id="en-hp-txt">0/0</b></span>
@@ -1350,6 +1380,42 @@
     }
     // --- FIN WIZARD LOGIC ---
 
+    // --- PHOTO AVATAR LOGIC ---
+    let currentPhotoData = null;
+    window.processPhoto = function(input) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const SIZE = 100;
+                canvas.width = SIZE; canvas.height = SIZE;
+                const ctx = canvas.getContext('2d');
+                
+                // Recortar cuadrado centrado
+                const minSide = Math.min(img.width, img.height);
+                const sx = (img.width - minSide) / 2;
+                const sy = (img.height - minSide) / 2;
+                
+                ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, SIZE, SIZE);
+                
+                // Exportar como JPEG de baja calidad (muy ligero para red)
+                currentPhotoData = canvas.toDataURL('image/jpeg', 0.6);
+                
+                const preview = document.getElementById('u-photo-preview');
+                if (preview) {
+                    preview.innerHTML = '';
+                    preview.style.backgroundImage = `url(${currentPhotoData})`;
+                    preview.style.borderStyle = 'solid';
+                }
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+
         window.addUnitToSquad = function() {
         // 1. Obtener valores del DOM
         const name = document.getElementById('u-name').value || "Operativo " + (editorSquad.length+1);
@@ -1423,12 +1489,22 @@
                     traits: wm.traits || [] // <--- AQUÍ ESTÁN TUS TAGS DE ARMA
                 }
             ],
-            gear: gKey
+            gear: gKey,
+            photo: currentPhotoData // <--- Guardamos el avatar
         };
     
         editorSquad.push(newUnit);
         renderEditorSquad();
         document.getElementById('u-name').value = "";
+        
+        // Reset Photo
+        currentPhotoData = null;
+        const preview = document.getElementById('u-photo-preview');
+        if (preview) {
+            preview.style.backgroundImage = 'none';
+            preview.innerHTML = '📷 FOTO';
+            preview.style.borderStyle = 'dashed';
+        }
     };
     
 window.renderEditorSquad = function() {
@@ -1895,7 +1971,7 @@ window.renderEditorSquad = function() {
             name: u.name,
             stats: u.stats,
             ap: u.ap, // Importante para sincronizar APL
-            // Agrega aquí solo lo que necesites, evita enviar 'u' entero si tiene basura
+            photo: u.photo // <--- AVATAR PARA EL RIVAL
         }));
     }
 
