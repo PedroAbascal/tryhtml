@@ -946,9 +946,21 @@
             <h2 id="combat-phase-title" style="margin:0; color:#fff;">COMBATE</h2>
             <button type="button" id="btn-cover-toggle" style="display:none;" onclick="toggleCover()">COBERTURA: NO</button>
             <div class="duel-container">
-                <div class="duel-side" id="side-atk"><div class="duel-label">ATACANTE</div><div id="pool-atk" class="dice-pool"></div></div>
+                <div class="duel-side" id="side-atk">
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:5px; margin-bottom:5px;">
+                        <img id="duel-avatar-atk" class="unit-avatar" src="" style="display:none; width:45px; height:45px;">
+                        <div class="duel-label">ATACANTE</div>
+                    </div>
+                    <div id="pool-atk" class="dice-pool"></div>
+                </div>
                 <div style="font-size:2rem; color:#444;">VS</div>
-                <div class="duel-side" id="side-def"><div class="duel-label">DEFENSOR</div><div id="pool-def" class="dice-pool">Esperando...</div></div>
+                <div class="duel-side" id="side-def">
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:5px; margin-bottom:5px;">
+                        <img id="duel-avatar-def" class="unit-avatar" src="" style="display:none; width:45px; height:45px;">
+                        <div class="duel-label">DEFENSOR</div>
+                    </div>
+                    <div id="pool-def" class="dice-pool">Esperando...</div>
+                </div>
             </div>
             <div id="combat-log-visual" class="combat-log"></div>
             <div id="combat-actions-bar" style="margin-top:20px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
@@ -1529,22 +1541,29 @@ window.renderEditorSquad = function() {
 
         let div = document.createElement('div');
         div.className = "unit-item";
+        
+        // Comprobar si hay foto
+        const photoHtml = u.photo ? `<img src="${u.photo}" class="unit-avatar" style="margin-right:10px;">` : '';
+        
         div.innerHTML = `
-            <div class="unit-info">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="color:var(--c); font-weight:bold;">${u.name}</span>
-                    <span style="color:var(--gold)">[${u.cost} PTS]</span>
+            <div style="display:flex; align-items:center; width:100%;">
+                ${photoHtml}
+                <div class="unit-info" style="flex:1;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:var(--c); font-weight:bold;">${u.name}</span>
+                        <span style="color:var(--gold)">[${u.cost} PTS]</span>
+                    </div>
+                    
+                    <div style="font-size:0.7rem; color:#aaa; margin-top:2px;">
+                        HP:${u.stats.hp} SV:${u.stats.sv} | ${u.weapons[0].name} & ${u.weapons[1].name}
+                    </div>
+                    
+                    <div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:3px;">
+                        ${badges}
+                    </div>
                 </div>
-                
-                <div style="font-size:0.7rem; color:#aaa; margin-top:2px;">
-                    HP:${u.stats.hp} SV:${u.stats.sv} | ${u.weapons[0].name} & ${u.weapons[1].name}
-                </div>
-                
-                <div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:3px;">
-                    ${badges}
-                </div>
+                <button class="btn btn-del" style="margin-left:10px;" onclick="removeEditorUnit(${i})">X</button>
             </div>
-            <button class="btn btn-del" onclick="removeEditorUnit(${i})">X</button>
         `;
         c.appendChild(div);
     });
@@ -2891,12 +2910,25 @@ window.renderStars = function(rolls, containerId) {
         document.getElementById('dice-overlay').style.display = 'flex';
         document.getElementById('combat-log-visual').innerHTML = '';
         hideAllCombatButtons();
+
+        // Identificar unidades activas
+        const myU = (typeof myUnits !== 'undefined' && myUnits[myIdx]) ? myUnits[myIdx] : {};
+        const enU = (typeof enemyUnits !== 'undefined' && enemyUnits[enIdx]) ? enemyUnits[enIdx] : {};
+        const atkAvatar = document.getElementById('duel-avatar-atk');
+        const defAvatar = document.getElementById('duel-avatar-def');
+
         if(role === 'ATTACKER') {
+            if (atkAvatar) { atkAvatar.src = myU.photo || ''; atkAvatar.style.display = myU.photo ? 'block' : 'none'; atkAvatar.style.borderColor = 'var(--c)'; }
+            if (defAvatar) { defAvatar.src = enU.photo || ''; defAvatar.style.display = enU.photo ? 'block' : 'none'; defAvatar.style.borderColor = 'var(--r)'; }
+            
             document.getElementById('pool-atk').innerHTML = '';
             document.getElementById('pool-def').innerHTML = 'Esperando...';
             document.getElementById('btn-confirm-atk').style.display = 'inline-block';
             document.getElementById('btn-cancel-combat').style.display = 'inline-block';
         } else {
+            if (atkAvatar) { atkAvatar.src = enU.photo || ''; atkAvatar.style.display = enU.photo ? 'block' : 'none'; atkAvatar.style.borderColor = 'var(--r)'; }
+            if (defAvatar) { defAvatar.src = myU.photo || ''; defAvatar.style.display = myU.photo ? 'block' : 'none'; defAvatar.style.borderColor = 'var(--c)'; }
+            
             document.getElementById('pool-def').innerHTML = '';
             document.getElementById('btn-confirm-def').style.display = 'inline-block';
             document.getElementById('btn-cover-toggle').style.display = 'block';
@@ -3637,96 +3669,5 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
