@@ -53,7 +53,7 @@
         .turn-badge.enemy-turn { border-color: var(--r); color: var(--r); opacity: 0.8; }
 
         .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; padding-bottom: 20px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: none; }
-        .unit-selector { display: flex; justify-content: center; align-items: flex-end; margin-bottom: 10px; width: 100%; gap: 20px; pointer-events: none; }
+        .unit-selector { display: flex; justify-content: center; align-items: flex-end; margin-bottom: 10px; width: 100%; gap: 20px; pointer-events: none; flex-direction: row-reverse; }
         
         /* BUBBLE CARDS */
         .card { width: auto; border: none; padding: 0; background: transparent; min-height: auto; transition: 0.2s; position: relative; display: flex; pointer-events: none !important; }
@@ -68,17 +68,17 @@
         .critical-hp .unit-avatar { animation: pulse-critical 1s infinite; border-color: var(--r) !important; }
         .status-indicator { position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); background: #000; font-size: 0.6rem; padding: 2px 8px; border-radius: 10px; font-weight: bold; border: 1px solid #555; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.8); z-index: 15; }
         
-        .card-details { background: rgba(0,0,0,0.85); padding: 12px; border-radius: 20px; border: 1px solid #333; pointer-events: auto; flex: 1; backdrop-filter: blur(10px); display: none; flex-direction: column; gap: 5px; box-shadow: 0 8px 25px rgba(0,0,0,0.7); z-index: 5; margin-left: -20px; padding-left: 25px; overflow-y: auto; max-height: 50vh; }
+        .card-details { background: rgba(0,0,0,0.85); padding: 12px; border-radius: 20px; border: 1px solid #333; pointer-events: auto; flex: 1; backdrop-filter: blur(10px); display: none; flex-direction: column; gap: 5px; box-shadow: 0 8px 25px rgba(0,0,0,0.7); z-index: 5; margin-right: -20px; padding-right: 25px; overflow-y: auto; max-height: 50vh; }
         .card-details::-webkit-scrollbar { width: 4px; } .card-details::-webkit-scrollbar-thumb { background: var(--c); border-radius: 4px; }
-        .card.enemy .card-details { margin-left: 0; margin-right: -20px; padding-left: 12px; padding-right: 25px; }
+        .card.enemy .card-details { margin-right: 0; margin-left: -20px; padding-right: 12px; padding-left: 25px; }
         
-        .card-details.open { display: flex !important; animation: popRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        .card.enemy .card-details.open { animation: popLeft 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .card-details.open { display: flex !important; animation: popLeft 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .card.enemy .card-details.open { animation: popRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes popRight { from { opacity: 0; transform: translateX(-30px) scale(0.9); } to { opacity: 1; transform: translateX(0) scale(1); } }
         @keyframes popLeft { from { opacity: 0; transform: translateX(30px) scale(0.9); } to { opacity: 1; transform: translateX(0) scale(1); } }
         
-        .cycle-btn { position: absolute; bottom: 0; right: -5px; width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.85); color: #fff; border: 1px solid #555; cursor: pointer; pointer-events: auto; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 20; font-size: 1.1rem; transition: 0.2s; flex-shrink: 0; padding: 0; }
-        .cycle-btn.enemy-cycle { right: auto; left: -5px; }
+        .cycle-btn { position: absolute; bottom: 0; left: -5px; width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.85); color: #fff; border: 1px solid #555; cursor: pointer; pointer-events: auto; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 20; font-size: 1.1rem; transition: 0.2s; flex-shrink: 0; padding: 0; }
+        .cycle-btn.enemy-cycle { left: auto; right: -5px; }
         .cycle-btn:active { background: #333; transform: scale(0.9); }
 
         .ready-marker { position:absolute; top:-15px; right:-15px; background:var(--g); color:#000; font-size:0.6rem; padding:4px 8px; border-radius:15px; font-weight:bold; display:none; animation: pop 0.3s; z-index: 20; box-shadow: 0 0 10px var(--g); }
@@ -801,13 +801,13 @@
             <div class="unit-selector">
                 <!-- TARJETA MIA: Burbuja Avatar -->
                 <div class="card my" id="my-card">
-                    <div style="display:flex; align-items:center; width:100%; position:relative;">
+                    <div style="display:flex; align-items:center; width:100%; position:relative; flex-direction:row-reverse;">
                         <div class="avatar-bubble" onclick="toggleCardDetails('my')">
                             <img id="my-avatar" class="unit-avatar large" src="" style="display:none;">
                             <div class="status-indicator" id="my-status-text" style="color:var(--gold)">LISTO</div>
                             <button class="cycle-btn" onclick="nextMyUnit(); event.stopPropagation();">♻️</button>
                         </div>
-                        <div class="card-details" id="my-card-details">
+                        <div class="card-details" id="my-card-details" style="align-items:flex-end; text-align:right;">
                             <div id="my-name" style="font-weight:bold; font-size:1.1rem; color:var(--c);">---</div>
                             <div class="tags-container" id="my-tags"></div>
                             <div class="stat-grid" style="display:flex; justify-content:flex-start; gap:15px; margin:5px 0;">
@@ -826,13 +826,13 @@
 
                 <!-- TARJETA RIVAL: Burbuja Avatar -->
                 <div class="card enemy" id="en-card">
-                    <div style="display:flex; align-items:center; width:100%; position:relative; flex-direction:row-reverse;">
+                    <div style="display:flex; align-items:center; width:100%; position:relative;">
                         <div class="avatar-bubble" onclick="toggleCardDetails('en')">
                             <img id="en-avatar" class="unit-avatar large" src="" style="display:none; border-color:var(--r);">
                             <div class="status-indicator" id="en-mode-icon" style="color:var(--r)">❓</div>
                             <button class="cycle-btn enemy-cycle" onclick="nextEnemyUnit(); event.stopPropagation();">♻️</button>
                         </div>
-                        <div class="card-details" id="en-card-details" style="align-items:flex-end; text-align:right;">
+                        <div class="card-details" id="en-card-details">
                             <div id="enemy-name" style="font-weight:bold; font-size:1.1rem; color:var(--r);">ESPERANDO...</div>
                             <div style="font-size:0.8rem; color:#ccc; margin-top:5px; margin-bottom:10px;">
                                 APL: <b id="en-ap">0/0</b> | HP: <b id="en-hp-txt">0/0</b>
