@@ -700,6 +700,33 @@
         .gear-item:hover { background: #333; border-color: #888; }
         .gear-item.used { opacity: 0.5; pointer-events: none; text-decoration: line-through; }
         
+        /* --- WIZARD WYSIWYG --- */
+        #wizard-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 3000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        #wizard-modal.active { display: flex; }
+        .wizard-title { font-size: 1.5rem; color: var(--gold); margin-bottom: 10px; font-weight:bold; }
+        .wizard-question { font-size: 1.2rem; margin-bottom: 30px; color:#ddd; }
+        .wizard-options {
+            display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; width: 100%; max-width: 400px;
+        }
+        .wizard-btn {
+            background: #222; border: 1px solid var(--c); color: #fff;
+            padding: 15px 10px; font-size: 1rem; border-radius: 8px; cursor: pointer;
+            transition: 0.2s; flex-grow: 1; text-align: center; min-width: 140px;
+        }
+        .wizard-btn:hover { background: var(--c); color: #000; box-shadow: 0 0 10px var(--c); }
     </style>
 </head>
 <body>
@@ -720,9 +747,19 @@
         <button type="button" class="btn" style="max-width:200px;" onclick="returnToLobby()"><span>REINICIAR</span></button>
     </div>
 
+    <div id="wizard-modal">
+        <div id="wizard-step" style="color:#aaa; font-size:0.8rem; margin-bottom:5px; font-weight:bold;">PASO 1/6</div>
+        <div id="wizard-title" class="wizard-title">ESPECIE</div>
+        <div id="wizard-question" class="wizard-question">¿A qué facción pertenece la miniatura?</div>
+        <div id="wizard-options" class="wizard-options"></div>
+        <button type="button" class="btn" style="margin-top:40px; max-width:200px; background:#444;" onclick="closeWizard()">CANCELAR ASISTENTE</button>
+    </div>
+
     <div id="creator-screen" class="screen hidden">
         <h2 style="color:var(--gold); margin:0;">SQUAD FORGE</h2>
         <div style="font-size:0.6rem; color:#888; margin-bottom:15px;">CONSTRUCTOR DE ESCUADRA</div>
+
+        <button class="btn" onclick="startWizard()" style="background:rgba(0, 242, 255, 0.2); border:1px solid var(--c); color:#fff; font-weight:bold; margin-bottom:15px; box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);">✨ ASISTENTE WYSIWYG</button>
 
         <div class="box">
             <div class="forge-grid">
@@ -957,25 +994,40 @@
         const FORGE_DB = {
     species: {
         human: { name:"Humano", cost:5, hp:8, sv:"5+", r_hit:"4+", m_hit:"4+", keywords: ["IMPERIUM", "ASTRA_MILITARUM"] },
-        ork:   { name:"Orko", cost:6, hp:10, sv:"6+", r_hit:"5+", m_hit:"3+", keywords: ["XENOS", "ORK"] }
+        ork:   { name:"Orko", cost:6, hp:10, sv:"6+", r_hit:"5+", m_hit:"3+", keywords: ["XENOS", "ORK"] },
+        marine: { name:"Astartes", cost:15, hp:14, sv:"3+", r_hit:"3+", m_hit:"3+", keywords: ["IMPERIUM", "SPACE_MARINE"] },
+        eldar: { name:"Aeldari", cost:7, hp:8, sv:"5+", r_hit:"3+", m_hit:"3+", keywords: ["XENOS", "AELDARI", "FLEET"] },
+        tau: { name:"T'au", cost:6, hp:8, sv:"4+", r_hit:"4+", m_hit:"5+", keywords: ["XENOS", "TAU_EMPIRE"] }
     },
     roles: {
         trooper: { name:"Trooper", cost:0, modHP:0, modA:0, modHit:0, keywords: [] },
         leader:  { name:"Líder", cost:15, modHP:2, modA:1, modHit:-1, keywords: ["LEADER", "HERO"] },
         scout:   { name:"Explorador", cost:5, modHP:0, modA:0, modHit:0, keywords: ["SCOUT", "LIGHT"] },
-        gunner:  { name:"Artillero", cost:10, modHP:1, modA:0, modHit:0, keywords: ["HEAVY_INFANTRY", "GRENADIER"] }
+        gunner:  { name:"Artillero", cost:10, modHP:1, modA:0, modHit:0, keywords: ["HEAVY_INFANTRY", "GRENADIER"] },
+        medic:   { name:"Médico", cost:8, modHP:0, modA:0, modHit:0, keywords: ["MEDIC"] },
+        sniper_role: { name:"Francotirador", cost:12, modHP:-1, modA:0, modHit:-1, keywords: ["SILENT_OPERATIVE"] }
     },
     weapons: {
         lasgun: { name:"Lasgun", type:"Ranged", cost:0, A:4, D:2, traits: ["BALANCED"] },
         sniper: { name:"Sniper", type:"Ranged", cost:5, A:4, D:3, traits: ["HEAVY", "SILENT", "MORTAL_1"] },
         plasma: { name:"Plasma", type:"Ranged", cost:10, A:4, D:5, traits: ["HOT", "AP_1"] },
+        bolter: { name:"Bolter", type:"Ranged", cost:5, A:4, D:3, traits: ["RELIABLE"] },
+        shuriken: { name:"Catapulta Shuriken", type:"Ranged", cost:3, A:4, D:3, traits: ["RENDING"] },
+        pulse: { name:"Rifle de Pulso", type:"Ranged", cost:4, A:4, D:4, traits: ["LETHAL_5"] },
+        melta: { name:"Rifle Fusión", type:"Ranged", cost:12, A:4, D:6, traits: ["HEAVY", "AP_2", "MORTAL_3"] },
+        flamer: { name:"Lanzallamas", type:"Ranged", cost:8, A:5, D:2, traits: ["TORRENT", "IGNORES_COVER"] },
         knife:  { name:"Cuchillo", type:"Melee", cost:0, A:3, D:3, traits: [] },
-        sword:  { name:"Espada Energía", type:"Melee", cost:5, A:4, D:5, traits: ["LETHAL_5", "RENDING"] }
+        sword:  { name:"Espada Energía", type:"Melee", cost:5, A:4, D:5, traits: ["LETHAL_5", "RENDING"] },
+        chainsword: { name:"Espada Sierra", type:"Melee", cost:3, A:5, D:3, traits: ["RELIABLE"] },
+        powerfist: { name:"Puño Combate", type:"Melee", cost:10, A:4, D:6, traits: ["UNWIELDY", "BRUTAL"] }
     },
     gear: {
         none: { name:"Nada", cost:0, keywords: [] },
-        nades: { name:"Granadas Frag", cost:2, keywords: ["GRENADIER"] , mechanicRef: "grenade" },
-        medkit: { name:"Medkit", cost:3, keywords: ["MEDIC"], mechanicRef: "medkit" }
+        nades: { name:"Granadas Frag", cost:2, keywords: ["GRENADIER"], mechanicRef: "grenade" },
+        medkit: { name:"Medkit", cost:3, keywords: ["MEDIC"], mechanicRef: "medkit" },
+        stim: { name:"Estimulante", cost:1, keywords: [], mechanicRef: "stim" },
+        scope: { name:"Mira Telescópica", cost:3, keywords: [], mechanicRef: "scope" },
+        stealth: { name:"Capa de Camuflaje", cost:4, keywords: ["STEALTH"], mechanicRef: "stealth" }
     },
     bases: { 
         b25: { name:"25mm", cost:0, hp:0 }, 
@@ -986,14 +1038,11 @@
 
     const GEAR_DB = {
     none:   { name:"Nada", cost:0, keywords: [] },
-    
-    // AQUI ESTA LA VINCULACIÓN: agregamos mechanicRef: "grenade"
     nades:  { name:"Granadas Frag", cost:2, keywords: ["GRENADIER"], mechanicRef: "grenade" }, 
-    
-    // AQUI TAMBIÉN: vinculamos con "medkit"
     medkit: { name:"Medkit", cost:3, keywords: ["MEDIC"], mechanicRef: "medkit" },
-    
-    stim:   { name:"Estimulante", cost:1, keywords: [], mechanicRef: "stim" }
+    stim:   { name:"Estimulante", cost:1, keywords: [], mechanicRef: "stim" },
+    scope:  { name:"Mira Telescópica", cost:3, keywords: [], mechanicRef: "scope" },
+    stealth:{ name:"Capa de Camuflaje", cost:4, keywords: ["STEALTH"], mechanicRef: "stealth" }
 };
     // --- DICCIONARIO DE REGLAS Y TAGS ---
     // 1. TAGS DE UNIDAD (Keywords)
@@ -1187,6 +1236,119 @@
         document.getElementById('p-matk').innerText = (wm.A + r.modA);
         document.getElementById('p-mhit').innerText = mhVal + "+";
     }
+
+    // --- WIZARD LOGIC ---
+    let wizardCurrentStep = 0;
+    let wizardAnswers = {};
+    const wizardFlow = [
+        {
+            id: 'species',
+            title: 'ESPECIE',
+            question: '¿A qué facción pertenece la miniatura?',
+            targetSelect: 'u-species',
+            options: () => Object.entries(FORGE_DB.species).map(([k,v]) => ({key:k, label:v.name}))
+        },
+        {
+            id: 'base',
+            title: 'PEANA (BASE)',
+            question: '¿Qué tamaño de base (peana) tiene la figura?',
+            targetSelect: 'u-base',
+            options: () => Object.entries(FORGE_DB.bases).map(([k,v]) => ({key:k, label:v.name}))
+        },
+        {
+            id: 'role',
+            title: 'ROL TÁCTICO',
+            question: 'Observa su armadura o porte. ¿Qué rol parece cumplir?',
+            targetSelect: 'u-role',
+            options: () => Object.entries(FORGE_DB.roles).map(([k,v]) => ({key:k, label:v.name}))
+        },
+        {
+            id: 'weapon_r',
+            title: 'ARMA A DISTANCIA',
+            question: 'Mira sus manos. ¿Qué arma de disparo principal lleva?',
+            targetSelect: 'u-weapon-r',
+            options: () => Object.entries(FORGE_DB.weapons).filter(([k,v]) => v.type === 'Ranged').map(([k,v]) => ({key:k, label:v.name}))
+        },
+        {
+            id: 'weapon_m',
+            title: 'ARMA CUERPO A CUERPO',
+            question: '¿Tiene algún arma de combate cercano desenfundada?',
+            targetSelect: 'u-weapon-m',
+            options: () => Object.entries(FORGE_DB.weapons).filter(([k,v]) => v.type === 'Melee').map(([k,v]) => ({key:k, label:v.name}))
+        },
+        {
+            id: 'gear',
+            title: 'EQUIPAMIENTO EXTRA',
+            question: 'Mira su cinturón o mochila. ¿Lleva algo especial?',
+            targetSelect: 'u-gear',
+            options: () => Object.entries(FORGE_DB.gear).map(([k,v]) => ({key:k, label:v.name}))
+        }
+    ];
+
+    window.startWizard = function() {
+        wizardCurrentStep = 0;
+        wizardAnswers = {};
+        document.getElementById('wizard-modal').classList.add('active');
+        renderWizardStep();
+    }
+
+    window.closeWizard = function() {
+        document.getElementById('wizard-modal').classList.remove('active');
+    }
+
+    function renderWizardStep() {
+        const stepDef = wizardFlow[wizardCurrentStep];
+        if (!stepDef) {
+            applyWizardAnswers();
+            return;
+        }
+
+        document.getElementById('wizard-step').innerText = `PASO ${wizardCurrentStep + 1} / ${wizardFlow.length}`;
+        document.getElementById('wizard-title').innerText = stepDef.title;
+        document.getElementById('wizard-question').innerText = stepDef.question;
+        
+        const container = document.getElementById('wizard-options');
+        container.innerHTML = '';
+        
+        const opts = stepDef.options();
+        opts.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'wizard-btn';
+            btn.innerText = opt.label;
+            btn.onclick = () => {
+                wizardAnswers[stepDef.targetSelect] = opt.key;
+                wizardCurrentStep++;
+                renderWizardStep();
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    function applyWizardAnswers() {
+        closeWizard();
+        // Rellenar formulario (Opción B)
+        for (let selectId in wizardAnswers) {
+            const el = document.getElementById(selectId);
+            if (el) el.value = wizardAnswers[selectId];
+        }
+        calcForge(); // Refrescar los stats y coste visuales
+        
+        // Enfocar el input de nombre e invitar a escribir
+        const nameInput = document.getElementById('u-name');
+        if (nameInput) {
+            nameInput.value = ""; // Limpiar si había uno
+            nameInput.placeholder = "¡Ponle nombre y Añade!";
+            nameInput.focus();
+        }
+        
+        // Resaltar visualmente la tarjeta de vista previa
+        const previewEl = document.querySelector('.preview-box');
+        if (previewEl) {
+            previewEl.style.boxShadow = "0 0 20px var(--c)";
+            setTimeout(() => { previewEl.style.boxShadow = "none"; }, 1500);
+        }
+    }
+    // --- FIN WIZARD LOGIC ---
 
         window.addUnitToSquad = function() {
         // 1. Obtener valores del DOM
@@ -3399,3 +3561,96 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
