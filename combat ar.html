@@ -1314,34 +1314,7 @@ window.renderEditorSquad = function() {
     lbl.style.color = (totalCost > 100) ? "var(--r)" : (totalCost === 100 ? "var(--gold)" : "#fff");
 };
     
-function renderEditorSquad() {
-        const c = document.getElementById('squad-list'); c.innerHTML = "";
-        let totalCost = 0;
 
-        editorSquad.forEach((u, i) => {
-            totalCost += u.cost;
-            let div = document.createElement('div');
-            div.className = "unit-item";
-            // Mostramos iconos de arma según sea Rango o Melee para identificar rápido
-            const wIcon = u.stats.r_atk > 0 ? "🔫" : "⚔️";
-            
-            div.innerHTML = `
-                <div class="unit-info">
-                    <div style="color:var(--c); font-weight:bold;">${u.name} <span style="color:var(--gold)">[${u.cost} PTS]</span></div>
-                    <div style="color:#666;">${wIcon} HP:${u.stats.hp} SV:${u.stats.sv} | ${u.gear ? u.gear : 'NO GEAR'}</div>
-                </div>
-                <button class="btn btn-del" onclick="removeEditorUnit(${i})">X</button>
-            `;
-            c.appendChild(div);
-        });
-
-        // Actualizar el HTML del contador
-        const lbl = document.getElementById('total-pts');
-        lbl.innerText = totalCost;
-        
-        if(totalCost >= 100) lbl.style.color = "var(--gold)";
-        else lbl.style.color = "#fff";
-    }
 
     
     window.startNewRound = function(amISecond) {
@@ -1879,7 +1852,6 @@ function renderEditorSquad() {
                 updateHUD(); // Para ver reflejados los cambios del enemigo
             } 
         }
-            else if(d.type === 'CHANGE_TURN') { if(gameState!=='PLANNING') setTurn('MY_TURN', d.passes || 0);  }
             else if(d.type === 'ROUND_OVER') resetRound();
             else if(d.type === 'CHANGE_TURN') { 
             if(gameState !== 'PLANNING') {
@@ -2319,49 +2291,7 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
         btnApply.dataset.dmg = finalDmg;
     };
     
-    function startDefenseSequence(stats, enemyRolls) {
-        pendingAtkStats = stats;
-        setupCombatUI('DEFENDER');
-        document.getElementById('pool-atk').innerHTML = '';
-        renderStars(enemyRolls, 'pool-atk');
-        
-        defRolls = []; for(let i=0; i<3; i++) defRolls.push(Math.ceil(Math.random()*6));
-        renderDiceFaces(defRolls, 'pool-def', true);
-        logCombat(`RECIBES ATAQUE. Tira defensa...`);
-    }
 
-    function confirmDefense() {
-        hideAllCombatButtons();
-        renderStars(defRolls, 'pool-def');
-        let defHits = 0, defCrits = 0;
-        let sv = parseInt(myUnits[myIdx].stats.sv.replace('+','')) || 3;
-        
-        defRolls.forEach(r => { if(r===6) defCrits++; else if(r>=sv) defHits++; });
-        if(coverActive) { defHits++; logCombat("COBERTURA: +1 Bloqueo Normal"); }
-
-        let incCrit = pendingAtkStats.crit;
-        let incNorm = pendingAtkStats.normal;
-        let dmgPerHit = pendingAtkStats.dmgValue;
-
-        let blockedCrits = Math.min(incCrit, defCrits);
-        let remainingAtkCrits = incCrit - blockedCrits;
-        let remainingDefCrits = defCrits - blockedCrits;
-        let convertedDefHits = remainingDefCrits * 2; 
-        let totalDefNormal = defHits + convertedDefHits;
-        let blockedNormals = Math.min(incNorm, totalDefNormal);
-        let remainingAtkNormals = incNorm - blockedNormals;
-        let totalUnblockedHits = remainingAtkCrits + remainingAtkNormals;
-        let finalDmg = totalUnblockedHits * dmgPerHit;
-
-        logCombat(`DEF: ${defCrits} Crit, ${defHits} Hit. BLQ: ${blockedCrits} Crit, ${blockedNormals} Norm.`);
-        logCombat(`DAÑO FINAL: ${finalDmg}`);
-        
-        // Guardamos el daño calculado en un atributo del botón para usarlo al hacer click
-        const btnApply = document.getElementById('btn-apply-dmg');
-        btnApply.style.display = 'inline-block';
-        btnApply.innerText = `RECIBIR ${finalDmg} DAÑO`;
-        btnApply.dataset.dmg = finalDmg; // Store damage value
-    }
 
     function applyCombatResult() {
         const btn = document.getElementById('btn-apply-dmg');
@@ -2636,33 +2566,7 @@ window.renderDiceFaces = function(rolls, containerId, interactive) {
     });
 };
 
-// Función necesaria para seleccionar dados para Re-Roll
-window.toggleDieSelection = function(index, event) {
-    // Asegurarnos que la variable global existe
-    if (typeof selectedIndices === 'undefined') window.selectedIndices = [];
-    
-    if (!canReroll) return;
 
-    const arrIdx = selectedIndices.indexOf(index);
-    if (arrIdx > -1) {
-        // Deseleccionar
-        selectedIndices.splice(arrIdx, 1); 
-        event.target.classList.remove('selected');
-    } else {
-        // Seleccionar
-        selectedIndices.push(index); 
-        event.target.classList.add('selected');
-    }
-    
-    // Mostrar/Ocultar botón de confirmar reroll si hay dados seleccionados
-    // Intentamos buscar ambos botones (ataque o defensa)
-    const btnAtk = document.getElementById('btn-reroll');
-    const btnDef = document.getElementById('btn-reroll-def');
-    
-    if(btnAtk && btnAtk.style.display !== 'none') {
-        // Podrías cambiar el texto o color si hay seleccionados
-    }
-};
 
 // Función para mostrar resultados finales (Estrellas/Explosiones)
 // Úsala en confirmAttack / confirmDefense
@@ -2697,7 +2601,7 @@ window.renderStars = function(rolls, containerId) {
     });
 };
     
-    function toggleDieSelection(index, event) {
+    window.toggleDieSelection = function(index, event) {
         if(!canReroll) return;
         const parentId = event.target.parentElement.id; 
         const isAtk = parentId === 'pool-atk';
@@ -2712,16 +2616,7 @@ window.renderStars = function(rolls, containerId) {
         else { btn.style.display = 'none'; }
     }
 
-    function renderStars(rolls, elementId) {
-        const el = document.getElementById(elementId); el.innerHTML = '';
-        rolls.forEach(r => {
-            let span = document.createElement('span'); span.className = 'd-icon';
-            if(r >= 6) { span.innerHTML = '★'; span.classList.add('star-gold'); }
-            else if(r >= 3) { span.innerHTML = '★'; span.classList.add('star-blue'); }
-            else { span.innerHTML = '•'; span.classList.add('star-miss'); }
-            el.appendChild(span);
-        });
-    }
+
 
     function setupCombatUI(role) {
         canReroll = true; selectedIndices = [];
@@ -2804,66 +2699,7 @@ window.renderStars = function(rolls, containerId) {
         });
     }
     
-    // 2. Dibujar iconos según el contexto
-    window.selectPloy = function(ployID) {
-        // Buscar directamente en tu constante
-        const ploy = PLOYS_DB[ployID];
-        
-        if (!ploy) return; // Seguridad
-    
-        // Referencias HTML
-        const detailPanel = document.getElementById('cmd-details');
-        const nameEl = document.getElementById('ploy-name');
-        const descEl = document.getElementById('ploy-desc');
-        const costEl = document.getElementById('ploy-cost');
-        const btn = document.getElementById('btn-use-ploy');
-    
-        // Rellenar Datos
-        if (detailPanel) {
-            detailPanel.style.display = 'block'; // Mostrar panel
-            
-            if (nameEl) nameEl.innerText = ploy.name;
-            if (descEl) descEl.innerHTML = ploy.desc; // innerHTML por si quieres poner negritas
-            if (costEl) costEl.innerText = ploy.cost + " CP";
-            
-            // Configurar Botón ACTIVAR
-            if (btn) {
-                // Limpiamos eventos previos clonando o reasignando
-                btn.onclick = null; 
-                
-                btn.onclick = function() {
-                    // Validación de Coste
-                    if (myCP >= ploy.cost) {
-                        
-                        // 1. Pagar coste
-                        myCP -= ploy.cost;
-                        updateCmdContent(); // Refrescar contador visual
-                        
-                        console.log(`ACTIVADO: ${ploy.name} (${ployID})`);
-    
-                        // 2. Ejecutar efecto
-                        // Aquí llamamos a tu gestor de operaciones
-                        performOp('PLOY', ployID); 
-    
-                        // 3. Feedback y cierre
-                        detailPanel.style.display = 'none'; // Ocultar panel tras usar
-                        
-                        // Opcional: Sonido o mensaje flotante
-                        // playSound('ui_confirm');
-                        
-                    } else {
-                        // Feedback visual de error
-                        btn.style.background = 'var(--r)';
-                        btn.innerText = "FALTAN CP";
-                        setTimeout(() => {
-                            btn.style.background = 'var(--gold)';
-                            btn.innerText = "ACTIVAR";
-                        }, 1000);
-                    }
-                };
-            }
-        }
-    };
+
     
     // 3. Mostrar detalles al hacer clic en icono
     window.selectPloy = function(ployID) {
@@ -3532,96 +3368,4 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
