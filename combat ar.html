@@ -10,9 +10,9 @@
         :root { --c: #00f2ff; --r: #ff0055; --g: #00ff99; --gold: #ffcc00; --bg: #0d1117; }
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; color: var(--c); user-select: none; -webkit-user-select: none; }
 
-        // ==========================================
-        // === SECCIÓN 7: RENDERIZADO Y HUD       ===
-        // ==========================================
+        /* ========================================== */
+        /* === SECCIÓN 7: RENDERIZADO Y HUD       === */
+        /* ========================================== */
 
         /* --- MAIN RENDER --- */
         .screen { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; background: var(--bg); z-index: 10; transition: 0.3s; align-items: center; overflow-y: auto; }
@@ -53,10 +53,10 @@
         .turn-badge.enemy-turn { border-color: var(--r); color: var(--r); opacity: 0.8; }
 
         .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; padding-bottom: 20px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: none; }
-        .unit-selector { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; width: 100%; gap: 10px; pointer-events: none; }
+        .unit-selector { display: flex; justify-content: center; align-items: flex-end; margin-bottom: 10px; width: 100%; gap: 20px; pointer-events: none; }
         
         /* BUBBLE CARDS */
-        .card { width: auto; border: none; padding: 0; background: transparent; min-height: auto; transition: 0.2s; position: relative; display: flex; flex: 1; pointer-events: none !important; }
+        .card { width: auto; border: none; padding: 0; background: transparent; min-height: auto; transition: 0.2s; position: relative; display: flex; pointer-events: none !important; }
         .card.locked .avatar-bubble { filter: grayscale(1); opacity: 0.5; }
         .card.active .unit-avatar { box-shadow: 0 0 20px var(--c); border-color: #fff !important; }
         .card.enemy.active .unit-avatar { box-shadow: 0 0 20px var(--r); }
@@ -68,7 +68,8 @@
         .critical-hp .unit-avatar { animation: pulse-critical 1s infinite; border-color: var(--r) !important; }
         .status-indicator { position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); background: #000; font-size: 0.6rem; padding: 2px 8px; border-radius: 10px; font-weight: bold; border: 1px solid #555; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.8); z-index: 15; }
         
-        .card-details { background: rgba(0,0,0,0.85); padding: 12px; border-radius: 20px; border: 1px solid #333; pointer-events: auto; flex: 1; backdrop-filter: blur(10px); display: none; flex-direction: column; gap: 5px; box-shadow: 0 8px 25px rgba(0,0,0,0.7); z-index: 5; margin-left: -20px; padding-left: 25px; }
+        .card-details { background: rgba(0,0,0,0.85); padding: 12px; border-radius: 20px; border: 1px solid #333; pointer-events: auto; flex: 1; backdrop-filter: blur(10px); display: none; flex-direction: column; gap: 5px; box-shadow: 0 8px 25px rgba(0,0,0,0.7); z-index: 5; margin-left: -20px; padding-left: 25px; overflow-y: auto; max-height: 50vh; }
+        .card-details::-webkit-scrollbar { width: 4px; } .card-details::-webkit-scrollbar-thumb { background: var(--c); border-radius: 4px; }
         .card.enemy .card-details { margin-left: 0; margin-right: -20px; padding-left: 12px; padding-right: 25px; }
         
         .card-details.open { display: flex !important; animation: popRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
@@ -1645,12 +1646,8 @@ window.renderEditorSquad = function() {
             if (unit.activations < 2) {
                 // 1. COMBATE (Ranged / Melee)
                 if (unit.mode === 'open') {
-                    // Asumimos que combatMode está definido globalmente o por defecto es ranged
-                    if (typeof combatMode !== 'undefined' && combatMode === 'ranged') {
-                         createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); setGameHUDVisibility(true); });
-                    } else {
-                         createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); setGameHUDVisibility(true); });
-                    }
+                    createActionButton("DISPARAR", "🔫", "combat", () => { initiateCombat(0); setGameHUDVisibility(true); });
+                    createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); setGameHUDVisibility(true); });
                 } else {
                     // Si está en Hidden, permitimos Melee (emboscada)
                     createActionButton("COMBATE MELEE", "⚔️", "combat", () => { initiateCombat(1); setGameHUDVisibility(true); });
@@ -3703,3 +3700,96 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
