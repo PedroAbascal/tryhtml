@@ -1979,7 +1979,7 @@ window.renderEditorSquad = function() {
         client = new Paho.MQTT.Client(BROKER, PORT, MY_ID);
         client.onConnectionLost=(e)=>{if(e.errorCode!==0 && !document.getElementById('game-screen').classList.contains('hidden')) setTimeout(()=>startNetwork(code),3000)};
         client.onMessageArrived=onMessage;
-        client.connect({useSSL:true, onSuccess:()=>{ client.subscribe(TOPIC); publish({type:'JOIN_REQ', squad:myUnits, pMission:primaryMission, secActive:secondaryActive}); }});
+        client.connect({useSSL:true, onSuccess:()=>{ client.subscribe(TOPIC); publish({type:'JOIN_REQ', squad:getCleanSquad(), pMission:primaryMission, secActive:secondaryActive}); }});
     }
 
     // --- NETWORK HANDLER ---
@@ -2661,6 +2661,13 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
                     APL: ${currentAP}/${maxAP}
                 </span>
             `;
+            
+        // Avatar del jugador actual
+        const myAvatar = document.getElementById('my-avatar');
+        if (myAvatar) {
+            myAvatar.src = me.photo || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="%23222"/><text x="50" y="65" font-size="50" text-anchor="middle" fill="%23555">?</text></svg>';
+            myAvatar.style.display = 'block';
+        }
     }
 
     // Texto de estado
@@ -2816,6 +2823,13 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
         const enMaxAp = (en.stats && en.stats.apl) ? en.stats.apl : 2;
         const enCurAp = (en.ap !== undefined) ? en.ap : enMaxAp;
         setText('en-ap', `${enCurAp}/${enMaxAp}`);
+        
+        // Avatar del enemigo
+        const enAvatar = document.getElementById('en-avatar');
+        if (enAvatar) {
+            enAvatar.src = en.photo || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="%23222"/><text x="50" y="65" font-size="50" text-anchor="middle" fill="%23555">?</text></svg>';
+            enAvatar.style.display = 'block';
+        }
     }
 };
 
@@ -3669,5 +3683,96 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
