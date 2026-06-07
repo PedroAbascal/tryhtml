@@ -737,9 +737,13 @@
         
         <button class="btn" onclick="openForge()" style="background:#222; border:1px solid var(--gold); color:var(--gold); margin-bottom:15px;">🛠️ CREAR ESCUADRA</button>
 
-        <div class="box">
-            <textarea id="json-input" placeholder='Pega aquí tu JSON'></textarea>
+        <div class="box" style="padding:10px;">
+            <div style="font-size:0.6rem; color:#888; margin-bottom:10px;">LISTA DE DESPLIEGUE</div>
+            <div id="lobby-squad-preview" style="max-height:200px; overflow-y:auto; padding:5px; text-align:left;">
+                <!-- squad list will be rendered here -->
+            </div>
         </div>
+        
         <div class="box" style="border-color:var(--gold);">
             <div style="font-size:0.6rem; color:#888;">CONFIGURACIÓN DE PARTIDA</div>
             <select id="primary-mission">
@@ -1363,6 +1367,27 @@
     
         // 6. Construir Objeto FINAL DE UNIDAD
         // Nota: Ahora guardamos las armas como OBJETOS completos, no solo nombres.
+        let finalMeleeWeapon = null;
+        if (!wm || wmKey === 'none' || wm.name === 'Ninguna' || !wm.A || wm.A === 0) {
+            finalMeleeWeapon = {
+                name: 'Combate Cercano',
+                type: 'MELEE',
+                atk: 2,
+                hit: 5,
+                dmg: '1/2',
+                traits: []
+            };
+        } else {
+            finalMeleeWeapon = {
+                name: wm.name,
+                type: 'MELEE',
+                atk: wm.A + r.modA,
+                hit: mhVal,
+                dmg: wm.D,
+                traits: wm.traits || []
+            };
+        }
+
         const newUnit = {
             id: Date.now(),
             name: name,
@@ -1385,14 +1410,7 @@
                     dmg: wr.D,
                     traits: wr.traits || [] // <--- AQUÍ ESTÁN TUS TAGS DE ARMA
                 },
-                {
-                    name: wm.name,
-                    type: 'MELEE',
-                    atk: wm.A + r.modA,
-                    hit: mhVal,
-                    dmg: wm.D,
-                    traits: wm.traits || [] // <--- AQUÍ ESTÁN TUS TAGS DE ARMA
-                }
+                finalMeleeWeapon
             ],
             gear: gKey,
             photo: currentPhotoData // <--- Guardamos el avatar
@@ -1755,12 +1773,10 @@ window.renderEditorSquad = function() {
     MY_ID = "OP_" + Math.random().toString(16).substr(2, 6);
     
     // 2. Referencias del HTML
-    const jsonInput = document.getElementById('json-input');
     const codeInput = document.getElementById('room-id');
     const roundSelect = document.getElementById('round-select');
     
     // Valores por defecto
-    const json = jsonInput ? jsonInput.value : "";
     const code = codeInput ? codeInput.value.trim().toUpperCase() : "TEST-ROOM";
     maxRounds = roundSelect ? parseInt(roundSelect.value, 10) : 4;
     
@@ -1770,12 +1786,11 @@ window.renderEditorSquad = function() {
     secondaryActive = (sToggleEl && sToggleEl.value === "SI");
     
     try {
-        // 3. Procesar JSON
-        const parsed = JSON.parse(json);
-        if(!parsed.squad) throw new Error("Falta 'squad' en JSON.");
+        // 3. Procesar Escuadra Local
+        if (!editorSquad || editorSquad.length === 0) throw new Error("Falta 'squad'. Debes crear una en la Forja.");
         
-        myUnits = parsed.squad.map(u => {
-            const unit = { ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', activations: 0, gearUsed: false, mechanics: [] };
+        myUnits = JSON.parse(JSON.stringify(editorSquad)).map(u => {
+            const unit = { ...u, uid: `${MY_ID}_${u.id}`, mode: 'open', activations: 0, hasOverwatched: false, gearUsed: false, mechanics: [] };
             if(u.gear && typeof MECHANICS_DB !== 'undefined' && MECHANICS_DB[u.gear]) {
                 unit.mechanics.push(MECHANICS_DB[u.gear]);
             }
@@ -1879,21 +1894,48 @@ window.renderEditorSquad = function() {
             return;
         }
 
-        // 2. Preparar el JSON en el formato correcto
-        // Nota: Creamos un objeto { squad: ... } para que initSystem lo lea bien
-        const finalObj = { squad: editorSquad };
-        const jsonStr = JSON.stringify(finalObj, null, 2); // Formato legible
+        // 2. Render visual lobby squad
+        if (typeof renderLobbySquad === 'function') renderLobbySquad();
         
-        // 3. Pegar el JSON en la caja de texto del Lobby
-        document.getElementById('json-input').value = jsonStr;
-        
-        // 4. Cambiar de pantalla MANUALMENTE (Solución al error showScreen)
+        // 4. Cambiar de pantalla MANUALMENTE
         document.getElementById('creator-screen').classList.add('hidden');
         document.getElementById('lobby-screen').classList.remove('hidden');
         
         // Feedback opcional
         console.log("Escuadra transferida al Lobby");
     }
+    
+    window.renderLobbySquad = function() {
+        const container = document.getElementById('lobby-squad-preview');
+        if(!container) return;
+        container.innerHTML = '';
+        editorSquad.forEach((u, i) => {
+            const isLeader = u.isLeader ? 'var(--gold)' : '#333';
+            const star = u.isLeader ? '⭐' : '☆';
+            
+            let div = document.createElement('div');
+            div.style.cssText = 'display:flex; align-items:center; background:#111; border-radius:10px; padding:5px; margin-bottom:5px; border:1px solid #333;';
+            div.innerHTML = `
+                <div style="width:30px; height:30px; border-radius:50%; background:#222; overflow:hidden; margin-right:10px; flex-shrink:0;">
+                    ${u.photo ? `<img src="${u.photo}" style="width:100%; height:100%; object-fit:cover;">` : ''}
+                </div>
+                <div style="flex:1; font-size:0.7rem;">
+                    <div style="font-weight:bold; color:var(--c);">${u.name}</div>
+                    <div style="color:#aaa;">${u.weapons[0].name} & ${u.weapons[1].name}</div>
+                </div>
+                <div onclick="setLeader(${i})" style="cursor:pointer; padding:5px; font-size:1.2rem; color:${isLeader}; text-shadow:0 0 5px ${isLeader}; transition:0.2s;">
+                    ${star}
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    };
+
+    window.setLeader = function(index) {
+        editorSquad.forEach(u => u.isLeader = false);
+        editorSquad[index].isLeader = true;
+        renderLobbySquad();
+    };
 
     function startNetwork(code) {
         TOPIC = `sqcmd/v2.4/${code}`;
@@ -2644,10 +2686,28 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
 
     // Botones de Toggle (Tu lógica original)
     const btnOpen = document.getElementById('btn-mode-open');
-    if (btnOpen) btnOpen.className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
+    if (btnOpen) {
+        btnOpen.className = me.mode === 'open' ? 'mode-toggle selected' : 'mode-toggle';
+        if (gameState !== 'PLANNING') {
+            btnOpen.style.opacity = '0.4';
+            btnOpen.style.pointerEvents = 'none';
+        } else {
+            btnOpen.style.opacity = '1';
+            btnOpen.style.pointerEvents = 'auto';
+        }
+    }
 
     const btnHidden = document.getElementById('btn-mode-hidden');
-    if (btnHidden) btnHidden.className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
+    if (btnHidden) {
+        btnHidden.className = me.mode === 'hidden' ? 'mode-toggle selected' : 'mode-toggle';
+        if (gameState !== 'PLANNING') {
+            btnHidden.style.opacity = '0.4';
+            btnHidden.style.pointerEvents = 'none';
+        } else {
+            btnHidden.style.opacity = '1';
+            btnHidden.style.pointerEvents = 'auto';
+        }
+    }
 
 
     // 6. EQUIPO (GEAR) - ¡AQUÍ ESTÁ LA INTEGRACIÓN!
@@ -3362,6 +3422,7 @@ function tryApplyReactionBonus(unit) {
         myUnits.forEach(u => {
             u.gearUsed = false; // Permitir usar items de nuevo
             u.activations = 0;  // Resetear fatiga (si aplica)
+            u.hasReactionBonus = false; // Resetear Overwatch
         });
         resetUnitAP(); updateHUD(); log(`INICIO RONDA ${currentRound}`); 
     }
