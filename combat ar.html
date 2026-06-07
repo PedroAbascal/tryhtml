@@ -15,15 +15,17 @@
         .screen.hidden { display: none !important; }
         .screen.transparent { background: transparent; pointer-events: none; padding: 0; overflow: hidden; }
         
-        .box { border: 1px solid var(--c); padding: 15px; width: 100%; max-width: 400px; background: rgba(0,0,0,0.95); margin-bottom: 15px; text-align: center; }
+        .box { border: 1px solid rgba(0, 242, 255, 0.3); padding: 15px; width: 100%; max-width: 400px; background: rgba(0,0,0,0.85); border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.7); margin-bottom: 15px; text-align: center; backdrop-filter: blur(5px); }
         
-        input, select, textarea { background: #000; border: 1px solid #333; color: #fff; padding: 8px; font-family: monospace; width: 100%; text-align: center; margin: 5px 0; text-transform: uppercase; box-sizing: border-box; }
+        input, select, textarea { background: #000; border: 1px solid #333; color: #fff; padding: 10px; font-family: monospace; width: 100%; text-align: center; margin: 5px 0; text-transform: uppercase; box-sizing: border-box; border-radius: 15px; }
         textarea { height: 60px; color: var(--gold); border-color: var(--gold); font-size: 0.7rem; }
         
-        .btn { background: var(--c); color: #000; border: none; padding: 12px; width: 100%; font-weight: bold; cursor: pointer; font-size: 1rem; clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%, 0 30%); margin-top: 5px; pointer-events: auto; }
-        .btn:disabled { background: #222; color: #555; pointer-events: none; }
-        .btn-small { font-size: 0.7rem; padding: 5px; width: auto; border: 1px solid var(--gold); background: #000; color: var(--gold); cursor: pointer; pointer-events: auto; }
-        .btn-del { background: var(--r); color: #fff; width: 30px; height: 30px; padding: 0; clip-path: none; }
+        .btn { background: var(--c); color: #000; border: none; padding: 12px; width: 100%; font-weight: bold; cursor: pointer; font-size: 1rem; border-radius: 25px; margin-top: 5px; pointer-events: auto; box-shadow: 0 4px 10px rgba(0, 242, 255, 0.2); transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .btn:hover { filter: brightness(1.2); }
+        .btn:active { transform: scale(0.95); box-shadow: 0 0 20px var(--c); }
+        .btn:disabled { background: #222; color: #555; pointer-events: none; box-shadow: none; }
+        .btn-small { font-size: 0.7rem; padding: 5px; width: auto; border: 1px solid var(--gold); background: #000; color: var(--gold); cursor: pointer; pointer-events: auto; border-radius: 15px; }
+        .btn-del { background: var(--r); color: #fff; width: 30px; height: 30px; padding: 0; border-radius: 50%; box-shadow: none; }
 
         /* --- FORGE (CREADOR) STYLES --- */
         .forge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; width: 100%; }
@@ -41,22 +43,37 @@
         .score-detail { font-size: 0.6rem; color: #aaa; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95%; }
         .secret-hl { color: var(--gold); font-weight: bold; }
 
-        .turn-badge { border: 2px solid #555; padding: 5px 15px; font-weight: bold; background: #000; color: #555; text-transform: uppercase; font-size: 0.8rem; transition: 0.3s; }
+        .turn-badge { border: 2px solid #555; padding: 5px 15px; font-weight: bold; background: #000; color: #555; text-transform: uppercase; font-size: 0.8rem; transition: 0.3s; border-radius: 20px; }
         .turn-badge.planning { border-color: var(--gold); color: var(--gold); }
         .turn-badge.my-turn { border-color: var(--g); color: var(--g); box-shadow: 0 0 15px var(--g); transform: scale(1.1); }
         .turn-badge.enemy-turn { border-color: var(--r); color: var(--r); opacity: 0.8; }
 
-        .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto; }
-        .unit-selector { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
-        .card { width: 48%; border: 1px solid #333; padding: 10px; background: rgba(0,0,0,0.85); cursor: pointer; min-height: 120px; transition: 0.2s; position: relative; display: flex; flex-direction: column; justify-content: space-between; pointer-events: auto !important; }
-        .card.active { border-color: #fff; transform: scale(1.02); z-index: 5; }
-        .card.fatigued { border-color: var(--gold); opacity: 0.9; }
-        .card.exhausted { opacity: 0.4; filter: grayscale(1); border-color: #222; }
-        .card.locked { opacity: 0.5; pointer-events: none; border-color: #333 !important; }
-        .card.my { border-left: 4px solid var(--c); }
-        .card.enemy { border-left: 4px solid var(--r); }
+        .hud-bottom { position: absolute; bottom: 0; width: 100%; padding: 10px; padding-bottom: 20px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: none; }
+        .unit-selector { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; width: 100%; gap: 10px; pointer-events: none; }
         
-        .ready-marker { position:absolute; top:-10px; right:-5px; background:var(--g); color:#000; font-size:0.6rem; padding:2px 5px; font-weight:bold; display:none; animation: pop 0.3s; }
+        /* BUBBLE CARDS */
+        .card { width: auto; border: none; padding: 0; background: transparent; min-height: auto; transition: 0.2s; position: relative; display: flex; flex: 1; pointer-events: none !important; }
+        .card.locked .avatar-bubble { filter: grayscale(1); opacity: 0.5; }
+        .card.active .unit-avatar { box-shadow: 0 0 20px var(--c); border-color: #fff !important; }
+        .card.enemy.active .unit-avatar { box-shadow: 0 0 20px var(--r); }
+        
+        .avatar-bubble { position: relative; cursor: pointer; border-radius: 50%; pointer-events: auto; transition: transform 0.2s; z-index: 10; display: inline-block; }
+        .avatar-bubble:active { transform: scale(0.9); }
+        .unit-avatar.large { width: 75px; height: 75px; border-width: 3px; box-shadow: 0 4px 15px rgba(0,0,0,0.9); }
+        .status-indicator { position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); background: #000; font-size: 0.6rem; padding: 2px 8px; border-radius: 10px; font-weight: bold; border: 1px solid #555; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.8); z-index: 15; }
+        
+        .card-details { background: rgba(0,0,0,0.85); padding: 12px; border-radius: 20px; border: 1px solid #333; pointer-events: auto; flex: 1; backdrop-filter: blur(10px); display: none; flex-direction: column; gap: 5px; box-shadow: 0 8px 25px rgba(0,0,0,0.7); z-index: 5; margin-left: -20px; padding-left: 25px; }
+        .card.enemy .card-details { margin-left: 0; margin-right: -20px; padding-left: 12px; padding-right: 25px; }
+        
+        .card-details.open { display: flex !important; animation: popRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .card.enemy .card-details.open { animation: popLeft 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes popRight { from { opacity: 0; transform: translateX(-30px) scale(0.9); } to { opacity: 1; transform: translateX(0) scale(1); } }
+        @keyframes popLeft { from { opacity: 0; transform: translateX(30px) scale(0.9); } to { opacity: 1; transform: translateX(0) scale(1); } }
+        
+        .cycle-btn { width: 45px; height: 45px; border-radius: 50%; background: rgba(0,0,0,0.8); color: #fff; border: 1px solid #555; font-weight: bold; cursor: pointer; pointer-events: auto; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10; font-size: 1.2rem; transition: 0.2s; flex-shrink: 0; }
+        .cycle-btn:active { background: #333; transform: scale(0.9); }
+
+        .ready-marker { position:absolute; top:-15px; right:-15px; background:var(--g); color:#000; font-size:0.6rem; padding:4px 8px; border-radius:15px; font-weight:bold; display:none; animation: pop 0.3s; z-index: 20; box-shadow: 0 0 10px var(--g); }
         .ready-marker.show { display:block; }
         @keyframes pop { 0%{transform:scale(0);} 80%{transform:scale(1.2);} 100%{transform:scale(1);} }
 
@@ -74,14 +91,14 @@
         .tag.passive { background: #222; color: #aaa; }
         .tag.used { text-decoration: line-through; opacity: 0.5; background: #000; color: #444; }
 
-        .tactic-row { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.7rem; border-top: 1px solid #333; padding-top: 5px; }
-        .mode-toggle { cursor: pointer; padding: 2px 5px; border: 1px solid #555; color: #888; background: #000; font-family: monospace; font-size: 0.6rem; width: 45%; }
-        .mode-toggle.selected { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.1); }
+        .tactic-row { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.7rem; border-top: 1px solid #333; padding-top: 5px; gap: 5px; }
+        .mode-toggle { cursor: pointer; padding: 4px 8px; border: 1px solid #555; color: #888; background: #000; font-family: monospace; font-size: 0.6rem; flex: 1; border-radius: 15px; transition: 0.2s; }
+        .mode-toggle.selected { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.1); box-shadow: 0 0 10px rgba(255, 204, 0, 0.2); }
         
-        #btn-claim-secret { display: none; margin-top: 5px; background: #000; color: var(--gold); border: 1px solid var(--gold); box-shadow: 0 0 5px var(--gold); animation: pulseSecret 2s infinite; width: 100%; font-size: 0.7rem; padding: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
-        @keyframes pulseSecret { 0% { box-shadow: 0 0 2px var(--gold); } 50% { box-shadow: 0 0 10px var(--gold); } 100% { box-shadow: 0 0 2px var(--gold); } }
+        #btn-claim-secret { display: none; margin-top: 5px; background: #000; color: var(--gold); border: 1px solid var(--gold); box-shadow: 0 0 5px var(--gold); animation: pulseSecret 2s infinite; width: 100%; font-size: 0.7rem; padding: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; border-radius: 15px; }
+        @keyframes pulseSecret { 0% { box-shadow: 0 0 2px var(--gold); } 50% { box-shadow: 0 0 15px var(--gold); } 100% { box-shadow: 0 0 2px var(--gold); } }
 
-        #btn-cover-toggle { background: #000; border: 2px solid #444; color: #666; padding: 8px 20px; font-family: monospace; font-weight: bold; cursor: pointer; margin-bottom: 10px; width: 80%; text-align: center; transition: 0.2s; pointer-events: auto; }
+        #btn-cover-toggle { background: #000; border: 2px solid #444; color: #666; padding: 8px 20px; font-family: monospace; font-weight: bold; cursor: pointer; margin-bottom: 10px; width: 80%; text-align: center; transition: 0.2s; pointer-events: auto; border-radius: 25px; }
         #btn-cover-toggle.active { background: rgba(0, 242, 255, 0.1); border-color: var(--c); color: var(--c); text-shadow: 0 0 5px var(--c); }
 
         .btn-gear { background: #fff !important; color: #000 !important; border: 2px solid var(--gold) !important; box-shadow: 0 0 10px var(--gold); animation: pulseGold 2s infinite; }
@@ -98,8 +115,8 @@
         @keyframes flashRed { 50% { background: rgba(255, 0, 0, 0.5); } }
 
         /* COMBAT ARENA */
-        #dice-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
-        .dice-arena { width: 100%; max-width: 400px; background: #111; border: 1px solid #333; padding: 15px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; }
+        #dice-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; backdrop-filter: blur(10px); }
+        .dice-arena { width: 100%; max-width: 400px; background: rgba(15,15,15,0.9); border: 1px solid #333; padding: 20px; border-radius: 25px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         .duel-container { display: flex; justify-content: space-between; align-items: center; width: 100%; margin: 20px 0; background: #000; padding: 10px; border-radius: 5px; box-sizing: border-box; }
         .duel-side { width: 45%; text-align: center; }
         .duel-label { font-size: 0.7rem; color: #666; margin-bottom: 5px; letter-spacing: 1px; }
@@ -196,12 +213,12 @@
         #game-over-screen.show { opacity: 1; pointer-events: auto; }
         .end-title { font-size: 3rem; font-weight: bold; margin-bottom: 20px; letter-spacing: 5px; }
         
-        #confirm-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; }
+        #confirm-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; backdrop-filter: blur(5px); }
         #confirm-modal.show { opacity: 1; pointer-events: auto; }
-        .modal-box { background: #111; border: 2px solid var(--gold); padding: 20px; width: 80%; max-width: 300px; text-align: center; box-shadow: 0 0 20px rgba(255,204,0,0.2); }
-        .modal-text { color: var(--gold); font-size: 0.9rem; margin-bottom: 20px; font-weight: bold; }
+        .modal-box { background: rgba(15,15,15,0.95); border: 1px solid var(--gold); padding: 25px; width: 80%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(255,204,0,0.3); border-radius: 25px; }
+        .modal-text { color: var(--gold); font-size: 0.9rem; margin-bottom: 25px; font-weight: bold; }
         .modal-btn-row { display: flex; gap: 10px; justify-content: center; }
-        .btn-modal-yes { background: var(--gold); color: #000; padding: 10px 20px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-modal-yes { background: var(--gold); color: #000; padding: 12px 25px; border: none; font-weight: bold; cursor: pointer; border-radius: 20px; }
 
         //Tags y Badges
         .badge {
@@ -241,8 +258,8 @@
         /* Estilo de la etiqueta individual */
         .hud-tag {
             font-size: 0.55rem;
-            padding: 1px 3px;
-            border-radius: 2px;
+            padding: 2px 6px;
+            border-radius: 10px;
             font-weight: bold;
             text-transform: uppercase;
             border: 1px solid #444;
@@ -261,143 +278,8 @@
             border-color: var(--r);
         }
 
-        #en-card.card.enemy {
-            position: relative;
-            min-width: 50px;
-            max-width: 45%;
-            margin: 0;
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-            background: rgb(255 76 162 / 21%);
-            border: 1px solid var(--r);
-            border-radius: 10px;
-            z-index: 100;
-            cursor: pointer;
-            transition: 0.3s all ease;
-            align-content: flex-end;
-            justify-content: center;
-        }
-        
-        /* 2. El Div interno que agrupa texto y stats */
-        #en-card > div:first-child {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        
-        /* 3. Cabecera "RIVAL" y Icono */
-        #en-card > div:first-child > div:first-child {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        /* Avatares WYSIWYG */
-        .unit-avatar {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            border: 2px solid var(--c);
-            object-fit: cover;
-            background: #222;
-        }
-        .forge-avatar-preview {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            border: 2px dashed #888;
-            object-fit: cover;
-            display: flex; align-items: center; justify-content: center;
-            color: #888; font-size: 0.6rem; cursor: pointer;
-            background: #111;
-        }
-
-        /* Ocultamos la palabra "RIVAL" para ahorrar espacio */
-        #en-card > div:first-child > div:first-child span:first-child {
-            display: none; 
-        }
-        
-        /* El Icono de modo (❓/⚔️) lo hacemos más grande */
-        #en-mode-icon {
-            font-size: 1.4rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid var(--r);
-        }
-        
-        /* 4. Nombre del Enemigo */
-        #enemy-name {
-            font-size: 1rem !important; /* Forzamos tamaño */
-            color: white;
-            text-shadow: 0 0 5px var(--r);
-            white-space: nowrap;
-            margin: 0 !important;
-            text-align: left;
-            flex-grow: 1; /* Ocupa el espacio disponible */
-        }
-        
-        /* 5. Ocultar cosas que no queremos en modo minimalista */
-        #en-tags { display: none; } /* Adiós tags */
-        
-        /* 6. Grid de Stats: Solo mostramos la Salvación (SV) */
-        .stat-grid {
-            display: flex;
-            margin: 0;
-            background: none;
-            padding: 0;
-            border: none;
-        }
-        
-        /* Ocultamos RNG (1ro) y MEL (2do) */
-        .stat-box:nth-child(1), 
-        .stat-box:nth-child(2) {
-            display: none;
-        }
-        
-        /* Estilizamos SV (3ro) */
-        .stat-box:nth-child(3) {
-            background: transparent;
-            border: none;
-            border-left: 1px solid #444;
-            padding: 0 0 0 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-width: auto;
-        }
-        .stat-box:nth-child(3) .stat-val {
-            font-size: 1.1rem;
-            color: #fff;
-        }
-        .stat-box:nth-child(3) .stat-label {
-            font-size: 0.6rem;
-            color: #888;
-        }
-        
-        /* 7. Barra de Vida (HP): Ahora es una línea fina abajo */
-        .hp-bar {
-            margin-top: 5px;
-            height: 4px; /* Muy fina */
-            background: #333;
-            width: 100%;
-            border-radius: 2px;
-            overflow: hidden;
-            border: none; /* Quitamos borde viejo */
-        }
-        #enemy-hp {
-            height: 100%;
-            transition: width 0.3s;
-        }
+        /* Borramos estilos viejos de en-card porque ya no se usan en la nueva burbuja */
+        #act-bar, #gear-bar, #cmd-bar { border-radius: 20px; padding: 15px; }
         
         /* 8. Marcador de "LISTO" (Si se usa) */
         #en-ready-mark {
@@ -839,6 +721,10 @@
                 
                 <div class="unit-list" id="squad-list"></div>
         
+        <div style="width:100%; max-width:400px; display:flex; gap:10px; margin-bottom:10px;">
+            <button class="btn" style="background:#444; color:#fff;" onclick="saveSquadLocal()">💾 GUARDAR</button>
+            <button class="btn" style="background:#444; color:#fff;" onclick="loadSquadLocal()">📂 CARGAR</button>
+        </div>
         <div style="width:100%; max-width:400px; display:flex; gap:10px;">
             <button class="btn" style="background:#333; color:#fff;" onclick="closeForge()">VOLVER</button>
             <button class="btn" style="background:var(--gold); color:#000;" onclick="deployToLobby()">DESPLEGAR EN LOBBY</button>
@@ -901,41 +787,48 @@
                     <div id="phase-display" style="font-size:0.8rem; color:var(--c); font-weight:bold; margin-bottom:5px;">ESPERANDO...</div>
                 </div>
             <div class="unit-selector">
-                <div class="card my" onclick="nextMyUnit()" id="my-card" style="flex: 1.5;">
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.6rem;"><span>YO</span> <span id="my-status-text" style="color:var(--gold)"></span></div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <img id="my-avatar" class="unit-avatar" src="" style="display:none;">
-                            <div id="my-name" style="font-weight:bold; font-size:1.1rem;">---</div>
+                <!-- TARJETA MIA: Burbuja Avatar -->
+                <div class="card my" id="my-card">
+                    <button class="cycle-btn" onclick="nextMyUnit()">&gt;</button>
+                    <div style="display:flex; align-items:center; width:100%; position:relative;">
+                        <div class="avatar-bubble" onclick="toggleCardDetails('my')">
+                            <img id="my-avatar" class="unit-avatar large" src="" style="display:none;">
+                            <div class="status-indicator" id="my-status-text" style="color:var(--gold)">LISTO</div>
                         </div>
-                        <div class="tags-container" id="my-tags"></div>
-                        <div class="stat-grid">
-                            <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="my-sv">--</span></div>
+                        <div class="card-details" id="my-card-details">
+                            <div id="my-name" style="font-weight:bold; font-size:1.1rem; color:var(--c);">---</div>
+                            <div class="tags-container" id="my-tags"></div>
+                            <div class="stat-grid" style="display:flex; justify-content:flex-start; gap:15px; margin:5px 0;">
+                                <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="my-sv">--</span></div>
+                                <div class="stat-box"><span class="stat-label">HP</span><span class="stat-val" id="g-w">--</span></div>
+                            </div>
+                            <div class="tactic-row" id="my-tactics">
+                                <button type="button" id="btn-mode-open" class="mode-toggle selected" onclick="setMode('open', event)">ATAQUE</button>
+                                <button type="button" id="btn-mode-hidden" class="mode-toggle" onclick="setMode('hidden', event)">TÁCTICA</button>
+                            </div>
+                            <div class="hp-bar" style="margin-top:10px;"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
                         </div>
+                        <div id="my-ready-mark" class="ready-marker">¡LISTO!</div>
                     </div>
-                    <div>
-                        <div class="tactic-row" id="my-tactics">
-                            <button type="button" id="btn-mode-open" class="mode-toggle selected" onclick="setMode('open', event)">ATAQUE</button>
-                            <button type="button" id="btn-mode-hidden" class="mode-toggle" onclick="setMode('hidden', event)">TÁCTICA</button>
-                        </div>
-                        <div class="hp-bar"><div id="my-hp" class="hp-fill" style="background:var(--c)"></div></div>
-                    </div>
-                    <div id="my-ready-mark" class="ready-marker">LISTO</div>
                 </div>
-                <div class="card enemy" onclick="nextEnemyUnit()" id="en-card" style="flex: 0.8;">
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)"><span>RIVAL</span> <span id="en-mode-icon">❓</span></div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <img id="en-avatar" class="unit-avatar" src="" style="display:none; border-color:var(--r);">
-                            <div id="enemy-name" style="font-weight:bold; font-size:0.9rem;">ESPERANDO...</div>
+
+                <!-- TARJETA RIVAL: Burbuja Avatar -->
+                <div class="card enemy" id="en-card">
+                    <div style="display:flex; align-items:center; width:100%; position:relative; flex-direction:row-reverse;">
+                        <div class="avatar-bubble" onclick="toggleCardDetails('en')">
+                            <img id="en-avatar" class="unit-avatar large" src="" style="display:none; border-color:var(--r);">
+                            <div class="status-indicator" id="en-mode-icon" style="color:var(--r)">❓</div>
                         </div>
-                        <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:0.8rem; color:#ccc;">
-                            <span>APL: <b id="en-ap">0/0</b></span>
-                            <span>HP: <b id="en-hp-txt">0/0</b></span>
+                        <div class="card-details" id="en-card-details" style="align-items:flex-end; text-align:right;">
+                            <div id="enemy-name" style="font-weight:bold; font-size:1.1rem; color:var(--r);">ESPERANDO...</div>
+                            <div style="font-size:0.8rem; color:#ccc; margin-top:5px; margin-bottom:10px;">
+                                APL: <b id="en-ap">0/0</b> | HP: <b id="en-hp-txt">0/0</b>
+                            </div>
+                            <div class="hp-bar" style="width:100%;"><div id="enemy-hp" class="hp-fill" style="background:var(--r)"></div></div>
                         </div>
+                        <div id="en-ready-mark" class="ready-marker" style="background:var(--r); left:-15px; right:auto;">¡LISTO!</div>
                     </div>
-                    <div class="hp-bar" style="margin-top:auto;"><div id="enemy-hp" class="hp-fill" style="background:var(--r)"></div></div>
-                    <div id="en-ready-mark" class="ready-marker">¡LISTO!</div>
+                    <button class="cycle-btn" onclick="nextEnemyUnit()">&lt;</button>
                 </div>
             </div>
         </div>
@@ -1760,7 +1653,7 @@ window.renderEditorSquad = function() {
        
         container.innerHTML = ''; // Limpiar
         
-        if (!unit.gear || unit.gear === "Nada") {
+        if (!unit.gear || unit.gear === "Nada" || unit.gear === "none") {
             container.innerHTML = '<div style="color:#777; font-size:0.7rem; padding:4px;">Sin Equipo</div>';
             return;
         }
@@ -1943,6 +1836,34 @@ window.renderEditorSquad = function() {
         alert("ERROR DE DATOS: " + e.message); 
     }
 }
+
+    function saveSquadLocal() {
+        if (editorSquad.length === 0) {
+            alert("No hay operativos para guardar.");
+            return;
+        }
+        try {
+            localStorage.setItem('combatAr_savedSquad', JSON.stringify(editorSquad));
+            alert("¡Escuadra guardada localmente!");
+        } catch(e) {
+            alert("Error al guardar: " + e.message);
+        }
+    }
+
+    function loadSquadLocal() {
+        try {
+            const data = localStorage.getItem('combatAr_savedSquad');
+            if (!data) {
+                alert("No hay ninguna escuadra guardada.");
+                return;
+            }
+            editorSquad = JSON.parse(data);
+            renderEditorSquad();
+            alert("¡Escuadra cargada con éxito!");
+        } catch(e) {
+            alert("Error al cargar: " + e.message);
+        }
+    }
 
     function removeEditorUnit(index) {
         // Borra 1 elemento en la posición 'index'
@@ -3453,6 +3374,14 @@ function tryApplyReactionBonus(unit) {
     window.setMode = function(m, e) { e.stopPropagation(); if(gameState === 'PLANNING') { myUnits[myIdx].mode = m; renderUnifiedHUD(); updateHUD(); } }
     window.nextMyUnit = () => { myIdx = (myIdx + 1) % myUnits.length; if (gameState === 'MY_TURN' && !canSelectUnit(myIdx)) autoSelectValidUnit(); updateHUD(); }
 
+    window.toggleCardDetails = function(side) {
+        const id = side === 'my' ? 'my-card-details' : 'en-card-details';
+        const el = document.getElementById(id);
+        if(el) {
+            el.classList.toggle('open');
+        }
+    };
+
     
     window.nextEnemyUnit = function() {
         // 1. Seguridad: Si no hay enemigos, no hacemos nada
@@ -3683,96 +3612,3 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
