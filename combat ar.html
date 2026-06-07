@@ -808,6 +808,10 @@
                 <option value="4">4 RONDAS</option>
                 <option value="5">5 RONDAS</option>
             </select>
+            <select id="ar-toggle">
+                <option value="ON">CON CÁMARA (AR)</option>
+                <option value="OFF">FONDO OSCURO (NO-AR)</option>
+            </select>
             <input type="text" id="room-id" value="WARZONE-10">
             <button type="button" class="btn" onclick="initSystem()"><span>DESPLEGAR</span></button>
         </div>
@@ -836,10 +840,10 @@
                     <div id="phase-display" style="font-size:0.8rem; color:var(--c); font-weight:bold; margin-bottom:5px;">ESPERANDO...</div>
                 </div>
             <div class="unit-selector">
-                <div class="card my" onclick="nextMyUnit()" id="my-card">
+                <div class="card my" onclick="nextMyUnit()" id="my-card" style="flex: 1.5;">
                     <div>
                         <div style="display:flex; justify-content:space-between; font-size:0.6rem;"><span>YO</span> <span id="my-status-text" style="color:var(--gold)"></span></div>
-                        <div id="my-name" style="font-weight:bold;">---</div>
+                        <div id="my-name" style="font-weight:bold; font-size:1.1rem;">---</div>
                         <div class="tags-container" id="my-tags"></div>
                         <div class="stat-grid">
                             <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="my-sv">--</span></div>
@@ -854,18 +858,16 @@
                     </div>
                     <div id="my-ready-mark" class="ready-marker">LISTO</div>
                 </div>
-                <div class="card enemy" onclick="nextEnemyUnit()" id="en-card">
+                <div class="card enemy" onclick="nextEnemyUnit()" id="en-card" style="flex: 0.8;">
                     <div>
                         <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--r)"><span>RIVAL</span> <span id="en-mode-icon">❓</span></div>
-                        <div id="enemy-name" style="font-weight:bold;">ESPERANDO...</div>
-                        <div class="tags-container" id="en-tags"></div>
-                        <div class="stat-grid">
-                            <div class="stat-box"><span class="stat-label">RNG</span><span class="stat-val" id="en-r">--</span></div>
-                            <div class="stat-box"><span class="stat-label">MEL</span><span class="stat-val" id="en-m">--</span></div>
-                            <div class="stat-box"><span class="stat-label">SV</span><span class="stat-val" id="en-sv">--</span></div>
+                        <div id="enemy-name" style="font-weight:bold; font-size:0.9rem;">ESPERANDO...</div>
+                        <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:0.8rem; color:#ccc;">
+                            <span>APL: <b id="en-ap">0/0</b></span>
+                            <span>HP: <b id="en-hp-txt">0/0</b></span>
                         </div>
                     </div>
-                    <div class="hp-bar"><div id="enemy-hp" class="hp-fill" style="background:var(--r)"></div></div>
+                    <div class="hp-bar" style="margin-top:auto;"><div id="enemy-hp" class="hp-fill" style="background:var(--r)"></div></div>
                     <div id="en-ready-mark" class="ready-marker">¡LISTO!</div>
                 </div>
             </div>
@@ -1259,7 +1261,7 @@
                     traits: wm.traits || [] // <--- AQUÍ ESTÁN TUS TAGS DE ARMA
                 }
             ],
-            gear: g.name
+            gear: gKey
         };
     
         editorSquad.push(newUnit);
@@ -1552,20 +1554,27 @@ window.renderEditorSquad = function() {
     
             if (!isUsed) {
                 div.onclick = function() {
+                    if (!trySpendAP(1)) return;
                     
                     // Ejecutar lógica según el nombre de la función
                     if(mech.func === 'THROW_GRENADE') {
-                        if (!trySpendAP(1)) return;
-                         alert("💥 ¡GRANADA LANZADA!");
+                        log(`GRANADA LANZADA!`);
+                        publish({type: 'GEAR_EFFECT', gearName: 'GRANADA', desc: 'BOOM! 3 Daño', dmg: 3});
                     } else if (mech.func === 'USE_MEDKIT') {
-                        if (!trySpendAP(1)) return;
-                         alert("❤️ CURANDO...");
+                        if (globalHP[unit.uid]) {
+                            globalHP[unit.uid].c = Math.min(globalHP[unit.uid].m, globalHP[unit.uid].c + 3);
+                            publish({type: 'SYNC_HP', state: globalHP});
+                            log("MEDKIT USADO (+3 HP)");
+                        }
+                    } else if (mech.func === 'USE_STIM') {
+                        unit.ap += 1;
+                        log("ESTIMULANTE USADO (+1 AP)");
                     }
     
                     if(mech.oneUse) {
                         unit.gearUsed = true;
-                       // updateGearContent(unit); // Recargar para mostrar como usado
                     }
+                    updateHUD();
                 };
             }
             
@@ -1651,12 +1660,24 @@ window.renderEditorSquad = function() {
         if (typeof updateHUD === 'function') updateHUD(); 
         
         // 8. Cámara y Red
-        navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
-            .then(s => {
-                const vid = document.getElementById('ar-feed');
-                if(vid) vid.srcObject = s;
-            })
-            .catch(e => console.log("AR no disponible"));
+        const arToggle = document.getElementById('ar-toggle');
+        const isAR = arToggle ? arToggle.value === 'ON' : true;
+        
+        if (isAR) {
+            navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+                .then(s => {
+                    const vid = document.getElementById('ar-feed');
+                    if(vid) { vid.srcObject = s; vid.style.display = 'block'; }
+                    document.body.style.background = '#000';
+                })
+                .catch(e => console.log("AR no disponible"));
+        } else {
+            const vid = document.getElementById('ar-feed');
+            if (vid) vid.style.display = 'none';
+            // Fondo oscuro al body simulando mesa virtual oscura
+            document.body.style.background = '#111';
+            document.getElementById('game-screen').style.background = 'transparent';
+        }
             
         if (typeof startNetwork === 'function') startNetwork(code);
 
@@ -2271,6 +2292,7 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
         let mortalWounds = 0;
         if(mwTrait && pendingAtkStats.crit > 0) { // MW suele activarse en críticos retenidos
              mortalWounds = parseInt(mwTrait.split('_')[1]) * (pendingAtkStats.crit); // MW por cada crit original? Ojo con la regla exacta.
+             logCombat(`TRAIT MW: Recibes ${mortalWounds} Heridas Mortales ignorando armadura.`, "danger");
         }
     
         let totalDmg = (atkCrit * dmg) + (atkNorm * dmg) + (atkCrit * 1); // +1 si crítico hace más daño base? O definelo en DB.
@@ -2278,8 +2300,8 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
         // SUGERENCIA: Usa un daño fijo extra para críticos si no está en DB.
         // Si tu DB tiene arma.critDmg, úsalo. Si no, (Hits + Crits) * DmgBase + (Crits * 1).
         
-        // Simplificación basada en tu código anterior:
-        let finalDmg = (atkNorm * dmg) + (atkCrit * (dmg + 1)); // Críticos hacen +1 daño
+        // Simplificación basada en tu código anterior sumando MW:
+        let finalDmg = (atkNorm * dmg) + (atkCrit * (dmg + 1)) + mortalWounds; // Críticos hacen +1 daño
     
         logCombat(`RESULTADO: ${atkCrit} Crits y ${atkNorm} Hits entran.`);
         logCombat(`DAÑO TOTAL: ${finalDmg}`, "danger");
@@ -2524,11 +2546,19 @@ if(activePloys['TAKE_COVER'] && coverActive && defHits > 0) {
     const en = (typeof enemyUnits !== 'undefined' && typeof enIdx !== 'undefined') ? enemyUnits[enIdx] : null;
     if (en) {
         setText('enemy-name', en.name);
-        // Barra de vida enemigo
+        // Barra de vida y texto enemigo
         if (typeof globalHP !== 'undefined' && globalHP[en.uid]) {
             const enHp = document.getElementById('enemy-hp');
-            if (enHp) enHp.style.width = (globalHP[en.uid].c / globalHP[en.uid].m * 100) + "%";
+            const c = globalHP[en.uid].c;
+            const m = globalHP[en.uid].m;
+            if (enHp) enHp.style.width = (c / m * 100) + "%";
+            setText('en-hp-txt', `${c}/${m}`);
         }
+        
+        // AP del enemigo
+        const enMaxAp = (en.stats && en.stats.apl) ? en.stats.apl : 2;
+        const enCurAp = (en.ap !== undefined) ? en.ap : enMaxAp;
+        setText('en-ap', `${enCurAp}/${enMaxAp}`);
     }
 };
 
@@ -3257,32 +3287,33 @@ function tryApplyReactionBonus(unit) {
             // A. Notificar a la red y al log
             log(`TACTICA ACTIVADA: ${ployID}`, "combat");
             publish({type:'OP_ACTION', opType: 'PLOY', id: ployID});
+            
+            // Registrar estratagema
+            if (typeof activePloys === 'undefined') window.activePloys = {};
+            activePloys[ployID] = true;
     
             // B. Ejecutar el efecto real en el juego
             switch(ployID) {
                 case 'RUSH':
-                    // Sumamos 2 al movimiento base de la unidad actual
-                    // Asegúrate de que stats.m sea un número
                     me.stats.m = parseInt(me.stats.m) + 2;
                     log(`>> ${me.name} gana +2" de Movimiento.`);
                     break;
     
                 case 'SHOOT_HARD':
-                    // Creamos una "regla temporal" o flag
-                    if(!me.tempRules) me.tempRules = [];
-                    me.tempRules.push('LETHAL_5');
                     log(">> Armas mejoradas (Lethal 5+)");
                     break;
     
                 case 'TAKE_COVER':
-                    if(!me.tempRules) me.tempRules = [];
-                    me.tempRules.push('BETTER_COVER');
                     log(">> Defensa mejorada en cobertura");
                     break;
                     
                 case 'REROLL':
-                    // Lógica especial (quizás solo un flag para usar después)
-                    alert("Elige un dado para repetir en tu próxima tirada.");
+                    window.canReroll = true;
+                    const btnAtk = document.getElementById('btn-reroll');
+                    const btnDef = document.getElementById('btn-reroll-def');
+                    if(btnAtk) { btnAtk.style.display = 'inline-block'; btnAtk.innerText = "USAR RE-TIRAR"; }
+                    if(btnDef) { btnDef.style.display = 'inline-block'; btnDef.innerText = "USAR RE-TIRAR"; }
+                    log(">> Puedes re-tirar dados de combate.");
                     break;
             }
     
@@ -3368,4 +3399,3 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
-
