@@ -1060,12 +1060,12 @@
             desc: "Si estás en cobertura, un éxito normal de defensa se vuelve crítico.",
             phase: 3 // Resolución/Defensa
         },
-        'REROLL': { 
-            name: "REPETICIÓN TÁCTICA", 
-            cost: 1, 
-            icon: "🎲", 
-            desc: "Repite un dado de ataque o defensa cualquiera.",
-            phase: 'ANY' // Especial, se gestiona en combate
+        'REROLL': {
+            name: "REPETICION TACTICA",
+            cost: 1,
+            icon: "♻️",
+            desc: "Permite re-tirar 1 dado de ataque o defensa (Incluso sin orden Táctica).",
+            phase: 0 // Cualquier fase
         }
     };
 
@@ -1367,11 +1367,11 @@
         const g = FORGE_DB.gear[gKey];
         const b = FORGE_DB.bases[bKey];
     
-        // 3. Validar Coste (Igual que antes)
-        const unitCost = s.cost + r.cost + wr.cost + wm.cost + g.cost + b.cost;
+        // 3. Validar Coste
+        const unitCost = (s ? s.cost : 0) + (r ? r.cost : 0) + (wr ? wr.cost : 0) + (wm ? wm.cost : 0) + (g ? g.cost : 0) + (b ? b.cost : 0);
         const currentTotal = editorSquad.reduce((sum, u) => sum + u.cost, 0);
         if (currentTotal + unitCost > 100) {
-            alert(`Límite excedido (${unitCost} pts).`);
+            alert(`Límite de puntos excedido (Total: ${currentTotal + unitCost} / 100 pts).`);
             return;
         }
     
@@ -2362,10 +2362,10 @@ window.renderEditorSquad = function() {
         // BALANCED / CEASELESS (Habilitar botón de Reroll)
         // En Kill Team, Balanced permite repetir 1 dado. Ceaseless permite repetir los 1s.
         // Aquí habilitamos el sistema de reroll genérico si tiene el trait.
-        if(traits.includes('BALANCED') || traits.includes('CEASELESS')) {
+        if(traits.includes('BALANCED') || traits.includes('CEASELESS') || activePloys['REROLL']) {
             canReroll = true; // Variable global que permite seleccionar dados
             document.getElementById('btn-reroll').style.display = 'inline-block';
-            log("TRAIT: RE-ROLL Habilitado (Selecciona dados)", "success");
+            log("TRAIT/TACTICA: RE-ROLL Habilitado (Selecciona dados)", "success");
         } else {
             canReroll = false;
             document.getElementById('btn-reroll').style.display = 'none';
@@ -2389,6 +2389,7 @@ window.renderEditorSquad = function() {
 
     function rerollDice(type) {
         if(!canReroll || selectedIndices.length === 0) return;
+        
         let targetArray = (type === 'ATK') ? atkRolls : defRolls;
         selectedIndices.forEach(idx => { targetArray[idx] = Math.ceil(Math.random()*6); });
         canReroll = false; selectedIndices = [];
@@ -2992,6 +2993,26 @@ window.renderStars = function(rolls, containerId) {
         const isAtk = parentId === 'pool-atk';
         if (gameState === 'MY_TURN' && !isAtk) return; 
         if (gameState !== 'MY_TURN' && isAtk) return;  
+        
+        // --- Limitaciones de Defensa ---
+        if (!isAtk) {
+            const myUnit = myUnits[myIdx];
+            // Permitir reroll si tiene el Ploy, o si tiene la orden "Hidden"
+            const hasTacticPloy = (typeof activePloys !== 'undefined' && activePloys['REROLL']);
+            const hasHiddenOrder = (myUnit.mode === 'hidden');
+            
+            if (!hasHiddenOrder && !hasTacticPloy) {
+                alert("Solo los operativos con orden TÁCTICA pueden re-tirar dados de defensa.");
+                return;
+            }
+            
+            // Limitación: Solo 1 dado de defensa a menos que tenga el ploy
+            if (!selectedIndices.includes(index) && selectedIndices.length >= 1 && !hasTacticPloy) {
+                alert("Solo puedes re-tirar 1 dado de defensa.");
+                return;
+            }
+        }
+        
         const div = event.target;
         if (selectedIndices.includes(index)) { selectedIndices = selectedIndices.filter(i => i !== index); div.classList.remove('selected'); } 
         else { selectedIndices.push(index); div.classList.add('selected'); }
@@ -3050,8 +3071,8 @@ window.renderStars = function(rolls, containerId) {
         const validPloys = Object.entries(PLOYS_DB).filter(([id, data]) => {
             // La condición mágica:
             // Coincide la fase NUMÉRICA exactamenete (1, 2, 3)
-            // O es una táctica universal ('ANY')
-            return data.phase === turnPhase || data.phase === 'ANY';
+            // O es una táctica universal ('ANY' = 0 en DB)
+            return data.phase === turnPhase || data.phase === 0;
         });
     
         // Si no hay nada para esta fase, ocultamos el panel de detalles para que no estorbe
@@ -3192,8 +3213,9 @@ window.renderStars = function(rolls, containerId) {
             // Intentar actualizar botones si existen
             const btnAtk = document.getElementById('btn-reroll');
             const btnDef = document.getElementById('btn-reroll-def');
-            if(btnAtk) { btnAtk.style.display = 'inline-block'; btnAtk.innerText = "USAR COMANDO"; }
-            if(btnDef) { btnDef.style.display = 'inline-block'; btnDef.innerText = "USAR COMANDO"; }
+            if(btnAtk) { btnAtk.style.display = 'inline-block'; btnAtk.innerText = "USAR RE-TIRAR"; }
+            if(btnDef) { btnDef.style.display = 'inline-block'; btnDef.innerText = "USAR RE-TIRAR"; }
+            log(">> Puedes re-tirar dados de combate.");
         }
     };
     
@@ -3427,6 +3449,11 @@ function tryApplyReactionBonus(unit) {
                 } else {
                     safeGear = u.gear; // Es texto, está bien.
                 }
+            }
+            
+            // Validación de puntos (Forja)
+            if (editorSquad.reduce((sum, unit) => sum + unit.cost, 0) > 100) {
+                throw new Error("Puntos excedidos");
             }
     
             return {
@@ -3705,8 +3732,8 @@ function tryApplyReactionBonus(unit) {
                 case 'TAKE_COVER':
                     log(">> Defensa mejorada en cobertura");
                     break;
-                    
                 case 'REROLL':
+                    log(">> Repetición Táctica activa: Puedes re-tirar 1 dado de ataque o defensa.");
                     window.canReroll = true;
                     const btnAtk = document.getElementById('btn-reroll');
                     const btnDef = document.getElementById('btn-reroll-def');
@@ -3798,4 +3825,5 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
+
 
