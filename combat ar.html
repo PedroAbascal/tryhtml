@@ -1639,7 +1639,7 @@ window.renderEditorSquad = function() {
 
         // ==========================================
         // FASE 1: MOVIMIENTO
-    
+        if (turnPhase === 1) {
             if(typeof setGameHUDVisibility === 'function') setGameHUDVisibility(true);
             
             if(bubbleIcon) bubbleIcon.innerText = "🦶"; 
@@ -3698,6 +3698,11 @@ function tryApplyReactionBonus(unit) {
             
         // --- MISIÓN ---
         } else if (op === 'MISION') {
+            const me = myUnits[myIdx];
+            if (me.mode !== 'hidden') {
+                alert("Solo los operativos con orden TÁCTICA pueden cumplir objetivos de misión.");
+                return;
+            }
             if (!trySpendAP(1)) return;
             myVP++;
             document.getElementById('my-score').innerText = myVP;
@@ -3825,5 +3830,4 @@ function canShootWeapon(unit, weapon) {
 </script>
 </body>
 </html>
-
 
